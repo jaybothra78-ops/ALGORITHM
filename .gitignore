@@ -1,0 +1,32 @@
+# Virtual environment
+.venv/
+venv/
+ENV/
+env/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*.class
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Databases & local state
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+scanner.db
+signals.db
+
+# IDE & OS files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Custom user configuration
+.env

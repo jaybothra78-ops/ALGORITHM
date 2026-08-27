@@ -1,0 +1,441 @@
+// DOM Elements
+const statusEl = document.querySelector('#status');
+const value = id => document.querySelector(id) ? document.querySelector(id).value : '';
+
+// State
+let state = {
+  activeTab: 'lookback',
+  lookbackDays: 1,
+  lookbackData: [],
+  searchQuery: '',
+  isLoading: false,
+};
+
+function money(v) {
+  return v == null ? '—' : '₹' + Number(v).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+function rsiBadge(rsi) {
+  if (rsi == null) return '<span class="rsi-cell">—</span>';
+  const val = Number(rsi).toFixed(2);
+  if (rsi < 30) {
+    return `<span class="rsi-cell oversold">📉 ${val}</span>`;
+  } else if (rsi > 70) {
+    return `<span class="rsi-cell overbought">📈 ${val}</span>`;
+  }
+  return `<span class="rsi-cell">${val}</span>`;
+}
+
+function renderSignalBadge(primaryType) {
+  switch ((primaryType || '').toLowerCase()) {
+    case 'oversold':
+    case 'buy':
+      return '<span class="badge badge-buy">BUY</span>';
+    case 'overbought':
+    case 'sell':
+      return '<span class="badge badge-sell">SELL</span>';
+    default:
+      return '<span class="badge badge-neutral">NEUTRAL</span>';
+  }
+}
+
+function renderReasons(reasons) {
+  if (!reasons || !reasons.length) return '—';
+  return reasons.map(r => {
+    let cls = 'strategy';
+    if (r.category === 'RSI_Oversold' || r.type === 'buy') cls = 'oversold';
+    if (r.category === 'RSI_Overbought' || r.type === 'sell') cls = 'overbought';
+    return `<span class="reason-pill ${cls}">${r.text}</span>`;
+  }).join(' ');
+}
+
+function updateMetrics(totalScanned, items) {
+  document.querySelector('#metric-scanned').textContent = totalScanned || 0;
+  document.querySelector('#metric-flagged').textContent = items.length;
+
+  let oversold = 0;
+  let overbought = 0;
+  let knoxCount = 0;
+
+  items.forEach(item => {
+    const reasons = item.reasons || [];
+    if (item.primary_type === 'oversold' || reasons.some(r => r.category === 'RSI_Oversold')) oversold++;
+    if (item.primary_type === 'overbought' || reasons.some(r => r.category === 'RSI_Overbought')) overbought++;
+    if (reasons.some(r => r.strategy === 'RB_KnoxDiv' || (r.text && r.text.toLowerCase().includes('knoxville')))) knoxCount++;
+  });
+
+  document.querySelector('#metric-oversold').textContent = oversold;
+  document.querySelector('#metric-overbought').textContent = overbought;
+  document.querySelector('#metric-signals').textContent = knoxCount;
+}
+
+
+// -------------------------------------------------------------
+// Lookback Screener Logic
+// -------------------------------------------------------------
+async function fetchLookbackSignals(forceRefresh = false) {
+  if (state.isLoading) return;
+  state.isLoading = true;
+  statusEl.textContent = `Screening ${state.lookbackDays}D lookback…`;
+
+  const params = new URLSearchParams({
+    lookback_days: state.lookbackDays,
+    rsi_length: 14,
+  });
+
+  const indexVal = value('#lookback-index');
+  if (indexVal) params.set('index', indexVal);
+
+  const condVal = value('#lookback-condition');
+  if (condVal) params.set('signal_filter', condVal);
+
+  if (forceRefresh) params.set('refresh', 'true');
+
+  try {
+    const res = await fetch('/screener/lookback?' + params);
+    if (!res.ok) throw new Error(`Server returned ${res.status}`);
+    const data = await res.json();
+    state.lookbackData = data.items || [];
+    updateMetrics(data.total_scanned, state.lookbackData);
+    renderLookbackTable();
+    statusEl.textContent = `Scanned ${data.total_scanned} tickers · ${data.total_flagged} flagged (${data.lookback_days}D)`;
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+    document.querySelector('#lookback-rows').innerHTML = `<tr><td colspan="7" class="empty-cell">Failed to load screener: ${err.message}</td></tr>`;
+  } finally {
+    state.isLoading = false;
+  }
+}
+
+function filterAndSortItems(items) {
+  let list = [...items];
+
+  // Search filter
+  const query = state.searchQuery.trim().toUpperCase();
+  if (query) {
+    list = list.filter(item => item.symbol.toUpperCase().includes(query));
+  }
+
+  // Sort
+  const sortBy = value('#lookback-sort') || 'recency';
+  switch (sortBy) {
+    case 'rsi_asc':
+      return list.sort((a, b) => (a.rsi == null ? 999 : a.rsi) - (b.rsi == null ? 999 : b.rsi));
+    case 'rsi_desc':
+      return list.sort((a, b) => (b.rsi == null ? -1 : b.rsi) - (a.rsi == null ? -1 : a.rsi));
+    case 'symbol':
+      return list.sort((a, b) => a.symbol.localeCompare(b.symbol));
+    case 'recency':
+    default:
+      return list.sort((a, b) => (b.signal_date || '').localeCompare(a.signal_date || ''));
+  }
+}
+
+function renderLookbackTable() {
+  const tbody = document.querySelector('#lookback-rows');
+  const filtered = filterAndSortItems(state.lookbackData);
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">No matching stocks found. Adjust filters or search.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(item => {
+    return `<tr>
+      <td>
+        <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(item.symbol)}">
+          ${item.symbol} ↗
+        </a>
+      </td>
+      <td class="price-cell">${money(item.current_price)}</td>
+      <td>${rsiBadge(item.rsi)}</td>
+      <td>${renderSignalBadge(item.primary_type)}</td>
+      <td>${renderReasons(item.reasons)}</td>
+      <td class="date-cell">${item.signal_date || '—'}</td>
+      <td class="universe-cell">${(item.index_membership || '').replace(/\|/g, ', ')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// -------------------------------------------------------------
+// TradingView Watchlist Manager Card Controller
+// -------------------------------------------------------------
+const wmCardEl = document.querySelector('#card-watchlist-manager');
+const wmStatusEl = document.querySelector('#modal-status');
+const customListsTagsEl = document.querySelector('#custom-lists-tags');
+
+function toggleWatchlistManager() {
+  if (wmCardEl.style.display === 'none' || !wmCardEl.style.display) {
+    wmCardEl.style.display = 'block';
+    wmStatusEl.style.display = 'none';
+    document.querySelector('#input-tv-url').focus();
+    loadCustomWatchlists();
+  } else {
+    wmCardEl.style.display = 'none';
+  }
+}
+
+function hideWatchlistManager() {
+  wmCardEl.style.display = 'none';
+}
+
+async function loadCustomWatchlists() {
+  try {
+    const res = await fetch('/watchlist/list');
+    if (!res.ok) return;
+    const watchlists = await res.json();
+    
+    // Update active tags
+    const keys = Object.keys(watchlists);
+    if (!keys.length) {
+      customListsTagsEl.innerHTML = '<span class="empty-custom">None imported yet</span>';
+    } else {
+      customListsTagsEl.innerHTML = keys.map(k => {
+        const count = watchlists[k].length;
+        return `<span class="custom-tag">
+          ⭐ ${k} (${count})
+          <span class="custom-tag-del" data-name="${k}" title="Delete Watchlist">&times;</span>
+        </span>`;
+      }).join('');
+
+      // Wire delete clicks
+      customListsTagsEl.querySelectorAll('.custom-tag-del').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const name = btn.dataset.name;
+          if (confirm(`Remove custom watchlist "${name}"?`)) {
+            await fetch(`/watchlist/${encodeURIComponent(name)}`, { method: 'DELETE' });
+            loadCustomWatchlists();
+            fetchLookbackSignals(true);
+          }
+        };
+      });
+    }
+
+    // Update Dropdowns
+    updateUniverseDropdowns(watchlists);
+  } catch (err) {
+    console.error('Failed to load watchlists', err);
+  }
+}
+
+function updateUniverseDropdowns(customLists) {
+  const lookbackSel = document.querySelector('#lookback-index');
+  const scannerSel = document.querySelector('#index');
+  const currentLookbackVal = lookbackSel.value;
+  const currentScannerVal = scannerSel.value;
+
+  const baseOptions = `
+    <option value="">All Universes</option>
+    <option value="FNO">📊 F&O List (178)</option>
+    <option value="Watchlist">⭐ My Watchlist (108)</option>
+    <option value="Nifty50">NIFTY 50</option>
+    <option value="IT">NIFTY IT</option>
+    <option value="Bank">NIFTY BANK</option>
+    <option value="Smallcap">NIFTY SMALLCAP</option>
+  `;
+
+  let customOptions = '';
+  for (const [name, syms] of Object.entries(customLists)) {
+    customOptions += `<option value="${name}">⭐ ${name} (${syms.length})</option>`;
+  }
+
+  lookbackSel.innerHTML = baseOptions + customOptions;
+  scannerSel.innerHTML = baseOptions + customOptions;
+
+  if (currentLookbackVal) lookbackSel.value = currentLookbackVal;
+  if (currentScannerVal) scannerSel.value = currentScannerVal;
+}
+
+async function handleImportSubmit() {
+  const urlInput = document.querySelector('#input-tv-url');
+  const nameInput = document.querySelector('#input-tv-name');
+  const url = (urlInput.value || '').trim();
+  const customName = (nameInput.value || '').trim();
+
+  if (!url) {
+    wmStatusEl.className = 'wm-status-box error';
+    wmStatusEl.textContent = 'Please enter a valid TradingView watchlist URL.';
+    wmStatusEl.style.display = 'block';
+    return;
+  }
+
+  wmStatusEl.className = 'wm-status-box';
+  wmStatusEl.textContent = 'Fetching and extracting tickers from TradingView…';
+  wmStatusEl.style.display = 'block';
+  const submitBtn = document.querySelector('#btn-modal-submit');
+  submitBtn.disabled = true;
+
+  try {
+    const res = await fetch('/watchlist/import', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url, custom_name: customName }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.detail || 'Import failed.');
+    }
+
+    wmStatusEl.className = 'wm-status-box success';
+    wmStatusEl.textContent = `Successfully imported "${data.name}" (${data.count} stocks)!`;
+    
+    urlInput.value = '';
+    nameInput.value = '';
+    await loadCustomWatchlists();
+    document.querySelector('#lookback-index').value = data.name;
+
+    fetchLookbackSignals(true);
+  } catch (err) {
+    wmStatusEl.className = 'wm-status-box error';
+    wmStatusEl.textContent = err.message;
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+// -------------------------------------------------------------
+// Daily Confirmed Scanner Logic
+// -------------------------------------------------------------
+function rsiDisplay(rsi, rsiMa, type) {
+  if (rsi == null) return '—';
+  const cls = type === 'buy' ? 'oversold' : (type === 'sell' ? 'overbought' : '');
+  const rsiText = Number(rsi).toFixed(2);
+  const maText = rsiMa != null ? Number(rsiMa).toFixed(2) : '—';
+  return `<span class="rsi-cell ${cls}">RSI: ${rsiText} | MA: ${maText}</span>`;
+}
+
+async function refreshScanner() {
+  const params = new URLSearchParams();
+  if (value('#strategy')) params.set('strategy', value('#strategy'));
+  if (value('#index')) params.set('index', value('#index'));
+  if (value('#type')) params.set('signal_type', value('#type'));
+
+  statusEl.textContent = 'Loading confirmed signals…';
+  try {
+    const response = await fetch('/signals/today?' + params);
+    if (!response.ok) throw new Error(`Server returned ${response.status}`);
+    const signals = await response.json();
+    const tbody = document.querySelector('#rows');
+
+    if (!signals.length) {
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No confirmed signals found for today. Click "Run Daily Scan".</td></tr>`;
+      statusEl.textContent = '0 confirmed signals today.';
+      return;
+    }
+
+    tbody.innerHTML = signals.map(s => {
+      const typeBadge = s.signal_type === 'buy' 
+        ? '<span class="badge badge-buy">BUY</span>' 
+        : '<span class="badge badge-sell">SELL</span>';
+
+      return `<tr>
+        <td>
+          <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(s.symbol)}">
+            ${s.symbol} ↗
+          </a>
+        </td>
+        <td><strong>${s.strategy || 'RSI'}</strong></td>
+        <td>${typeBadge}</td>
+        <td>${rsiDisplay(s.rsi_value, s.rsi_ma_value, s.signal_type)}</td>
+        <td class="price-cell">${money(s.entry_price)}</td>
+        <td class="price-cell">${money(s.signal_candle_low)}</td>
+        <td class="price-cell">${money(s.stop_loss)}</td>
+        <td class="date-cell">${s.signal_date}</td>
+        <td class="universe-cell">${(s.index_membership || '').replace(/\|/g, ', ')}</td>
+      </tr>`;
+    }).join('');
+
+    statusEl.textContent = `${signals.length} confirmed signal(s) active today.`;
+  } catch (err) {
+    statusEl.textContent = 'Error: ' + err.message;
+  }
+}
+
+// -------------------------------------------------------------
+// Navigation Tab Switching
+// -------------------------------------------------------------
+document.querySelector('#tab-lookback').onclick = () => {
+  state.activeTab = 'lookback';
+  document.querySelector('#tab-lookback').classList.add('active');
+  document.querySelector('#tab-scanner').classList.remove('active');
+  document.querySelector('#section-lookback').style.display = 'block';
+  document.querySelector('#section-scanner').style.display = 'none';
+  fetchLookbackSignals();
+};
+
+document.querySelector('#tab-scanner').onclick = () => {
+  state.activeTab = 'scanner';
+  document.querySelector('#tab-scanner').classList.add('active');
+  document.querySelector('#tab-lookback').classList.remove('active');
+  document.querySelector('#section-scanner').style.display = 'block';
+  document.querySelector('#section-lookback').style.display = 'none';
+  refreshScanner();
+};
+
+// Lookback Period Buttons
+document.querySelectorAll('#lookback-group .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#lookback-group .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.lookbackDays = parseInt(btn.dataset.days, 10) || 1;
+    fetchLookbackSignals();
+  };
+});
+
+// Search input
+document.querySelector('#symbol-search').oninput = (e) => {
+  state.searchQuery = e.target.value;
+  renderLookbackTable();
+};
+
+// Watchlist Manager Card Toggle & Submit Handlers
+document.querySelector('#btn-import-modal').onclick = toggleWatchlistManager;
+document.querySelector('#btn-close-wm').onclick = hideWatchlistManager;
+document.querySelector('#btn-modal-submit').onclick = handleImportSubmit;
+
+// Lookback Selectors & Buttons
+document.querySelector('#lookback-condition').onchange = () => fetchLookbackSignals();
+document.querySelector('#lookback-index').onchange = () => fetchLookbackSignals();
+document.querySelector('#lookback-sort').onchange = () => renderLookbackTable();
+document.querySelector('#lookback-refresh').onclick = () => fetchLookbackSignals(false);
+document.querySelector('#lookback-rescan').onclick = () => fetchLookbackSignals(true);
+
+// Daily Scanner Selectors & Buttons
+document.querySelector('#refresh').onclick = refreshScanner;
+document.querySelector('#strategy').onchange = refreshScanner;
+document.querySelector('#index').onchange = refreshScanner;
+document.querySelector('#type').onchange = refreshScanner;
+
+document.querySelector('#scan').onclick = async () => {
+  const strat = value('#strategy') || 'RSI';
+  statusEl.textContent = `Scanning market for ${strat} signals…`;
+  const scanBtn = document.querySelector('#scan');
+  scanBtn.disabled = true;
+  
+  try {
+    const response = await fetch('/scan/run?strategy=' + encodeURIComponent(strat), { method: 'POST' });
+    const body = await response.json();
+    if (response.ok) {
+      statusEl.textContent = `Scan complete! Scanned ${body.stocks_scanned} stocks, inserted ${body.signals_inserted} signal(s).`;
+      refreshScanner();
+    } else {
+      statusEl.textContent = 'Scan error: ' + (body.detail || 'Failed to scan');
+    }
+  } catch (err) {
+    statusEl.textContent = 'Scan failed: ' + err.message;
+  } finally {
+    scanBtn.disabled = false;
+  }
+};
+
+// Initial Load
+loadCustomWatchlists();
+fetchLookbackSignals();
+
+
+
+
+
+
