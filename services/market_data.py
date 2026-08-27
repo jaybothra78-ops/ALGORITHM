@@ -62,6 +62,46 @@ class MarketDataProvider:
             raise ValueError(f"Only {len(result)} bars returned; minimum {min_rows} required")
         return result
 
+    INVALID_SYMBOLS: set[str] = {
+        "NIFTY", "BANKNIFTY", "SENSEX", "INDIAVIX", "CNX500", "CNXMIDCAP", 
+        "CNXSMALLCAP", "RUDRAECO", "RAJESH"
+    }
+
+    @classmethod
+    def load_disk_cache(cls) -> bool:
+        """Load OHLC cache from disk if available and fresh."""
+        import pickle
+        p = settings.DISK_CACHE_PATH
+        if not p.exists():
+            return False
+        try:
+            now = time.time()
+            mtime = p.stat().st_mtime
+            if now - mtime < settings.CACHE_TTL_SECONDS:
+                with open(p, "rb") as f:
+                    data = pickle.load(f)
+                if isinstance(data, dict) and data:
+                    cls._CACHE["ohlc_data"] = data
+                    cls._CACHE["ohlc_timestamp"] = mtime
+                    logger.info(f"Loaded {len(data)} cached symbols instantly from disk ({p.name}).")
+                    return True
+        except Exception as exc:
+            logger.warning(f"Could not load disk cache: {exc}")
+        return False
+
+    @classmethod
+    def save_disk_cache(cls, data: dict[str, pd.DataFrame]) -> None:
+        """Save memory cache to disk for instant restart recovery."""
+        import pickle
+        p = settings.DISK_CACHE_PATH
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(p, "wb") as f:
+                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            logger.debug(f"Saved {len(data)} symbols to disk cache at {p.name}.")
+        except Exception as exc:
+            logger.warning(f"Could not save disk cache: {exc}")
+
     @classmethod
     def get_universe_ohlc(
         cls, symbols: list[str], force_refresh: bool = False
@@ -71,13 +111,20 @@ class MarketDataProvider:
         cached = cls._CACHE.get("ohlc_data", {})
         cache_time = cls._CACHE.get("ohlc_timestamp", 0.0)
 
+        # 1. Check in-memory cache
         if not force_refresh and cached and (now - cache_time < settings.CACHE_TTL_SECONDS):
             return cached
+
+        # 2. Check disk cache
+        if not force_refresh and not cached and cls.load_disk_cache():
+            return cls._CACHE["ohlc_data"]
 
         if not symbols:
             return {}
 
-        ticker_map = {cls.normalize_ticker(s): s for s in symbols}
+        # Filter out known invalid non-stock tickers to prevent timeout retries
+        valid_symbols = [s for s in symbols if s.upper() not in cls.INVALID_SYMBOLS]
+        ticker_map = {cls.normalize_ticker(s): s for s in valid_symbols}
         tickers_list = list(ticker_map.keys())
 
         logger.info(f"Fetching fresh market data for {len(tickers_list)} tickers from Yahoo Finance...")
@@ -108,14 +155,15 @@ class MarketDataProvider:
                     logger.debug(f"Failed to normalize {sym}: {exc}")
                     continue
         else:
-            if len(symbols) == 1:
+            if len(valid_symbols) == 1:
                 try:
-                    result[symbols[0]] = cls.normalize_ohlc(raw_data)
+                    result[valid_symbols[0]] = cls.normalize_ohlc(raw_data)
                 except Exception as exc:
-                    logger.debug(f"Failed to normalize single symbol {symbols[0]}: {exc}")
-
+                    logger.debug(f"Failed to normalize single symbol {valid_symbols[0]}: {exc}")
 
         cls._CACHE["ohlc_data"] = result
         cls._CACHE["ohlc_timestamp"] = now
+        cls.save_disk_cache(result)
         logger.info(f"Market data cache updated with {len(result)} valid symbols.")
         return result
+

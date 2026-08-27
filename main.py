@@ -18,16 +18,31 @@ BASE_DIR = Path(__file__).resolve().parent
 scheduler = build_scheduler()
 
 
+async def _warmup_cache() -> None:
+    """Non-blocking background cache pre-warming on server startup."""
+    import asyncio
+    from services.scanner import ScannerEngine
+    try:
+        logger.info("Pre-warming market data cache in background...")
+        await asyncio.to_thread(ScannerEngine.screen_lookback, 1, 14, None, None, False)
+        logger.info("Market data cache pre-warmed and ready.")
+    except Exception as exc:
+        logger.warning(f"Background cache warm-up error: {exc}")
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     """Application startup and graceful shutdown lifespan management."""
+    import asyncio
     setup_logging()
     logger.info("Starting Algo Stock Scanner application...")
     initialize_schema()
     scheduler.start()
+    asyncio.create_task(_warmup_cache())
     yield
     logger.info("Shutting down Algo Stock Scanner application...")
     scheduler.shutdown(wait=False)
+
 
 
 app = FastAPI(

@@ -15,12 +15,12 @@ class Settings(BaseSettings):
     FNO_PATH: Path = BASE_DIR / "config" / "fno_watchlist.txt"
     FALLBACK_PATH: Path = BASE_DIR / "config" / "universe_fallback.json"
     CUSTOM_WATCHLISTS_PATH: Path = BASE_DIR / "config" / "custom_watchlists.json"
-
+    DISK_CACHE_PATH: Path = BASE_DIR / "config" / "ohlc_cache.pkl"
 
     # Market data settings
     DATA_PERIOD: str = "1y"
     DATA_INTERVAL: str = "1d"
-    CACHE_TTL_SECONDS: float = 900.0  # 15 minutes in-memory cache
+    CACHE_TTL_SECONDS: float = 14400.0  # 4 hours in-memory & disk cache
     YFINANCE_TIMEOUT: int = 30
     MIN_OHLC_ROWS: int = 80
 
