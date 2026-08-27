@@ -59,10 +59,12 @@ def rb_knox_divergence(
     """Calculate Rob Booker Knoxville Divergence indicator.
 
     Standard TradingView Rules (RB_KnoxDiv 150 21 20):
-    - Bearish Divergence (Sell Line): An earlier pivot in the lookback window was Overbought (RSI >= rsi_ob),
-      and current candle reaches a Higher High (High[i] > High[j]), while Momentum is Lower (Mom[i] < Mom[j]).
-    - Bullish Divergence (Buy Line): An earlier pivot in the lookback window was Oversold (RSI <= rsi_os),
-      and current candle reaches a Lower Low (Low[i] < Low[j]), while Momentum is Higher (Mom[i] > Mom[j]).
+    - Bearish Divergence (Sell Line): Current candle makes a New High over recent bars (mom_period),
+      while an earlier pivot in the lookback window was Overbought (RSI >= rsi_ob),
+      and current Momentum is lower than the past overbought momentum peak.
+    - Bullish Divergence (Buy Line): Current candle makes a New Low over recent bars (mom_period),
+      while an earlier pivot in the lookback window was Oversold (RSI <= rsi_os),
+      and current Momentum is higher than the past oversold momentum trough.
     """
     close = ohlc["Close"]
     high = ohlc["High"]
@@ -87,21 +89,25 @@ def rb_knox_divergence(
         if w_end <= w_start:
             continue
 
-        # Bearish Divergence (Sell): Compare with past overbought candles
-        ob_mask = rsi_arr[w_start:w_end] >= rsi_ob
-        if np.any(ob_mask):
-            ob_highs = high_arr[w_start:w_end][ob_mask]
-            ob_moms = mom_arr[w_start:w_end][ob_mask]
-            if np.any((high_arr[i] > ob_highs) & (mom_arr[i] < ob_moms)):
-                sell_signal[i] = True
+        # 1. Bearish Knoxville Divergence:
+        # Price is printing a new high relative to recent bars (mom_period)
+        recent_high_max = np.nanmax(high_arr[max(0, i - mom_period):i])
+        if high_arr[i] >= recent_high_max:
+            ob_mask = rsi_arr[w_start:w_end] >= rsi_ob
+            if np.any(ob_mask):
+                past_moms = mom_arr[w_start:w_end][ob_mask]
+                if mom_arr[i] < np.nanmax(past_moms):
+                    sell_signal[i] = True
 
-        # Bullish Divergence (Buy): Compare with past oversold candles
-        os_mask = rsi_arr[w_start:w_end] <= rsi_os
-        if np.any(os_mask):
-            os_lows = low_arr[w_start:w_end][os_mask]
-            os_moms = mom_arr[w_start:w_end][os_mask]
-            if np.any((low_arr[i] < os_lows) & (mom_arr[i] > os_moms)):
-                buy_signal[i] = True
+        # 2. Bullish Knoxville Divergence:
+        # Price is printing a new low relative to recent bars (mom_period)
+        recent_low_min = np.nanmin(low_arr[max(0, i - mom_period):i])
+        if low_arr[i] <= recent_low_min:
+            os_mask = rsi_arr[w_start:w_end] <= rsi_os
+            if np.any(os_mask):
+                past_moms = mom_arr[w_start:w_end][os_mask]
+                if mom_arr[i] > np.nanmin(past_moms):
+                    buy_signal[i] = True
 
     return pd.DataFrame(
         {
@@ -112,6 +118,7 @@ def rb_knox_divergence(
         },
         index=ohlc.index,
     )
+
 
 
 def calculate_sma(series: pd.Series, length: int = 200) -> pd.Series:
