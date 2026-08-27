@@ -40,3 +40,19 @@ def test_rb_knox_divergence_shape():
     assert "buy_signal" in res.columns
     assert "sell_signal" in res.columns
     assert len(res) == 200
+
+
+def test_ma200_signals():
+    from services.indicators import calculate_sma, ma200_signals
+    df = _dummy_ohlc(250)
+    sma = calculate_sma(df["Close"], length=200)
+    assert len(sma) == 250
+    assert sma.iloc[:199].isna().all()
+    assert pd.notna(sma.iloc[199])
+
+    sigs = ma200_signals(df, length=200, tolerance=0.01)
+    assert "cross_up" in sigs.columns
+    assert "cross_down" in sigs.columns
+    assert "touch" in sigs.columns
+    assert len(sigs) == 250
+

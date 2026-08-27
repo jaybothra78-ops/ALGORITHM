@@ -9,9 +9,9 @@ from core.config import settings
 from core.logging import logger
 from db.repository import SignalRepository
 from models.signal import LookbackItem, LookbackResponse, ReasonTag, ScanResponse
-from services.indicators import rb_knox_divergence, rsi_signals
+from services.indicators import ma200_signals, rb_knox_divergence, rsi_signals
 from services.market_data import MarketDataProvider
-from services.strategies import confirmed_trades, rsi_trades
+from services.strategies import confirmed_trades, ma200_trades, rsi_trades
 from services.universe import load_universe
 
 
@@ -30,7 +30,7 @@ class ScannerEngine:
         scan_date_str = date.today().isoformat()
         inserted = 0
         errors: list[dict[str, Any]] = []
-        strategies = ["RSI", "RB_KnoxDiv"] if strategy_name.upper() in ("ALL", "*", "") else [strategy_name]
+        strategies = ["RSI", "RB_KnoxDiv", "SMA_200"] if strategy_name.upper() in ("ALL", "*", "") else [strategy_name]
 
         all_symbols = list(universe.keys())
         ohlc_by_symbol = MarketDataProvider.get_universe_ohlc(all_symbols)
@@ -51,6 +51,9 @@ class ScannerEngine:
                     elif strat.upper() in ("RB_KNOXDIV", "RB_KNOXVILLE", "KNOXVILLE"):
                         signals = rb_knox_divergence(ohlc)
                         trades = confirmed_trades(ohlc, signals, max_lookback=3)
+                    elif strat.upper() in ("SMA_200", "200MA", "MA200"):
+                        signals = ma200_signals(ohlc)
+                        trades = ma200_trades(ohlc, signals, max_lookback=2)
                     else:
                         continue
 
@@ -123,6 +126,14 @@ class ScannerEngine:
                     elif sf == "sell" and item.primary_type not in ("sell", "overbought"):
                         continue
                     elif sf == "signals_only" and not any(r.category == "Strategy_Signal" for r in item.reasons):
+                        continue
+                    elif sf in ("ma200", "200ma", "ma_200") and not any(r.category == "MA200" for r in item.reasons):
+                        continue
+                    elif sf in ("ma200_touch", "touch") and not any(r.category == "MA200" and r.type == "touch" for r in item.reasons):
+                        continue
+                    elif sf in ("ma200_cross_up", "cross_up", "crossed_up") and not any(r.category == "MA200" and r.type == "cross_up" for r in item.reasons):
+                        continue
+                    elif sf in ("ma200_cross_down", "cross_down", "crossed_down") and not any(r.category == "MA200" and r.type == "cross_down" for r in item.reasons):
                         continue
                 flagged_items.append(item)
 
@@ -221,6 +232,62 @@ class ScannerEngine:
         except Exception:
             pass
 
+        # 3. Check 200-Day Moving Average Touch and Crossover in Lookback Window
+        latest_sma200 = None
+        try:
+            ma_df = ma200_signals(df)
+            if len(ma_df) >= 200 and pd.notna(ma_df["sma200"].iloc[-1]):
+                latest_sma200 = round(float(ma_df["sma200"].iloc[-1]), 2)
+
+            for idx in window_df.index:
+                dt_str = idx.date().isoformat()
+                if idx in ma_df.index:
+                    row_ma = ma_df.loc[idx]
+                    sma_val = float(row_ma["sma200"]) if pd.notna(row_ma["sma200"]) else None
+                    if sma_val is None:
+                        continue
+
+                    if bool(row_ma["cross_up"]):
+                        is_flagged = True
+                        if primary_type == "neutral":
+                            primary_type = "buy"
+                        most_recent_signal_date = dt_str
+                        reasons.append(ReasonTag(
+                            category="MA200",
+                            strategy="SMA_200",
+                            type="cross_up",
+                            text=f"200 MA Crossed Up (₹{sma_val:.2f}) on {dt_str}",
+                            date=dt_str,
+                            entry_price=float(df.loc[idx, "Close"]),
+                        ))
+                    elif bool(row_ma["cross_down"]):
+                        is_flagged = True
+                        if primary_type == "neutral":
+                            primary_type = "sell"
+                        most_recent_signal_date = dt_str
+                        reasons.append(ReasonTag(
+                            category="MA200",
+                            strategy="SMA_200",
+                            type="cross_down",
+                            text=f"200 MA Crossed Down (₹{sma_val:.2f}) on {dt_str}",
+                            date=dt_str,
+                            entry_price=float(df.loc[idx, "Close"]),
+                        ))
+                    elif bool(row_ma["touch"]):
+                        is_flagged = True
+                        if primary_type == "neutral":
+                            primary_type = "buy" if float(df.loc[idx, "Close"]) >= sma_val else "sell"
+                        most_recent_signal_date = dt_str
+                        reasons.append(ReasonTag(
+                            category="MA200",
+                            strategy="SMA_200",
+                            type="touch",
+                            text=f"200 MA Touch (₹{sma_val:.2f}) on {dt_str}",
+                            date=dt_str,
+                            entry_price=float(df.loc[idx, "Close"]),
+                        ))
+        except Exception:
+            pass
 
         if not is_flagged:
             return None
@@ -230,9 +297,11 @@ class ScannerEngine:
             status="active",
             current_price=round(latest_close, 2),
             rsi=latest_rsi,
+            sma_200=latest_sma200,
             primary_type=primary_type,
             signal_date=most_recent_signal_date,
             reasons=reasons,
             reason_summary=" | ".join(r.text for r in reasons),
             index_membership=index_membership,
         )
+

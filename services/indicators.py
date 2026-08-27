@@ -84,7 +84,6 @@ def rb_knox_divergence(
                 if np.any(cond):
                     sell_signal[i] = True
 
-        # Bullish Divergence (Buy Line)
         if rsi_arr[i] <= rsi_os:
             w_start = max(0, i - look_back)
             w_end = i - 5
@@ -102,3 +101,51 @@ def rb_knox_divergence(
         },
         index=ohlc.index,
     )
+
+
+def calculate_sma(series: pd.Series, length: int = 200) -> pd.Series:
+    """Calculate Simple Moving Average (SMA)."""
+    return series.rolling(window=length, min_periods=length).mean()
+
+
+def ma200_signals(
+    ohlc: pd.DataFrame,
+    length: int = 200,
+    tolerance: float = 0.01,
+) -> pd.DataFrame:
+    """200-Day Moving Average Touch and Crossover signals.
+    
+    Conditions:
+    - Crossed Up (Bullish): previous_close < prev_200ma and current_close > curr_200ma
+    - Crossed Down (Bearish): previous_close > prev_200ma and current_close < curr_200ma
+    - Touched: low <= curr_200ma * (1 + tolerance) and high >= curr_200ma * (1 - tolerance)
+    """
+    close = ohlc["Close"]
+    high = ohlc["High"]
+    low = ohlc["Low"]
+    sma200 = calculate_sma(close, length=length)
+
+    prev_close = close.shift(1)
+    prev_sma = sma200.shift(1)
+
+    cross_up = (prev_close < prev_sma) & (close > sma200)
+    cross_down = (prev_close > prev_sma) & (close < sma200)
+
+    # Touch: High or Low reaches within tolerance zone without crossing
+    touch = (
+        (low <= sma200 * (1.0 + tolerance)) &
+        (high >= sma200 * (1.0 - tolerance)) &
+        (~cross_up) &
+        (~cross_down)
+    )
+
+    return pd.DataFrame(
+        {
+            "sma200": sma200,
+            "cross_up": cross_up.fillna(False),
+            "cross_down": cross_down.fillna(False),
+            "touch": touch.fillna(False),
+        },
+        index=ohlc.index,
+    )
+

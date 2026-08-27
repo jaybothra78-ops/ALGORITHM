@@ -45,6 +45,12 @@ function renderReasons(reasons) {
     let cls = 'strategy';
     if (r.category === 'RSI_Oversold' || r.type === 'buy') cls = 'oversold';
     if (r.category === 'RSI_Overbought' || r.type === 'sell') cls = 'overbought';
+    if (r.category === 'MA200') {
+      if (r.type === 'touch') cls = 'ma200-touch';
+      else if (r.type === 'cross_up') cls = 'ma200-cross-up';
+      else if (r.type === 'cross_down') cls = 'ma200-cross-down';
+      else cls = 'ma200-touch';
+    }
     return `<span class="reason-pill ${cls}">${r.text}</span>`;
   }).join(' ');
 }
@@ -56,17 +62,20 @@ function updateMetrics(totalScanned, items) {
   let oversold = 0;
   let overbought = 0;
   let knoxCount = 0;
+  let ma200Count = 0;
 
   items.forEach(item => {
     const reasons = item.reasons || [];
     if (item.primary_type === 'oversold' || reasons.some(r => r.category === 'RSI_Oversold')) oversold++;
     if (item.primary_type === 'overbought' || reasons.some(r => r.category === 'RSI_Overbought')) overbought++;
     if (reasons.some(r => r.strategy === 'RB_KnoxDiv' || (r.text && r.text.toLowerCase().includes('knoxville')))) knoxCount++;
+    if (reasons.some(r => r.category === 'MA200' || (r.text && r.text.includes('200 MA')))) ma200Count++;
   });
 
   document.querySelector('#metric-oversold').textContent = oversold;
   document.querySelector('#metric-overbought').textContent = overbought;
   document.querySelector('#metric-signals').textContent = knoxCount;
+  document.querySelector('#metric-ma200').textContent = ma200Count;
 }
 
 
@@ -89,6 +98,16 @@ async function fetchLookbackSignals(forceRefresh = false) {
   const condVal = value('#lookback-condition');
   if (condVal) params.set('signal_filter', condVal);
 
+  // Sync 200 MA toggle pill active state
+  const btn200ma = document.querySelector('#btn-toggle-200ma');
+  if (btn200ma) {
+    if (condVal && condVal.startsWith('ma200')) {
+      btn200ma.classList.add('active');
+    } else {
+      btn200ma.classList.remove('active');
+    }
+  }
+
   if (forceRefresh) params.set('refresh', 'true');
 
   try {
@@ -101,7 +120,7 @@ async function fetchLookbackSignals(forceRefresh = false) {
     statusEl.textContent = `Scanned ${data.total_scanned} tickers · ${data.total_flagged} flagged (${data.lookback_days}D)`;
   } catch (err) {
     statusEl.textContent = 'Error: ' + err.message;
-    document.querySelector('#lookback-rows').innerHTML = `<tr><td colspan="7" class="empty-cell">Failed to load screener: ${err.message}</td></tr>`;
+    document.querySelector('#lookback-rows').innerHTML = `<tr><td colspan="8" class="empty-cell">Failed to load screener: ${err.message}</td></tr>`;
   } finally {
     state.isLoading = false;
   }
@@ -136,11 +155,15 @@ function renderLookbackTable() {
   const filtered = filterAndSortItems(state.lookbackData);
 
   if (!filtered.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="empty-cell">No matching stocks found. Adjust filters or search.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-cell">No matching stocks found. Adjust filters or search.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = filtered.map(item => {
+    const smaDisplay = item.sma_200 != null 
+      ? `<span class="sma-cell">${money(item.sma_200)}</span>`
+      : '<span class="sma-cell">—</span>';
+
     return `<tr>
       <td>
         <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(item.symbol)}">
@@ -148,6 +171,7 @@ function renderLookbackTable() {
         </a>
       </td>
       <td class="price-cell">${money(item.current_price)}</td>
+      <td>${smaDisplay}</td>
       <td>${rsiBadge(item.rsi)}</td>
       <td>${renderSignalBadge(item.primary_type)}</td>
       <td>${renderReasons(item.reasons)}</td>
@@ -156,6 +180,7 @@ function renderLookbackTable() {
     </tr>`;
   }).join('');
 }
+
 
 // -------------------------------------------------------------
 // TradingView Watchlist Manager Card Controller
@@ -384,11 +409,26 @@ document.querySelectorAll('#lookback-group .pill').forEach(btn => {
   };
 });
 
+// 200 MA Quick Strategy Toggle Button
+const btn200ma = document.querySelector('#btn-toggle-200ma');
+if (btn200ma) {
+  btn200ma.onclick = () => {
+    const condSel = document.querySelector('#lookback-condition');
+    if (condSel.value.startsWith('ma200')) {
+      condSel.value = '';
+    } else {
+      condSel.value = 'ma200';
+    }
+    fetchLookbackSignals();
+  };
+}
+
 // Search input
 document.querySelector('#symbol-search').oninput = (e) => {
   state.searchQuery = e.target.value;
   renderLookbackTable();
 };
+
 
 // Watchlist Manager Card Toggle & Submit Handlers
 document.querySelector('#btn-import-modal').onclick = toggleWatchlistManager;

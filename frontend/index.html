@@ -100,14 +100,25 @@
 
         <div class="toolbar-divider"></div>
 
+        <!-- Strategy Quick Toggle Pill -->
+        <div class="pill-group" id="strategy-filter-group">
+          <button type="button" class="pill" id="btn-toggle-200ma" title="Filter stocks that touched or crossed the 200-Day Moving Average">📈 200 MA</button>
+        </div>
+
+        <div class="toolbar-divider"></div>
+
         <!-- Filters -->
         <div class="filter-controls">
           <div class="select-wrapper">
             <select id="lookback-condition">
-              <option value="">All Dual Signals</option>
+              <option value="">All Strategies &amp; Signals</option>
               <option value="oversold">🟢 Dual Oversold (Both &lt; 30)</option>
               <option value="overbought">🔴 Dual Overbought (Both &gt; 70)</option>
               <option value="signals_only">⚡ Knoxville Divergence Only</option>
+              <option value="ma200">📈 200 MA (Touch &amp; Cross)</option>
+              <option value="ma200_touch">🎯 200 MA: Touch</option>
+              <option value="ma200_cross_up">🚀 200 MA: Crossed Up</option>
+              <option value="ma200_cross_down">🔻 200 MA: Crossed Down</option>
             </select>
           </div>
 
@@ -149,6 +160,7 @@
         <div class="stat-pill"><span class="stat-dot dot-green"></span> <span class="stat-label">Dual &lt; 30:</span> <strong id="metric-oversold" class="text-green">—</strong></div>
         <div class="stat-pill"><span class="stat-dot dot-red"></span> <span class="stat-label">Dual &gt; 70:</span> <strong id="metric-overbought" class="text-red">—</strong></div>
         <div class="stat-pill"><span class="stat-dot dot-purple"></span> <span class="stat-label">Knoxville:</span> <strong id="metric-signals" class="text-purple">—</strong></div>
+        <div class="stat-pill"><span class="stat-dot dot-blue"></span> <span class="stat-label">200 MA:</span> <strong id="metric-ma200" class="text-blue">—</strong></div>
         <div class="status-msg" id="status">Ready</div>
       </div>
 
@@ -159,6 +171,7 @@
             <tr>
               <th>Ticker</th>
               <th>Price</th>
+              <th>200 SMA</th>
               <th>RSI (14)</th>
               <th>Condition</th>
               <th>Trigger Reason</th>
@@ -167,7 +180,7 @@
             </tr>
           </thead>
           <tbody id="lookback-rows">
-            <tr><td colspan="7" class="empty-cell">Loading opportunities…</td></tr>
+            <tr><td colspan="8" class="empty-cell">Loading opportunities…</td></tr>
           </tbody>
         </table>
       </div>
@@ -181,6 +194,7 @@
             <select id="strategy">
               <option value="RSI" selected>RSI + RSI MA (Both &lt; 30 / Both &gt; 70)</option>
               <option value="RB_KnoxDiv">RB Knoxville Divergence (150 21 20)</option>
+              <option value="SMA_200">📈 200-Day MA (Touch / Cross)</option>
               <option value="">All Strategies</option>
             </select>
           </div>
@@ -237,9 +251,10 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=2.2"></script>
+  <script src="/static/app.js?v=2.3"></script>
 </body>
 </html>
+
 
 
 

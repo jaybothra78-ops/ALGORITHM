@@ -85,3 +85,53 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                 "rsi_value": rsi_val,
             })
     return rows
+
+
+def ma200_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: int | None = None) -> list[dict]:
+    """Generate trade records for 200-Day Moving Average Touch and Crossover strategy."""
+    if not ohlc.index.equals(signals.index):
+        raise ValueError("OHLC and signal indexes must match")
+    n = len(ohlc)
+    start_pos = max(0, n - max_lookback) if max_lookback is not None else 0
+    rows: list[dict] = []
+    for position in range(start_pos, n):
+        signal_row = ohlc.iloc[position]
+        sig = signals.iloc[position]
+        signal_date = ohlc.index[position].date().isoformat()
+        sma200_val = round(float(sig["sma200"]), 2) if "sma200" in sig and pd.notna(sig["sma200"]) else None
+
+        if bool(sig.get("cross_up", False)):
+            rows.append({
+                "strategy": "SMA_200",
+                "signal_type": "buy",
+                "signal_date": signal_date,
+                "signal_candle_low": float(signal_row["Low"]),
+                "confirmation_date": signal_date,
+                "entry_price": float(signal_row["Close"]),
+                "stop_loss": round(float(signal_row["Low"] * 0.99), 2),
+                "rsi_value": sma200_val,
+            })
+        elif bool(sig.get("cross_down", False)):
+            rows.append({
+                "strategy": "SMA_200",
+                "signal_type": "sell",
+                "signal_date": signal_date,
+                "signal_candle_low": float(signal_row["Low"]),
+                "confirmation_date": signal_date,
+                "entry_price": float(signal_row["Close"]),
+                "stop_loss": None,
+                "rsi_value": sma200_val,
+            })
+        elif bool(sig.get("touch", False)):
+            rows.append({
+                "strategy": "SMA_200",
+                "signal_type": "buy" if float(signal_row["Close"]) >= (sma200_val or 0) else "sell",
+                "signal_date": signal_date,
+                "signal_candle_low": float(signal_row["Low"]),
+                "confirmation_date": signal_date,
+                "entry_price": float(signal_row["Close"]),
+                "stop_loss": round(float(signal_row["Low"] * 0.99), 2),
+                "rsi_value": sma200_val,
+            })
+    return rows
+

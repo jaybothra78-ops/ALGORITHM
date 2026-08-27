@@ -14,11 +14,12 @@ class SignalType(str, Enum):
 class StrategyType(str, Enum):
     RSI = "RSI"
     RB_KNOXDIV = "RB_KnoxDiv"
+    SMA_200 = "SMA_200"
     ALL = "ALL"
 
 
 class ReasonTag(BaseModel):
-    category: str = Field(..., description="Category: RSI_Oversold, RSI_Overbought, Strategy_Signal")
+    category: str = Field(..., description="Category: RSI_Oversold, RSI_Overbought, Strategy_Signal, MA200")
     strategy: str | None = None
     type: str | None = None
     text: str
@@ -32,11 +33,13 @@ class LookbackItem(BaseModel):
     current_price: float
     rsi: float | None = None
     rsi_ma: float | None = None
+    sma_200: float | None = None
     primary_type: str
     signal_date: str | None = None
     reasons: list[ReasonTag] = Field(default_factory=list)
     reason_summary: str = ""
     index_membership: str = ""
+
 
 
 class LookbackResponse(BaseModel):
