@@ -210,27 +210,42 @@ class ScannerEngine:
         except Exception:
             pass
 
-        # 2. Check RB Knoxville Divergence Strategy Confirmed Signals in Lookback Window
+        # 2. Check RB Knoxville Divergence in Lookback Window
         try:
             knox_sigs = rb_knox_divergence(df)
-            knox_trade_list = confirmed_trades(df, knox_sigs, max_lookback=lookback_days + 2)
-            for trade in knox_trade_list:
-                c_date = trade["confirmation_date"]
-                s_type = trade["signal_type"]
-                if c_date in window_dates:
-                    is_flagged = True
-                    primary_type = s_type
-                    most_recent_signal_date = c_date
-                    reasons.append(ReasonTag(
-                        category="Strategy_Signal",
-                        strategy="RB_KnoxDiv",
-                        type=s_type,
-                        text=f"Knoxville {s_type.upper()} on {c_date}",
-                        date=c_date,
-                        entry_price=trade["entry_price"],
-                    ))
+            for idx in window_df.index:
+                dt_str = idx.date().isoformat()
+                if idx in knox_sigs.index:
+                    row_k = knox_sigs.loc[idx]
+                    if bool(row_k.get("sell_signal", False)):
+                        is_flagged = True
+                        if primary_type == "neutral":
+                            primary_type = "sell"
+                        most_recent_signal_date = dt_str
+                        reasons.append(ReasonTag(
+                            category="Strategy_Signal",
+                            strategy="RB_KnoxDiv",
+                            type="sell",
+                            text=f"Knoxville Bearish Divergence on {dt_str}",
+                            date=dt_str,
+                            entry_price=float(df.loc[idx, "Close"]),
+                        ))
+                    elif bool(row_k.get("buy_signal", False)):
+                        is_flagged = True
+                        if primary_type == "neutral":
+                            primary_type = "buy"
+                        most_recent_signal_date = dt_str
+                        reasons.append(ReasonTag(
+                            category="Strategy_Signal",
+                            strategy="RB_KnoxDiv",
+                            type="buy",
+                            text=f"Knoxville Bullish Divergence on {dt_str}",
+                            date=dt_str,
+                            entry_price=float(df.loc[idx, "Close"]),
+                        ))
         except Exception:
             pass
+
 
         # 3. Check 200-Day Moving Average Touch and Crossover in Lookback Window
         latest_sma200 = None

@@ -56,7 +56,14 @@ def rb_knox_divergence(
     rsi_ob: float = 70.0,
     rsi_os: float = 30.0,
 ) -> pd.DataFrame:
-    """Vectorized Rob Booker Knoxville Divergence indicator (150 21 20)."""
+    """Calculate Rob Booker Knoxville Divergence indicator.
+
+    Standard TradingView Rules (RB_KnoxDiv 150 21 20):
+    - Bearish Divergence (Sell Line): An earlier pivot in the lookback window was Overbought (RSI >= rsi_ob),
+      and current candle reaches a Higher High (High[i] > High[j]), while Momentum is Lower (Mom[i] < Mom[j]).
+    - Bullish Divergence (Buy Line): An earlier pivot in the lookback window was Oversold (RSI <= rsi_os),
+      and current candle reaches a Lower Low (Low[i] < Low[j]), while Momentum is Higher (Mom[i] > Mom[j]).
+    """
     close = ohlc["Close"]
     high = ohlc["High"]
     low = ohlc["Low"]
@@ -75,22 +82,26 @@ def rb_knox_divergence(
 
     start_idx = max(mom_period + 5, 20)
     for i in range(start_idx, n):
-        # Bearish Divergence (Sell Line)
-        if rsi_arr[i] >= rsi_ob:
-            w_start = max(0, i - look_back)
-            w_end = i - 5
-            if w_end > w_start:
-                cond = (high_arr[i] > high_arr[w_start:w_end]) & (mom_arr[i] < mom_arr[w_start:w_end]) & (rsi_arr[w_start:w_end] >= rsi_ob)
-                if np.any(cond):
-                    sell_signal[i] = True
+        w_start = max(0, i - look_back)
+        w_end = i - 1
+        if w_end <= w_start:
+            continue
 
-        if rsi_arr[i] <= rsi_os:
-            w_start = max(0, i - look_back)
-            w_end = i - 5
-            if w_end > w_start:
-                cond = (low_arr[i] < low_arr[w_start:w_end]) & (mom_arr[i] > mom_arr[w_start:w_end]) & (rsi_arr[w_start:w_end] <= rsi_os)
-                if np.any(cond):
-                    buy_signal[i] = True
+        # Bearish Divergence (Sell): Compare with past overbought candles
+        ob_mask = rsi_arr[w_start:w_end] >= rsi_ob
+        if np.any(ob_mask):
+            ob_highs = high_arr[w_start:w_end][ob_mask]
+            ob_moms = mom_arr[w_start:w_end][ob_mask]
+            if np.any((high_arr[i] > ob_highs) & (mom_arr[i] < ob_moms)):
+                sell_signal[i] = True
+
+        # Bullish Divergence (Buy): Compare with past oversold candles
+        os_mask = rsi_arr[w_start:w_end] <= rsi_os
+        if np.any(os_mask):
+            os_lows = low_arr[w_start:w_end][os_mask]
+            os_moms = mom_arr[w_start:w_end][os_mask]
+            if np.any((low_arr[i] < os_lows) & (mom_arr[i] > os_moms)):
+                buy_signal[i] = True
 
     return pd.DataFrame(
         {
