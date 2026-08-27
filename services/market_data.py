@@ -91,16 +91,22 @@ class MarketDataProvider:
 
     @classmethod
     def save_disk_cache(cls, data: dict[str, pd.DataFrame]) -> None:
-        """Save memory cache to disk for instant restart recovery."""
+        """Save memory cache to disk atomically for instant restart recovery."""
+        import os
         import pickle
         p = settings.DISK_CACHE_PATH
+        tmp_path = p.with_suffix(".tmp")
         try:
             p.parent.mkdir(parents=True, exist_ok=True)
-            with open(p, "wb") as f:
+            with open(tmp_path, "wb") as f:
                 pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
-            logger.debug(f"Saved {len(data)} symbols to disk cache at {p.name}.")
+            os.replace(tmp_path, p)
+            logger.debug(f"Saved {len(data)} symbols atomically to disk cache at {p.name}.")
         except Exception as exc:
+            if tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
             logger.warning(f"Could not save disk cache: {exc}")
+
 
     @classmethod
     def get_universe_ohlc(
