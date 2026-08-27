@@ -95,20 +95,12 @@ async function fetchLookbackSignals(forceRefresh = false) {
   const indexVal = value('#lookback-index');
   if (indexVal) params.set('index', indexVal);
 
-  const condVal = value('#lookback-condition');
-  if (condVal) params.set('signal_filter', condVal);
-
-  // Sync 200 MA toggle pill active state
-  const btn200ma = document.querySelector('#btn-toggle-200ma');
-  if (btn200ma) {
-    if (condVal && condVal.startsWith('ma200')) {
-      btn200ma.classList.add('active');
-    } else {
-      btn200ma.classList.remove('active');
-    }
-  }
+  const activeStratPill = document.querySelector('#strategy-filter-group .strat-pill.active');
+  const filterVal = (activeStratPill && activeStratPill.dataset.filter) || state.strategyFilter || '';
+  if (filterVal) params.set('signal_filter', filterVal);
 
   if (forceRefresh) params.set('refresh', 'true');
+
 
   try {
     const res = await fetch('/screener/lookback?' + params);
@@ -409,19 +401,52 @@ document.querySelectorAll('#lookback-group .pill').forEach(btn => {
   };
 });
 
-// 200 MA Quick Strategy Toggle Button
-const btn200ma = document.querySelector('#btn-toggle-200ma');
-if (btn200ma) {
-  btn200ma.onclick = () => {
-    const condSel = document.querySelector('#lookback-condition');
-    if (condSel.value.startsWith('ma200')) {
-      condSel.value = '';
-    } else {
-      condSel.value = 'ma200';
-    }
+// Strategy Filter Pills
+document.querySelectorAll('#strategy-filter-group .strat-pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#strategy-filter-group .strat-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter || '';
+    state.strategyFilter = filter;
     fetchLookbackSignals();
   };
-}
+});
+
+// Global Keyboard Shortcuts
+window.addEventListener('keydown', (e) => {
+  const activeTag = (document.activeElement && document.activeElement.tagName) || '';
+  const isInputActive = activeTag === 'INPUT' || activeTag === 'SELECT' || activeTag === 'TEXTAREA';
+
+  // Press "/" to focus search
+  if (e.key === '/' && !isInputActive) {
+    e.preventDefault();
+    const searchInput = document.querySelector('#symbol-search');
+    if (searchInput) {
+      searchInput.focus();
+      searchInput.select();
+    }
+    return;
+  }
+
+  // Press Escape to blur or close modal
+  if (e.key === 'Escape') {
+    if (isInputActive) {
+      document.activeElement.blur();
+    }
+    hideWatchlistManager();
+    return;
+  }
+
+  // Numbers 1-4 for quick lookback switching
+  if (!isInputActive) {
+    const keyMap = { '1': 1, '2': 3, '3': 7, '4': 14 };
+    if (keyMap[e.key]) {
+      const targetDays = keyMap[e.key];
+      const targetBtn = document.querySelector(`#lookback-group .pill[data-days="${targetDays}"]`);
+      if (targetBtn) targetBtn.click();
+    }
+  }
+});
 
 // Search input
 document.querySelector('#symbol-search').oninput = (e) => {
@@ -429,14 +454,12 @@ document.querySelector('#symbol-search').oninput = (e) => {
   renderLookbackTable();
 };
 
-
 // Watchlist Manager Card Toggle & Submit Handlers
 document.querySelector('#btn-import-modal').onclick = toggleWatchlistManager;
 document.querySelector('#btn-close-wm').onclick = hideWatchlistManager;
 document.querySelector('#btn-modal-submit').onclick = handleImportSubmit;
 
 // Lookback Selectors & Buttons
-document.querySelector('#lookback-condition').onchange = () => fetchLookbackSignals();
 document.querySelector('#lookback-index').onchange = () => fetchLookbackSignals();
 document.querySelector('#lookback-sort').onchange = () => renderLookbackTable();
 document.querySelector('#lookback-refresh').onclick = () => fetchLookbackSignals(false);
@@ -473,6 +496,7 @@ document.querySelector('#scan').onclick = async () => {
 // Initial Load
 loadCustomWatchlists();
 fetchLookbackSignals();
+
 
 
 

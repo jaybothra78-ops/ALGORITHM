@@ -3,61 +3,64 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Algo Scanner — Minimal Screener</title>
+  <title>ALGORITHM — Institutional Stock Screener</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=2.2">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/style.css?v=3.0">
 </head>
 <body>
-  <!-- Minimal Top Navigation -->
-  <nav class="navbar">
+  <!-- Top Glassmorphism Navigation Bar -->
+  <header class="navbar">
     <div class="nav-container">
       <div class="nav-brand">
-        <span class="brand-logo">⚡</span>
-        <span class="brand-name">ALGORITHM</span>
-        <span class="brand-badge">NSE / BSE</span>
+        <div class="brand-badge-icon">⚡</div>
+        <div class="brand-text">
+          <span class="brand-name">ALGORITHM</span>
+          <span class="brand-tag">NSE · BSE</span>
+        </div>
       </div>
 
-
-      <!-- Center Segmented View Switcher -->
-      <div class="nav-tabs">
+      <!-- Segmented Navigation Views -->
+      <nav class="nav-tabs" aria-label="Main Navigation">
         <button id="tab-lookback" class="nav-tab active">
+          <span class="tab-icon">📊</span>
           <span>Lookback Screener</span>
         </button>
         <button id="tab-scanner" class="nav-tab">
+          <span class="tab-icon">⚡</span>
           <span>Confirmed Signals</span>
         </button>
-      </div>
+      </nav>
 
-      <!-- Right Actions -->
+      <!-- Quick Action Utilities -->
       <div class="nav-actions">
-        <button id="btn-import-modal" class="btn-icon" title="Import TradingView Watchlist">
-          <span>➕ Import Watchlist</span>
+        <button id="btn-import-modal" class="btn-subtle" title="Import public watchlist from TradingView">
+          <span class="btn-icon-symbol">➕</span>
+          <span>Import Watchlist</span>
         </button>
-        <button id="lookback-refresh" class="btn-icon" title="Refresh Data">
+        <button id="lookback-refresh" class="btn-icon" title="Refresh local data">
           <span>🔄</span>
         </button>
-        <button id="lookback-rescan" class="btn-action">
+        <button id="lookback-rescan" class="btn-primary" title="Trigger full market rescan">
           <span>⚡ Force Scan</span>
         </button>
       </div>
     </div>
-  </nav>
+  </header>
 
   <main class="main-content">
-    <!-- Dedicated Watchlist Manager Card (Collapsible) -->
+    <!-- Collapsible Watchlist Manager Card -->
     <div id="card-watchlist-manager" class="watchlist-manager-card" style="display: none;">
-
       <div class="wm-header">
         <div class="wm-title-area">
           <span class="wm-icon">🔗</span>
           <div>
             <h3 class="wm-title">TradingView Watchlist Importer</h3>
-            <p class="wm-subtitle">Paste any public TradingView watchlist URL to automatically extract and track its tickers.</p>
+            <p class="wm-subtitle">Paste any public TradingView watchlist URL to extract tickers and track them across all strategies.</p>
           </div>
         </div>
-        <button id="btn-close-wm" class="btn-icon btn-sm" title="Close Importer">✕ Close</button>
+        <button id="btn-close-wm" class="btn-icon-close" title="Close Importer">&times;</button>
       </div>
 
       <div class="wm-body">
@@ -70,7 +73,7 @@
             <label for="input-tv-name">Custom Name (Optional)</label>
             <input type="text" id="input-tv-name" placeholder="Auto-detected if blank" autocomplete="off">
           </div>
-          <button id="btn-modal-submit" class="btn-action wm-submit-btn">
+          <button id="btn-modal-submit" class="btn-primary wm-submit-btn">
             <span>📥 Import &amp; Sync</span>
           </button>
         </div>
@@ -78,7 +81,7 @@
         <div id="modal-status" class="wm-status-box" style="display: none;"></div>
 
         <div class="wm-tags-section">
-          <span class="wm-tags-label">Active Custom Watchlists:</span>
+          <span class="wm-tags-label">Custom Watchlists:</span>
           <div id="custom-lists-tags" class="wm-tags-list">
             <span class="empty-custom">None imported yet</span>
           </div>
@@ -86,44 +89,35 @@
       </div>
     </div>
 
-    <!-- Lookback Screener Section -->
+    <!-- Section 1: Lookback Screener -->
     <section id="section-lookback" class="view-section">
-      <!-- Unified Compact Controls Bar -->
+      <!-- Minimal Single-Row Toolbar -->
       <div class="toolbar">
         <!-- Lookback Range Pills -->
-        <div class="pill-group" id="lookback-group">
+        <div class="pill-group" id="lookback-group" aria-label="Time Horizon">
           <button type="button" class="pill active" data-days="1">1D</button>
           <button type="button" class="pill" data-days="3">3D</button>
           <button type="button" class="pill" data-days="7">7D</button>
           <button type="button" class="pill" data-days="14">14D</button>
         </div>
 
-        <div class="toolbar-divider"></div>
+        <div class="toolbar-sep"></div>
 
-        <!-- Strategy Quick Toggle Pill -->
-        <div class="pill-group" id="strategy-filter-group">
-          <button type="button" class="pill" id="btn-toggle-200ma" title="Filter stocks that touched or crossed the 200-Day Moving Average">📈 200 MA</button>
+        <!-- Strategy Filter Segmented Pills -->
+        <div class="pill-group" id="strategy-filter-group" aria-label="Strategy Filter">
+          <button type="button" class="pill strat-pill active" data-filter="">All Signals</button>
+          <button type="button" class="pill strat-pill" data-filter="oversold">🟢 Dual &lt; 30</button>
+          <button type="button" class="pill strat-pill" data-filter="overbought">🔴 Dual &gt; 70</button>
+          <button type="button" class="pill strat-pill" data-filter="signals_only">⚡ Knoxville</button>
+          <button type="button" class="pill strat-pill" data-filter="ma200">📈 200 MA</button>
         </div>
 
-        <div class="toolbar-divider"></div>
+        <div class="toolbar-sep"></div>
 
-        <!-- Filters -->
+        <!-- Dropdowns -->
         <div class="filter-controls">
           <div class="select-wrapper">
-            <select id="lookback-condition">
-              <option value="">All Strategies &amp; Signals</option>
-              <option value="oversold">🟢 Dual Oversold (Both &lt; 30)</option>
-              <option value="overbought">🔴 Dual Overbought (Both &gt; 70)</option>
-              <option value="signals_only">⚡ Knoxville Divergence Only</option>
-              <option value="ma200">📈 200 MA (Touch &amp; Cross)</option>
-              <option value="ma200_touch">🎯 200 MA: Touch</option>
-              <option value="ma200_cross_up">🚀 200 MA: Crossed Up</option>
-              <option value="ma200_cross_down">🔻 200 MA: Crossed Down</option>
-            </select>
-          </div>
-
-          <div class="select-wrapper">
-            <select id="lookback-index">
+            <select id="lookback-index" aria-label="Universe Selection">
               <option value="">All Universes</option>
               <option value="FNO">📊 F&amp;O List (178)</option>
               <option value="Watchlist">⭐ My Watchlist (108)</option>
@@ -135,7 +129,7 @@
           </div>
 
           <div class="select-wrapper">
-            <select id="lookback-sort">
+            <select id="lookback-sort" aria-label="Sort Options">
               <option value="recency">Sort: Newest</option>
               <option value="rsi_asc">Sort: RSI Low → High</option>
               <option value="rsi_desc">Sort: RSI High → Low</option>
@@ -146,22 +140,25 @@
 
         <div class="toolbar-spacer"></div>
 
-        <!-- Search Input -->
+        <!-- Search Bar with Shortcut Badge -->
         <div class="search-wrapper">
           <span class="search-icon">🔍</span>
           <input type="text" id="symbol-search" placeholder="Search ticker..." autocomplete="off">
+          <span class="search-shortcut" title="Press / to focus">/</span>
         </div>
       </div>
 
-      <!-- Minimal Inline Summary Bar -->
+      <!-- Minimal Live Stats Bar -->
       <div class="stats-bar">
-        <div class="stat-pill"><span class="stat-label">Scanned:</span> <strong id="metric-scanned">—</strong></div>
-        <div class="stat-pill"><span class="stat-label">Flagged:</span> <strong id="metric-flagged" class="text-accent">—</strong></div>
-        <div class="stat-pill"><span class="stat-dot dot-green"></span> <span class="stat-label">Dual &lt; 30:</span> <strong id="metric-oversold" class="text-green">—</strong></div>
-        <div class="stat-pill"><span class="stat-dot dot-red"></span> <span class="stat-label">Dual &gt; 70:</span> <strong id="metric-overbought" class="text-red">—</strong></div>
-        <div class="stat-pill"><span class="stat-dot dot-purple"></span> <span class="stat-label">Knoxville:</span> <strong id="metric-signals" class="text-purple">—</strong></div>
-        <div class="stat-pill"><span class="stat-dot dot-blue"></span> <span class="stat-label">200 MA:</span> <strong id="metric-ma200" class="text-blue">—</strong></div>
-        <div class="status-msg" id="status">Ready</div>
+        <div class="stats-items">
+          <div class="stat-pill"><span class="stat-label">Scanned</span> <strong id="metric-scanned">—</strong></div>
+          <div class="stat-pill highlight"><span class="stat-label">Flagged</span> <strong id="metric-flagged">—</strong></div>
+          <div class="stat-pill"><span class="stat-dot dot-green"></span> <span class="stat-label">Dual &lt; 30</span> <strong id="metric-oversold" class="text-green">—</strong></div>
+          <div class="stat-pill"><span class="stat-dot dot-red"></span> <span class="stat-label">Dual &gt; 70</span> <strong id="metric-overbought" class="text-red">—</strong></div>
+          <div class="stat-pill"><span class="stat-dot dot-purple"></span> <span class="stat-label">Knoxville</span> <strong id="metric-signals" class="text-purple">—</strong></div>
+          <div class="stat-pill"><span class="stat-dot dot-blue"></span> <span class="stat-label">200 MA</span> <strong id="metric-ma200" class="text-blue">—</strong></div>
+        </div>
+        <div class="status-msg" id="status"><span class="live-pulse"></span> Ready</div>
       </div>
 
       <!-- Screener Data Table -->
@@ -186,12 +183,12 @@
       </div>
     </section>
 
-    <!-- Daily Confirmed Signals Section (Secondary Tab) -->
+    <!-- Section 2: Daily Confirmed Signals -->
     <section id="section-scanner" class="view-section" style="display: none;">
       <div class="toolbar">
         <div class="filter-controls">
           <div class="select-wrapper">
-            <select id="strategy">
+            <select id="strategy" aria-label="Strategy Selection">
               <option value="RSI" selected>RSI + RSI MA (Both &lt; 30 / Both &gt; 70)</option>
               <option value="RB_KnoxDiv">RB Knoxville Divergence (150 21 20)</option>
               <option value="SMA_200">📈 200-Day MA (Touch / Cross)</option>
@@ -200,7 +197,7 @@
           </div>
 
           <div class="select-wrapper">
-            <select id="index">
+            <select id="index" aria-label="Universe Selection">
               <option value="">All Universes</option>
               <option value="FNO">📊 F&amp;O List</option>
               <option value="Watchlist">⭐ My Watchlist</option>
@@ -212,7 +209,7 @@
           </div>
 
           <div class="select-wrapper">
-            <select id="type">
+            <select id="type" aria-label="Signal Type Filter">
               <option value="">All Types</option>
               <option value="buy">🟢 Buy Signals</option>
               <option value="sell">🔴 Sell Signals</option>
@@ -223,8 +220,8 @@
         <div class="toolbar-spacer"></div>
 
         <div class="nav-actions">
-          <button id="refresh" class="btn-icon"><span>🔄 Refresh</span></button>
-          <button id="scan" class="btn-action"><span>⚡ Run Daily Scan</span></button>
+          <button id="refresh" class="btn-subtle"><span>🔄 Refresh</span></button>
+          <button id="scan" class="btn-primary"><span>⚡ Run Daily Scan</span></button>
         </div>
       </div>
 
@@ -251,9 +248,10 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=2.3"></script>
+  <script src="/static/app.js?v=3.0"></script>
 </body>
 </html>
+
 
 
 
