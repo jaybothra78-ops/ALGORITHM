@@ -377,8 +377,15 @@ document.querySelector('#tab-lookback').onclick = () => {
   state.activeTab = 'lookback';
   document.querySelector('#tab-lookback').classList.add('active');
   document.querySelector('#tab-scanner').classList.remove('active');
+// Tab Navigation Handlers
+document.querySelector('#tab-lookback').onclick = () => {
+  state.activeTab = 'lookback';
+  document.querySelector('#tab-lookback').classList.add('active');
+  document.querySelector('#tab-scanner').classList.remove('active');
+  document.querySelector('#tab-tester').classList.remove('active');
   document.querySelector('#section-lookback').style.display = 'block';
   document.querySelector('#section-scanner').style.display = 'none';
+  document.querySelector('#section-tester').style.display = 'none';
   fetchLookbackSignals();
 };
 
@@ -386,11 +393,220 @@ document.querySelector('#tab-scanner').onclick = () => {
   state.activeTab = 'scanner';
   document.querySelector('#tab-scanner').classList.add('active');
   document.querySelector('#tab-lookback').classList.remove('active');
+  document.querySelector('#tab-tester').classList.remove('active');
   document.querySelector('#section-scanner').style.display = 'block';
   document.querySelector('#section-lookback').style.display = 'none';
+  document.querySelector('#section-tester').style.display = 'none';
   refreshScanner();
 };
 
+document.querySelector('#tab-tester').onclick = () => {
+  state.activeTab = 'tester';
+  document.querySelector('#tab-tester').classList.add('active');
+  document.querySelector('#tab-lookback').classList.remove('active');
+  document.querySelector('#tab-scanner').classList.remove('active');
+  document.querySelector('#section-tester').style.display = 'block';
+  document.querySelector('#section-lookback').style.display = 'none';
+  document.querySelector('#section-scanner').style.display = 'none';
+};
+
+// -------------------------------------------------------------
+// Strategy Tester Controller
+// -------------------------------------------------------------
+state.testerData = { summary: null, trades: [] };
+state.testerOutcomeFilter = 'ALL';
+state.testerSearchQuery = '';
+
+// Target % Pills & Custom Input
+document.querySelectorAll('#target-pct-group .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#target-pct-group .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector('#tester-target-input').value = btn.dataset.pct;
+  };
+});
+
+document.querySelector('#tester-target-input').oninput = (e) => {
+  const val = e.target.value;
+  document.querySelectorAll('#target-pct-group .pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pct === val);
+  });
+};
+
+// Stop Loss % Pills & Custom Input
+document.querySelectorAll('#sl-pct-group .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#sl-pct-group .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelector('#tester-sl-input').value = btn.dataset.pct;
+  };
+});
+
+document.querySelector('#tester-sl-input').oninput = (e) => {
+  const val = e.target.value;
+  document.querySelectorAll('#sl-pct-group .pill').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.pct === val);
+  });
+};
+
+// Holding Days Pills
+document.querySelectorAll('#hold-days-group .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#hold-days-group .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+  };
+});
+
+// Trade Outcome Filter Pills
+document.querySelectorAll('#trade-outcome-filter .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#trade-outcome-filter .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.testerOutcomeFilter = btn.dataset.outcome || 'ALL';
+    renderTesterTradeTable();
+  };
+});
+
+// Tester Search Input
+document.querySelector('#tester-search').oninput = (e) => {
+  state.testerSearchQuery = e.target.value.trim().toUpperCase();
+  renderTesterTradeTable();
+};
+
+// Run Strategy Test Button Handler
+document.querySelector('#btn-run-tester').onclick = async () => {
+  const btn = document.querySelector('#btn-run-tester');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳ Testing…</span>';
+  statusEl.textContent = 'Simulating strategy performance across historical market data…';
+
+  const activeHoldBtn = document.querySelector('#hold-days-group .pill.active');
+  const maxHoldDays = activeHoldBtn ? parseInt(activeHoldBtn.dataset.days, 10) : 10;
+  const targetPct = parseFloat(document.querySelector('#tester-target-input').value) || 5.0;
+  const slPct = parseFloat(document.querySelector('#tester-sl-input').value) || 2.0;
+  const strategy = value('#tester-strategy') || 'RSI';
+  const index = value('#tester-universe') || null;
+
+  const payload = {
+    strategy,
+    index,
+    target_pct: targetPct,
+    stop_loss_pct: slPct,
+    max_holding_days: maxHoldDays,
+  };
+
+  try {
+    const res = await fetch('/backtest/run', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.detail || `Server returned status ${res.status}`);
+    }
+
+    const data = await res.json();
+    state.testerData = data;
+    renderTesterKPIs(data.summary, data.execution_time_ms);
+    renderTesterTradeTable();
+    statusEl.textContent = `Simulation completed in ${data.execution_time_ms}ms · ${data.summary.total_trades} trades simulated.`;
+  } catch (err) {
+    statusEl.textContent = 'Test failed: ' + err.message;
+    document.querySelector('#tester-rows').innerHTML = `<tr><td colspan="12" class="empty-cell">Test failed: ${err.message}</td></tr>`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>🚀 Run Test</span>';
+  }
+};
+
+function renderTesterKPIs(summary, execMs) {
+  if (!summary) return;
+
+  // Win Rate
+  document.querySelector('#kpi-win-rate').textContent = `${summary.win_rate_pct}%`;
+  document.querySelector('#kpi-wins-losses').textContent = `${summary.winning_trades} wins / ${summary.losing_trades} losses`;
+
+  // Net Return
+  const netEl = document.querySelector('#kpi-net-return');
+  const isNetPos = summary.net_return_pct >= 0;
+  netEl.textContent = `${isNetPos ? '+' : ''}${summary.net_return_pct}%`;
+  netEl.className = `kpi-val ${isNetPos ? 'text-green' : 'text-red'}`;
+  document.querySelector('#kpi-total-trades').textContent = `${summary.total_trades} total trades`;
+
+  // Profit Factor
+  document.querySelector('#kpi-profit-factor').textContent = summary.profit_factor;
+
+  // Max DD
+  document.querySelector('#kpi-max-dd').textContent = `-${summary.max_drawdown_pct}%`;
+
+  // Avg Win / Loss
+  document.querySelector('#kpi-avg-win-loss').innerHTML = `<span class="text-green">+${summary.avg_win_pct}%</span> / <span class="text-red">${summary.avg_loss_pct}%</span>`;
+  document.querySelector('#kpi-avg-pnl').textContent = `Avg trade: ${summary.avg_trade_pnl_pct >= 0 ? '+' : ''}${summary.avg_trade_pnl_pct}%`;
+
+  // Avg Holding
+  document.querySelector('#kpi-avg-hold').textContent = `${summary.avg_holding_days}D`;
+  document.querySelector('#kpi-exec-time').textContent = `Executed in ${execMs}ms`;
+}
+
+function renderTesterTradeTable() {
+  const tbody = document.querySelector('#tester-rows');
+  const allTrades = (state.testerData && state.testerData.trades) || [];
+
+  let filtered = [...allTrades];
+
+  // Outcome filter
+  if (state.testerOutcomeFilter !== 'ALL') {
+    filtered = filtered.filter(t => t.outcome === state.testerOutcomeFilter);
+  }
+
+  // Search filter
+  if (state.testerSearchQuery) {
+    filtered = filtered.filter(t => t.symbol.toUpperCase().includes(state.testerSearchQuery));
+  }
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-cell">No trades match the current filter.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const isWin = t.outcome === 'WIN';
+    const pnlCls = isWin ? 'win' : 'loss';
+    const outcomeBadge = isWin ? `<span class="badge-win">🟢 WIN</span>` : `<span class="badge-loss">🔴 LOSS</span>`;
+
+    let exitReasonCls = 'time';
+    if (t.exit_reason === 'Target Hit') exitReasonCls = 'target';
+    else if (t.exit_reason === 'Stop Loss Hit') exitReasonCls = 'stop';
+
+    return `<tr>
+      <td>
+        <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(t.symbol)}">
+          ${t.symbol} ↗
+        </a>
+      </td>
+      <td><span class="reason-pill strategy">${t.strategy}</span></td>
+      <td>${renderSignalBadge(t.signal_type)}</td>
+      <td class="date-cell">${t.entry_date}</td>
+      <td class="price-cell">${money(t.entry_price)}</td>
+      <td class="sma-cell">
+        <span class="text-green" title="Target Price">${t.target_price ? '🎯 ' + money(t.target_price) : '—'}</span><br>
+        <span class="text-red" title="Stop Loss Price">${t.stop_loss_price ? '🛑 ' + money(t.stop_loss_price) : '—'}</span>
+      </td>
+      <td class="date-cell">${t.exit_date}</td>
+      <td class="price-cell">${money(t.exit_price)}</td>
+      <td><span class="exit-tag ${exitReasonCls}">${t.exit_reason}</span></td>
+      <td class="sma-cell">${t.holding_days}D</td>
+      <td class="pnl-cell ${pnlCls}">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct}%</td>
+      <td>${outcomeBadge}</td>
+    </tr>`;
+  }).join('');
+}
+
+// -------------------------------------------------------------
+// Global Keyboard Shortcuts & Event Listeners
+// -------------------------------------------------------------
 // Lookback Period Buttons
 document.querySelectorAll('#lookback-group .pill').forEach(btn => {
   btn.onclick = () => {
@@ -420,7 +636,9 @@ window.addEventListener('keydown', (e) => {
   // Press "/" to focus search
   if (e.key === '/' && !isInputActive) {
     e.preventDefault();
-    const searchInput = document.querySelector('#symbol-search');
+    const searchInput = state.activeTab === 'tester'
+      ? document.querySelector('#tester-search')
+      : document.querySelector('#symbol-search');
     if (searchInput) {
       searchInput.focus();
       searchInput.select();
@@ -438,7 +656,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   // Numbers 1-4 for quick lookback switching
-  if (!isInputActive) {
+  if (!isInputActive && state.activeTab === 'lookback') {
     const keyMap = { '1': 1, '2': 3, '3': 7, '4': 14 };
     if (keyMap[e.key]) {
       const targetDays = keyMap[e.key];
@@ -496,6 +714,7 @@ document.querySelector('#scan').onclick = async () => {
 // Initial Load
 loadCustomWatchlists();
 fetchLookbackSignals();
+
 
 
 

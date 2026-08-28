@@ -5,8 +5,10 @@ from datetime import date
 from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from db.repository import SignalRepository
+from models.backtest import BacktestRequest, BacktestResponse
 from models.signal import LookbackResponse, ScanResponse
 from services.scanner import ScannerEngine
+
 
 router = APIRouter(tags=["Scanner & Screener"])
 
@@ -112,4 +114,17 @@ def delete_watchlist_endpoint(name: str) -> dict[str, str]:
     if not success:
         raise HTTPException(404, f"Watchlist '{name}' not found.")
     return {"status": "success", "message": f"Watchlist '{name}' deleted."}
+
+
+@router.post("/backtest/run", response_model=BacktestResponse)
+def run_backtest_endpoint(
+    payload: BacktestRequest,
+) -> BacktestResponse:
+    """Run simulated strategy backtest on historical market data."""
+    try:
+        from services.backtester import BacktesterEngine
+        return BacktesterEngine.run_backtest(payload)
+    except Exception as exc:
+        raise HTTPException(500, f"Backtest simulation failed: {exc}") from exc
+
 
