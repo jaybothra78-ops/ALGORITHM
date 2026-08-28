@@ -377,17 +377,13 @@ document.querySelector('#tab-lookback').onclick = () => {
   state.activeTab = 'lookback';
   document.querySelector('#tab-lookback').classList.add('active');
   document.querySelector('#tab-scanner').classList.remove('active');
-// Tab Navigation Handlers
-document.querySelector('#tab-lookback').onclick = () => {
-  state.activeTab = 'lookback';
-  document.querySelector('#tab-lookback').classList.add('active');
-  document.querySelector('#tab-scanner').classList.remove('active');
   document.querySelector('#tab-tester').classList.remove('active');
   document.querySelector('#section-lookback').style.display = 'block';
   document.querySelector('#section-scanner').style.display = 'none';
   document.querySelector('#section-tester').style.display = 'none';
   fetchLookbackSignals();
 };
+
 
 document.querySelector('#tab-scanner').onclick = () => {
   state.activeTab = 'scanner';
