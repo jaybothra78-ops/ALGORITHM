@@ -19,6 +19,10 @@ htmlcov/
 *.db-shm
 scanner.db
 signals.db
+*.pkl
+*.tmp
+config/ohlc_cache.pkl
+
 
 # IDE & OS files
 .vscode/
