@@ -18,12 +18,16 @@ class BacktestRequest(BaseModel):
     """Parameters for running a strategy backtest simulation."""
     model_config = ConfigDict(extra="ignore")
 
+    symbol: str | None = Field(default=None, description="Specific single stock ticker to test (e.g. TVSMOTOR, RELIANCE)")
     strategy: str = Field(default="RSI", description="Strategy: RSI, RB_KnoxDiv, SMA_200, ALL")
     index: str | None = Field(default=None, description="Universe / Watchlist filter (FNO, Watchlist, custom, etc.)")
     target_pct: float | None = Field(default=5.0, ge=0.1, le=100.0, description="Take profit target percentage")
     stop_loss_pct: float | None = Field(default=2.0, ge=0.1, le=50.0, description="Stop loss percentage")
     max_holding_days: int = Field(default=10, ge=1, le=60, description="Maximum days to hold position before market exit")
     signal_type: str | None = Field(default=None, description="Filter: buy, sell, or all")
+    start_date: str | None = Field(default=None, description="Earliest entry date (YYYY-MM-DD)")
+    end_date: str | None = Field(default=None, description="Latest entry date (YYYY-MM-DD)")
+
 
 
 class BacktestTrade(BaseModel):

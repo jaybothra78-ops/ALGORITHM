@@ -413,6 +413,48 @@ state.testerData = { summary: null, trades: [] };
 state.testerOutcomeFilter = 'ALL';
 state.testerSearchQuery = '';
 
+// Date Range Calculation Helpers
+function setTesterDateRange(months) {
+  const toDate = new Date();
+  const toStr = toDate.toISOString().split('T')[0];
+  document.querySelector('#tester-to-date').value = toStr;
+
+  if (months === 'all') {
+    document.querySelector('#tester-from-date').value = '';
+    return;
+  }
+
+  const fromDate = new Date();
+  const m = parseInt(months, 10) || 3;
+  fromDate.setMonth(fromDate.getMonth() - m);
+  const fromStr = fromDate.toISOString().split('T')[0];
+  document.querySelector('#tester-from-date').value = fromStr;
+}
+
+// Initialize default date range: 3 Months (Recent 2026)
+setTesterDateRange(3);
+
+// Date Range Pills Handler
+document.querySelectorAll('#tester-range-group .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#tester-range-group .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const range = btn.dataset.range || '3m';
+    if (range === '1m') setTesterDateRange(1);
+    else if (range === '3m') setTesterDateRange(3);
+    else if (range === '6m') setTesterDateRange(6);
+    else if (range === '1y') setTesterDateRange(12);
+    else if (range === 'all') setTesterDateRange('all');
+  };
+});
+
+// Manual Date Picker Listeners
+['#tester-from-date', '#tester-to-date'].forEach(sel => {
+  document.querySelector(sel).onchange = () => {
+    document.querySelectorAll('#tester-range-group .pill').forEach(b => b.classList.remove('active'));
+  };
+});
+
 // Target % Pills & Custom Input
 document.querySelectorAll('#target-pct-group .pill').forEach(btn => {
   btn.onclick = () => {
@@ -482,13 +524,19 @@ document.querySelector('#btn-run-tester').onclick = async () => {
   const slPct = parseFloat(document.querySelector('#tester-sl-input').value) || 2.0;
   const strategy = value('#tester-strategy') || 'RSI';
   const index = value('#tester-universe') || null;
+  const singleSymbol = (document.querySelector('#tester-symbol-input').value || '').trim().toUpperCase();
+  const fromDate = document.querySelector('#tester-from-date').value || null;
+  const toDate = document.querySelector('#tester-to-date').value || null;
 
   const payload = {
     strategy,
     index,
+    symbol: singleSymbol || null,
     target_pct: targetPct,
     stop_loss_pct: slPct,
     max_holding_days: maxHoldDays,
+    start_date: fromDate,
+    end_date: toDate,
   };
 
   try {
@@ -507,7 +555,8 @@ document.querySelector('#btn-run-tester').onclick = async () => {
     state.testerData = data;
     renderTesterKPIs(data.summary, data.execution_time_ms);
     renderTesterTradeTable();
-    statusEl.textContent = `Simulation completed in ${data.execution_time_ms}ms · ${data.summary.total_trades} trades simulated.`;
+    const symLabel = singleSymbol ? `${singleSymbol} ` : '';
+    statusEl.textContent = `Simulation completed in ${data.execution_time_ms}ms · ${symLabel}${data.summary.total_trades} trades simulated.`;
   } catch (err) {
     statusEl.textContent = 'Test failed: ' + err.message;
     document.querySelector('#tester-rows').innerHTML = `<tr><td colspan="12" class="empty-cell">Test failed: ${err.message}</td></tr>`;
@@ -516,6 +565,7 @@ document.querySelector('#btn-run-tester').onclick = async () => {
     btn.innerHTML = '<span>🚀 Run Test</span>';
   }
 };
+
 
 function renderTesterKPIs(summary, execMs) {
   if (!summary) return;

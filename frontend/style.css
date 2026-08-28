@@ -896,12 +896,84 @@ select option:checked {
   transition: all 0.15s ease;
 }
 
-.number-input:focus {
+.stock-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.stock-input-icon {
+  position: absolute;
+  left: 9px;
+  font-size: 0.76rem;
+  pointer-events: none;
+}
+
+#tester-symbol-input {
+  background-color: #0d1424;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: #38bdf8;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px 6px 28px;
+  width: 220px;
+  outline: none;
+  transition: all 0.15s ease;
+  text-transform: uppercase;
+}
+
+#tester-symbol-input::placeholder {
+  color: var(--text-muted);
+  font-weight: 400;
+  text-transform: none;
+  font-family: var(--font-sans);
+}
+
+#tester-symbol-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
+  background-color: #121c31;
+}
+
+.tester-date-toolbar {
+  margin-top: 4px;
+  background: rgba(13, 20, 36, 0.4);
+  border: 1px dashed rgba(255, 255, 255, 0.08);
+}
+
+.date-picker-input {
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  outline: none;
+  color-scheme: dark;
+  transition: all 0.15s ease;
+}
+
+.date-picker-input:focus {
   border-color: var(--accent);
   background: rgba(0, 0, 0, 0.7);
 }
 
+.tester-quick-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+}
+
+.tester-quick-hint strong {
+  color: var(--text-secondary);
+}
+
 /* KPI Cards Grid */
+
 .kpi-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));

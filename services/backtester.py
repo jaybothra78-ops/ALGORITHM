@@ -24,17 +24,24 @@ class BacktesterEngine:
 
     @classmethod
     def run_backtest(cls, request: BacktestRequest) -> BacktestResponse:
-        """Execute strategy simulation across the selected universe."""
+        """Execute strategy simulation across the selected universe or a single stock."""
         t_start = time.perf_counter()
 
-        universe = load_universe()
-        if request.index:
-            target_universe = {s: m for s, m in universe.items() if request.index in m}
-        else:
-            target_universe = universe
+        single_sym = request.symbol.strip().upper() if request.symbol and request.symbol.strip() else None
 
-        all_symbols = list(target_universe.keys())
-        ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
+        if single_sym:
+            all_symbols = [single_sym]
+            universe_label = f"{single_sym} (Single Stock)"
+            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
+        else:
+            universe = load_universe()
+            if request.index:
+                target_universe = {s: m for s, m in universe.items() if request.index in m}
+            else:
+                target_universe = universe
+            all_symbols = list(target_universe.keys())
+            universe_label = request.index or "All Universes"
+            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
 
         all_trades: list[BacktestTrade] = []
         strategy_filter = request.strategy.upper()
@@ -57,15 +64,21 @@ class BacktesterEngine:
             if strategy_filter in ("SMA_200", "200MA", "ALL"):
                 all_trades.extend(cls._backtest_ma200(symbol, df, request))
 
-        # Sort trades chronologically by entry date
-        all_trades.sort(key=lambda t: (t.entry_date, t.symbol))
+        # Filter by date range if specified
+        if request.start_date:
+            all_trades = [t for t in all_trades if t.entry_date >= request.start_date]
+        if request.end_date:
+            all_trades = [t for t in all_trades if t.entry_date <= request.end_date]
 
         # Filter by signal_type if requested (buy vs sell)
         if request.signal_type:
             st_filter = request.signal_type.lower()
             all_trades = [t for t in all_trades if t.signal_type.lower() == st_filter]
 
-        summary = cls._compute_summary(all_trades, request, universe_label=request.index or "All Universes")
+        # Sort trades with MOST RECENT trades first (Newest -> Oldest)
+        all_trades.sort(key=lambda t: (t.entry_date, t.symbol), reverse=True)
+
+        summary = cls._compute_summary(all_trades, request, universe_label=universe_label)
         exec_ms = round((time.perf_counter() - t_start) * 1000, 2)
 
         return BacktestResponse(
@@ -73,6 +86,7 @@ class BacktesterEngine:
             trades=all_trades,
             execution_time_ms=exec_ms,
         )
+
 
     @classmethod
     def _backtest_rsi(

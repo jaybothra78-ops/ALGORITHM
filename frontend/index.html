@@ -254,7 +254,7 @@
 
     <!-- Section 3: STRATEGY TESTER -->
     <section id="section-tester" class="view-section" style="display: none;">
-      <!-- Tester Controls Bar -->
+      <!-- Tester Controls Bar (Row 1: Strategy, Universe, Individual Stock, Risk/Target, Run) -->
       <div class="toolbar tester-toolbar">
         <div class="filter-controls">
           <!-- Strategy Selector -->
@@ -278,6 +278,12 @@
               <option value="Bank">NIFTY BANK</option>
               <option value="Smallcap">NIFTY SMALLCAP</option>
             </select>
+          </div>
+
+          <!-- Individual Stock Input (Optional override) -->
+          <div class="stock-input-wrapper">
+            <span class="stock-input-icon">🎯</span>
+            <input type="text" id="tester-symbol-input" placeholder="Individual Stock (e.g. TVSMOTOR)" autocomplete="off" title="Leave blank to test full universe, or enter any stock ticker">
           </div>
 
           <div class="toolbar-sep"></div>
@@ -329,6 +335,33 @@
           <span>🚀 Run Test</span>
         </button>
       </div>
+
+      <!-- Tester Controls Bar (Row 2: Calendar & Date Range Selection) -->
+      <div class="toolbar tester-date-toolbar">
+        <div class="control-unit">
+          <span class="control-label">📅 Period:</span>
+          <div class="pill-group" id="tester-range-group">
+            <button type="button" class="pill" data-range="1m">1M</button>
+            <button type="button" class="pill active" data-range="3m">3M (Recent)</button>
+            <button type="button" class="pill" data-range="6m">6M</button>
+            <button type="button" class="pill" data-range="1y">1Y</button>
+            <button type="button" class="pill" data-range="all">All</button>
+          </div>
+        </div>
+
+        <div class="toolbar-sep"></div>
+
+        <div class="control-unit date-inputs-unit">
+          <span class="control-label">From:</span>
+          <input type="date" id="tester-from-date" class="date-picker-input">
+          <span class="control-label">To:</span>
+          <input type="date" id="tester-to-date" class="date-picker-input">
+        </div>
+
+        <div class="toolbar-spacer"></div>
+        <div class="tester-quick-hint">💡 Tests <strong>latest 2026</strong> market action by default.</div>
+      </div>
+
 
       <!-- KPI Summary Cards Grid -->
       <div class="kpi-grid" id="tester-kpi-grid">

@@ -88,3 +88,21 @@ def test_backtest_api_endpoint():
         assert "win_rate_pct" in data["summary"]
         assert "net_return_pct" in data["summary"]
         assert "execution_time_ms" in data
+
+
+def test_backtest_single_symbol_and_dates():
+    with TestClient(app) as c:
+        payload = {
+            "symbol": "TVSMOTOR",
+            "strategy": "RSI",
+            "target_pct": 5.0,
+            "stop_loss_pct": 2.0,
+            "max_holding_days": 10,
+            "start_date": "2026-01-01",
+            "end_date": "2026-08-28",
+        }
+        resp = c.post("/backtest/run", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["summary"]["universe"] == "TVSMOTOR (Single Stock)"
+
