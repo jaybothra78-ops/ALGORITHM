@@ -10,7 +10,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=5.1">
+  <link rel="stylesheet" href="/static/style.css?v=6.0">
+
 
 
 
@@ -426,104 +427,84 @@
       </div>
     </section>
 
-    <!-- Section 3: Zerodha Kite-Inspired Paper Trading & Virtual Portfolio -->
+    <!-- Section 3: Paper Trading / Virtual Portfolio -->
     <section id="section-paper" class="view-section" style="display: none;">
 
-      <!-- Zerodha Kite Portfolio Header KPI Banner -->
-      <div class="zerodha-kpi-grid">
-        <!-- 1. Day's P&L (Today's Earnings) -->
-        <div class="zerodha-kpi-card highlight-card">
+      <!-- Portfolio Overview KPI Banner -->
+      <div class="paper-kpi-grid">
+        <div class="paper-kpi-card equity-card">
           <div class="kpi-meta-row">
-            <span class="kpi-title">Day's P&amp;L (Today)</span>
+            <span class="kpi-title">Total Portfolio Equity</span>
             <span class="kpi-badge-live">LIVE</span>
           </div>
           <div class="kpi-value-row">
-            <span id="paper-day-pnl" class="kpi-main-val kpi-pnl-neutral">₹0.00 (+0.00%)</span>
+            <span id="paper-total-equity" class="kpi-main-val">₹10,00,000.00</span>
           </div>
           <div class="kpi-sub-row">
-            <span>Today Realized: <strong id="paper-today-realized">₹0.00</strong></span>
-            <span>·</span>
-            <span>Open MTM: <strong id="paper-today-unrealized">₹0.00</strong></span>
+            <span>Overall P&amp;L:</span>
+            <strong id="paper-total-pnl" class="kpi-pnl-neutral">₹0.00 (+0.00%)</strong>
           </div>
         </div>
 
-        <!-- 2. Overall P&L (Earned Till Date) -->
-        <div class="zerodha-kpi-card">
-          <span class="kpi-title">Total P&amp;L (Earned Till Date)</span>
-          <div class="kpi-value-row">
-            <span id="paper-total-pnl" class="kpi-main-val kpi-pnl-neutral">₹0.00 (+0.00%)</span>
-          </div>
-          <div class="kpi-sub-row">
-            <span>Gross Realized: <strong id="paper-realized-pnl">₹0.00</strong></span>
-            <span>·</span>
-            <span>Unrealized: <strong id="paper-unrealized-pnl">₹0.00</strong></span>
-          </div>
-        </div>
-
-        <!-- 3. Total Portfolio Value -->
-        <div class="zerodha-kpi-card">
-          <span class="kpi-title">Total Account Value</span>
-          <span id="paper-total-equity" class="kpi-main-val">₹10,00,000.00</span>
-          <span class="kpi-sub-text">Holdings: <strong id="paper-holdings-value">₹0.00</strong></span>
-        </div>
-
-        <!-- 4. Available Margin & Funds -->
-        <div class="zerodha-kpi-card">
-          <span class="kpi-title">Available Margin (Cash)</span>
+        <div class="paper-kpi-card">
+          <span class="kpi-title">Available Cash Balance</span>
           <span id="paper-cash-balance" class="kpi-main-val">₹10,00,000.00</span>
-          <span class="kpi-sub-text">Used Margin: <strong id="paper-invested-amount">₹0.00</strong></span>
+          <span class="kpi-sub-text">Unallocated virtual capital</span>
         </div>
 
-        <!-- 5. Performance Metrics & Reset -->
-        <div class="zerodha-kpi-card">
+        <div class="paper-kpi-card">
+          <span class="kpi-title">Invested Margin</span>
+          <span id="paper-invested-amount" class="kpi-main-val">₹0.00</span>
+          <span id="paper-open-count" class="kpi-sub-text">0 active positions</span>
+        </div>
+
+        <div class="paper-kpi-card">
+          <span class="kpi-title">Unrealized P&amp;L (Open)</span>
+          <span id="paper-unrealized-pnl" class="kpi-main-val kpi-pnl-neutral">₹0.00</span>
+          <span id="paper-unrealized-pct" class="kpi-sub-text">+0.00%</span>
+        </div>
+
+        <div class="paper-kpi-card">
           <div class="kpi-meta-row">
-            <span class="kpi-title">Trade Analytics</span>
+            <span class="kpi-title">Realized P&amp;L (Closed)</span>
             <button id="btn-paper-reset" class="btn-subtle btn-xs" title="Reset virtual capital to ₹10,00,000">
-              <span>🔄 Reset Capital</span>
+              <span>🔄 Reset</span>
             </button>
           </div>
-          <span id="paper-win-rate" class="kpi-main-val" style="color: #38bdf8;">0.0% Win Rate</span>
-          <span id="paper-trade-counts" class="kpi-sub-text">0 Wins · 0 Losses (0 Trades)</span>
+          <span id="paper-realized-pnl" class="kpi-main-val kpi-pnl-neutral">₹0.00</span>
+          <span id="paper-win-rate" class="kpi-sub-text">Win Rate: 0.0% · 0 Trades</span>
         </div>
       </div>
 
-      <!-- Zerodha Kite Order Placement Pad -->
-      <div class="zerodha-order-card">
+      <!-- New Trade Placement Card -->
+      <div class="paper-order-card">
         <div class="order-card-header">
           <div class="order-title-group">
             <span class="order-card-icon">⚡</span>
             <div>
-              <h3 class="order-card-title">Order Placement Pad</h3>
-              <p class="order-card-sub">Execute intraday (MIS) and swing (CNC) paper trades with live NSE market execution.</p>
+              <h3 class="order-card-title">Place New Paper Order</h3>
+              <p class="order-card-sub">Test strategies, Knoxville divergences, and breakouts in real-time with zero risk.</p>
             </div>
           </div>
-          <div class="order-top-controls">
-            <!-- Product Type Toggle (CNC vs MIS) -->
-            <div class="product-selector-pill-group">
-              <button type="button" id="btn-prod-cnc" class="prod-pill active" data-prod="CNC">CNC (Delivery)</button>
-              <button type="button" id="btn-prod-mis" class="prod-pill" data-prod="MIS">MIS (Intraday)</button>
-            </div>
-            <!-- Side Selector Toggle (BUY vs SELL) -->
-            <div class="side-selector-pill-group">
-              <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY</button>
-              <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL</button>
-            </div>
+          <div class="side-selector-pill-group">
+            <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY (Long)</button>
+            <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL (Short)</button>
           </div>
         </div>
 
         <div class="order-form-grid">
           <!-- Stock Symbol with scoped autocomplete -->
           <div class="form-group field-symbol">
-            <label for="paper-stock-input">Instrument (NSE/BSE)</label>
+            <label for="paper-stock-input">Stock Symbol</label>
             <div class="stock-input-wrapper">
               <span class="stock-input-icon">🔍</span>
-              <input type="text" id="paper-stock-input" list="paper-stocks-datalist" placeholder="e.g. TVSMOTOR, RELIANCE" autocomplete="off">
+              <input type="text" id="paper-stock-input" list="paper-stocks-datalist" placeholder="e.g. TVSMOTOR" autocomplete="off">
             </div>
           </div>
 
           <!-- Quantity -->
           <div class="form-group field-qty">
-            <label for="paper-qty-input">Quantity (Qty.)</label>
+            <label for="paper-qty-input">Quantity (Shares)</label>
             <div class="qty-input-row">
               <input type="number" id="paper-qty-input" value="10" min="1" step="1">
               <div class="qty-quick-btns">
@@ -534,44 +515,44 @@
             </div>
           </div>
 
-          <!-- Entry Price & Live LTP Button -->
+          <!-- Entry Price -->
           <div class="form-group field-price">
             <div class="label-with-action">
-              <label for="paper-price-input">Price (₹)</label>
-              <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch Live LTP</button>
+              <label for="paper-price-input">Entry Price (₹)</label>
+              <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch LTP</button>
             </div>
-            <input type="number" id="paper-price-input" placeholder="Leave blank for Market Price" step="0.05">
+            <input type="number" id="paper-price-input" placeholder="Leave blank for live LTP" step="0.05">
           </div>
 
-          <!-- Target (GTT Take Profit) -->
+          <!-- Target Price -->
           <div class="form-group field-target">
             <div class="label-with-action">
-              <label for="paper-target-input">Target (GTT ₹)</label>
+              <label for="paper-target-input">Target (₹)</label>
               <div class="quick-pct-row">
                 <button type="button" class="btn-pct-chip" data-pct="2">+2%</button>
                 <button type="button" class="btn-pct-chip" data-pct="5">+5%</button>
                 <button type="button" class="btn-pct-chip" data-pct="10">+10%</button>
               </div>
             </div>
-            <input type="number" id="paper-target-input" placeholder="Optional (5% default)" step="0.05">
+            <input type="number" id="paper-target-input" placeholder="Auto-calculated (5%)" step="0.05">
           </div>
 
-          <!-- Stop Loss (GTT SL) -->
+          <!-- Stop Loss Price -->
           <div class="form-group field-sl">
             <div class="label-with-action">
-              <label for="paper-sl-input">Stoploss (SL ₹)</label>
+              <label for="paper-sl-input">Stop Loss (₹)</label>
               <div class="quick-pct-row">
                 <button type="button" class="btn-pct-chip" data-pct="-1">-1%</button>
                 <button type="button" class="btn-pct-chip" data-pct="-2">-2%</button>
                 <button type="button" class="btn-pct-chip" data-pct="-3">-3%</button>
               </div>
             </div>
-            <input type="number" id="paper-sl-input" placeholder="Optional (2% default)" step="0.05">
+            <input type="number" id="paper-sl-input" placeholder="Auto-calculated (2%)" step="0.05">
           </div>
 
           <!-- Strategy Tag -->
           <div class="form-group field-strategy">
-            <label for="paper-strategy-select">Tag / Strategy Reason</label>
+            <label for="paper-strategy-select">Strategy Reason</label>
             <div class="select-wrapper">
               <select id="paper-strategy-select">
                 <option value="Knoxville Divergence" selected>Knoxville Divergence</option>
@@ -586,106 +567,76 @@
 
         <div class="order-footer-row">
           <div class="order-est-summary">
-            <span>Margin Required: <strong id="paper-est-capital">₹0.00</strong></span>
-            <span>·</span>
-            <span>Available: <strong id="paper-footer-avail-cash" style="color: #10b981;">₹10,00,000.00</strong></span>
+            <span>Estimated Capital Required:</span>
+            <strong id="paper-est-capital">₹0.00</strong>
           </div>
           <button id="btn-paper-execute" class="btn-primary btn-execute-order">
-            <span>⚡ Place Order</span>
+            <span>⚡ Execute Paper Order</span>
           </button>
         </div>
         <div id="paper-order-status" class="wm-status-box" style="display: none;"></div>
       </div>
 
-      <!-- Zerodha Kite Subtabs Navigation -->
+      <!-- Positions & Journal Subtabs -->
       <div class="paper-subtabs-row">
         <button id="paper-tab-positions" class="paper-subtab active">
-          <span>📌 Positions</span>
+          <span>📌 Active Positions</span>
           <span id="badge-open-positions" class="subtab-count-badge">0</span>
         </button>
-        <button id="paper-tab-holdings" class="paper-subtab">
-          <span>💼 Holdings</span>
-          <span id="badge-holdings-count" class="subtab-count-badge">0</span>
-        </button>
         <button id="paper-tab-history" class="paper-subtab">
-          <span>📜 Tradebook &amp; Console P&amp;L</span>
+          <span>📜 Trade History Journal</span>
           <span id="badge-history-trades" class="subtab-count-badge">0</span>
         </button>
       </div>
 
-      <!-- 1. Active Positions Table View -->
+      <!-- Active Open Positions Table View -->
       <div id="paper-view-positions" class="table-container">
-        <table class="data-table zerodha-table">
+        <table class="data-table">
           <thead>
             <tr>
-              <th>Instrument</th>
-              <th>Product</th>
-              <th>Qty.</th>
-              <th>Avg. Price</th>
-              <th>LTP</th>
-              <th>Cur. Value</th>
-              <th>Day's P&amp;L</th>
-              <th>Overall P&amp;L</th>
+              <th>Stock &amp; Chart</th>
+              <th>Side</th>
+              <th>Qty</th>
+              <th>Entry Price</th>
+              <th>Live LTP</th>
+              <th>Invested</th>
+              <th>Unrealized P&amp;L</th>
               <th>Target / SL</th>
               <th>Strategy</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="paper-positions-rows">
-            <tr><td colspan="11" class="empty-cell">No open positions. Use the order pad above or click "Paper Trade" from the Lookback Screener.</td></tr>
+            <tr><td colspan="10" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>
           </tbody>
         </table>
       </div>
 
-      <!-- 2. Holdings View (CNC Portfolio) -->
-      <div id="paper-view-holdings" class="table-container" style="display: none;">
-        <table class="data-table zerodha-table">
-          <thead>
-            <tr>
-              <th>Instrument</th>
-              <th>Qty.</th>
-              <th>Avg. Cost</th>
-              <th>LTP</th>
-              <th>Cur. Value</th>
-              <th>Invested</th>
-              <th>Day's Change</th>
-              <th>Total Return P&amp;L</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="paper-holdings-rows">
-            <tr><td colspan="9" class="empty-cell">No CNC holdings in your portfolio.</td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <!-- 3. Console Tradebook & P&L History View -->
+      <!-- Trade History Journal Table View -->
       <div id="paper-view-history" class="table-container" style="display: none;">
-        <table class="data-table zerodha-table">
+        <table class="data-table">
           <thead>
             <tr>
-              <th>Instrument</th>
+              <th>Stock</th>
               <th>Side</th>
-              <th>Product</th>
-              <th>Qty.</th>
+              <th>Qty</th>
               <th>Entry Price</th>
               <th>Exit Price</th>
               <th>Exit Date</th>
-              <th>Net Realized P&amp;L</th>
+              <th>Realized P&amp;L</th>
               <th>Return %</th>
-              <th>Holding Period</th>
+              <th>Duration</th>
               <th>Exit Reason</th>
-              <th>Strategy Tag</th>
+              <th>Strategy</th>
             </tr>
           </thead>
           <tbody id="paper-history-rows">
-            <tr><td colspan="12" class="empty-cell">No closed trades yet in your journal.</td></tr>
+            <tr><td colspan="11" class="empty-cell">No closed trades yet in your journal.</td></tr>
           </tbody>
         </table>
       </div>
     </section>
   </main>
-
 
   <!-- Scoped Auto-Complete Ticker Datalists -->
   <datalist id="lookback-stocks-datalist"></datalist>
@@ -693,7 +644,8 @@
   <datalist id="news-stocks-datalist"></datalist>
 
 
-  <script src="/static/app.js?v=5.4"></script>
+  <script src="/static/app.js?v=6.0"></script>
+
 </body>
 </html>
 

@@ -136,7 +136,6 @@ class PaperTradingService:
         trade_data = {
             "symbol": symbol,
             "side": request.side.value if hasattr(request.side, "value") else str(request.side),
-            "product_type": request.product_type.value if hasattr(request.product_type, "value") else str(request.product_type),
             "quantity": qty,
             "entry_price": round(entry_price, 2),
             "target_price": target,
@@ -154,7 +153,6 @@ class PaperTradingService:
             "position_id": trade_id,
             "symbol": symbol,
             "side": trade_data["side"],
-            "product_type": trade_data["product_type"],
             "quantity": qty,
             "entry_price": trade_data["entry_price"],
             "target_price": target,
@@ -213,40 +211,27 @@ class PaperTradingService:
         positions: list[PaperPosition] = []
 
         for p in raw_positions:
-            quote = cls.get_live_ltp(p["symbol"])
-            live_p = float(quote.get("ltp") or p["entry_price"])
-            prev_close = float(quote.get("previous_close") or p["entry_price"])
+            live_p = cls.get_live_price(p["symbol"])
             qty = p["quantity"]
             entry_p = p["entry_price"]
             side = p["side"]
             invested = entry_p * qty
-            cur_val = live_p * qty
 
-            # Overall P&L
             if side == "BUY":
                 u_pnl = (live_p - entry_p) * qty
                 u_pct = ((live_p - entry_p) / entry_p) * 100.0 if entry_p > 0 else 0.0
-                day_pnl = (live_p - prev_close) * qty
-                day_pct = ((live_p - prev_close) / prev_close) * 100.0 if prev_close > 0 else 0.0
             else:
                 u_pnl = (entry_p - live_p) * qty
                 u_pct = ((entry_p - live_p) / entry_p) * 100.0 if entry_p > 0 else 0.0
-                day_pnl = (prev_close - live_p) * qty
-                day_pct = ((prev_close - live_p) / prev_close) * 100.0 if prev_close > 0 else 0.0
 
             positions.append(
                 PaperPosition(
                     id=p["id"],
                     symbol=p["symbol"],
                     side=p["side"],
-                    product_type=p.get("product_type", "CNC"),
                     quantity=qty,
                     entry_price=entry_p,
                     current_price=round(live_p, 2),
-                    previous_close=round(prev_close, 2),
-                    current_value=round(cur_val, 2),
-                    day_pnl=round(day_pnl, 2),
-                    day_pnl_pct=round(day_pct, 2),
                     target_price=p["target_price"],
                     stop_loss_price=p["stop_loss_price"],
                     strategy=p["strategy"] or "Manual",
@@ -283,7 +268,6 @@ class PaperTradingService:
                     id=t["id"],
                     symbol=t["symbol"],
                     side=t["side"],
-                    product_type=t.get("product_type", "CNC"),
                     quantity=t["quantity"],
                     entry_price=t["entry_price"],
                     entry_time=t["entry_time"],
@@ -301,7 +285,7 @@ class PaperTradingService:
 
     @classmethod
     def get_summary(cls) -> PaperPortfolioSummary:
-        """Calculate complete portfolio health, equity, and Zerodha Kite KPIs."""
+        """Calculate complete portfolio health, equity, and KPIs."""
         account = PaperRepository.get_account()
         initial_cap = account["initial_capital"]
         cash = account["cash_balance"]
@@ -309,8 +293,7 @@ class PaperTradingService:
         open_positions = cls.get_open_positions()
         invested = sum(p.invested_amount for p in open_positions)
         unrealized = sum(p.unrealized_pnl for p in open_positions)
-        cur_holdings_val = sum(p.current_value for p in open_positions)
-        total_equity = cash + cur_holdings_val
+        total_equity = cash + invested + unrealized
 
         closed = cls.get_history()
         realized = sum(t.pnl_amount for t in closed)
@@ -319,17 +302,7 @@ class PaperTradingService:
         losing_trades = sum(1 for t in closed if t.pnl_amount < 0)
         win_rate = (winning_trades / total_trades * 100.0) if total_trades > 0 else 0.0
 
-        # Zerodha Day's P&L (Today's Realized + Today's Unrealized)
-        today_str = datetime.now().strftime("%Y-%m-%d")
-        today_realized = sum(t.pnl_amount for t in closed if t.exit_time and t.exit_time.startswith(today_str))
-        today_unrealized = sum(p.day_pnl for p in open_positions)
-        day_pnl = today_realized + today_unrealized
-        day_pnl_pct = (day_pnl / (total_equity - day_pnl) * 100.0) if (total_equity - day_pnl) > 0 else 0.0
-
-        # Zerodha Overall P&L Till Date
-        total_earned_till_date = realized + unrealized
-        total_earned_pct = (total_earned_till_date / initial_cap * 100.0) if initial_cap > 0 else 0.0
-        total_pnl = total_equity - initial_cap
+        total_pnl = (total_equity - initial_cap)
         total_pnl_pct = (total_pnl / initial_cap * 100.0) if initial_cap > 0 else 0.0
         u_pnl_pct = (unrealized / invested * 100.0) if invested > 0 else 0.0
         r_pnl_pct = (realized / initial_cap * 100.0) if initial_cap > 0 else 0.0
@@ -337,21 +310,12 @@ class PaperTradingService:
         return PaperPortfolioSummary(
             initial_capital=round(initial_cap, 2),
             cash_balance=round(cash, 2),
-            available_margin=round(cash, 2),
-            used_margin=round(invested, 2),
             invested_amount=round(invested, 2),
             total_equity=round(total_equity, 2),
-            current_holdings_value=round(cur_holdings_val, 2),
-            day_pnl=round(day_pnl, 2),
-            day_pnl_pct=round(day_pnl_pct, 2),
-            today_realized_pnl=round(today_realized, 2),
-            today_unrealized_pnl=round(today_unrealized, 2),
-            total_earned_till_date=round(total_earned_till_date, 2),
-            total_earned_pct=round(total_earned_pct, 2),
-            realized_pnl=round(realized, 2),
-            realized_pnl_pct=round(r_pnl_pct, 2),
             unrealized_pnl=round(unrealized, 2),
             unrealized_pnl_pct=round(u_pnl_pct, 2),
+            realized_pnl=round(realized, 2),
+            realized_pnl_pct=round(r_pnl_pct, 2),
             total_pnl=round(total_pnl, 2),
             total_pnl_pct=round(total_pnl_pct, 2),
             win_rate_pct=round(win_rate, 1),
@@ -364,4 +328,3 @@ class PaperTradingService:
     @classmethod
     def reset_portfolio(cls, capital: float = 1000000.0) -> None:
         PaperRepository.reset_account(capital)
-
