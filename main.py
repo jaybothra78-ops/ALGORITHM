@@ -59,8 +59,16 @@ app.include_router(api_router)
 
 @app.get("/", include_in_schema=False)
 def serve_dashboard() -> FileResponse:
-    """Serve single-page frontend application."""
-    return FileResponse(BASE_DIR / "frontend" / "index.html")
+    """Serve single-page frontend application with no-cache headers."""
+    return FileResponse(
+        BASE_DIR / "frontend" / "index.html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
 
 
 if __name__ == "__main__":
