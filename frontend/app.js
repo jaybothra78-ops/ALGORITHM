@@ -743,14 +743,6 @@ function updateLookbackSearchScope() {
   }
 }
 
-function updateTesterSearchScope() {
-  const uni = document.querySelector('#tester-universe').value;
-  const filtered = getFilteredSymbols(uni);
-  const input = document.querySelector('#tester-symbol-input');
-  if (input) {
-    input.placeholder = uni ? `Individual ${uni} stock (${filtered.length})...` : `Individual stock (e.g. TVSMOTOR)...`;
-  }
-}
 
 function updateNewsSearchScope() {
   const uni = document.querySelector('#news-universe-filter').value;
@@ -872,8 +864,8 @@ async function loadUniverseSymbols() {
     state.allSymbols = symbols;
 
     updateLookbackSearchScope();
-    updateTesterSearchScope();
     updateNewsSearchScope();
+
 
     // Attach modern floating autocomplete to all stock inputs
     attachModernAutocomplete(
