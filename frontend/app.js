@@ -121,10 +121,16 @@ async function fetchLookbackSignals(forceRefresh = false) {
 function filterAndSortItems(items) {
   let list = [...items];
 
-  // Search filter
+  // Enhanced Search filter (searches symbol, reason text, index tags)
   const query = state.searchQuery.trim().toUpperCase();
   if (query) {
-    list = list.filter(item => item.symbol.toUpperCase().includes(query));
+    list = list.filter(item => {
+      const symMatch = item.symbol.toUpperCase().includes(query);
+      const reasonMatch = item.reason_summary && item.reason_summary.toUpperCase().includes(query);
+      const indexMatch = item.index_membership && item.index_membership.toUpperCase().includes(query);
+      const typeMatch = item.primary_type && item.primary_type.toUpperCase().includes(query);
+      return symMatch || reasonMatch || indexMatch || typeMatch;
+    });
   }
 
   // Sort
@@ -141,6 +147,7 @@ function filterAndSortItems(items) {
       return list.sort((a, b) => (b.signal_date || '').localeCompare(a.signal_date || ''));
   }
 }
+
 
 function renderLookbackTable() {
   const tbody = document.querySelector('#lookback-rows');
@@ -864,11 +871,87 @@ window.addEventListener('keydown', (e) => {
   }
 });
 
-// Search input
-document.querySelector('#symbol-search').oninput = (e) => {
+// -------------------------------------------------------------
+// Universal Universe Symbols Loader & Search Auto-Complete
+// -------------------------------------------------------------
+state.allSymbols = [];
+
+async function loadUniverseSymbols() {
+  try {
+    const res = await fetch('/universe/symbols');
+    if (!res.ok) return;
+    const symbols = await res.json();
+    state.allSymbols = symbols;
+
+    const datalist = document.querySelector('#all-universe-stocks');
+    if (datalist) {
+      datalist.innerHTML = symbols.map(item => 
+        `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
+      ).join('');
+    }
+
+    populateNewsStockSelect();
+  } catch (err) {
+    console.error('Failed to load universe symbols', err);
+  }
+}
+
+// Search input for Lookback Screener
+const symbolSearchEl = document.querySelector('#symbol-search');
+symbolSearchEl.oninput = (e) => {
   state.searchQuery = e.target.value;
   renderLookbackTable();
 };
+
+symbolSearchEl.onkeydown = async (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    const query = (symbolSearchEl.value || '').trim().toUpperCase();
+    if (!query) return;
+
+    // Check if symbol already in table
+    const existing = state.lookbackData.find(item => item.symbol.toUpperCase() === query);
+    if (!existing) {
+      statusEl.textContent = `Searching live data for ${query}…`;
+      try {
+        const res = await fetch(`/screener/lookback?symbol=${encodeURIComponent(query)}&lookback_days=${state.lookbackDays}&rsi_length=14&include_neutral=true`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.items && data.items.length) {
+            state.lookbackData = [...data.items, ...state.lookbackData];
+            renderLookbackTable();
+            statusEl.textContent = `Loaded ${query} status successfully.`;
+          }
+        }
+      } catch (err) {
+        console.error('Direct symbol search error:', err);
+      }
+    }
+  }
+};
+
+// Strategy Tester Single Stock Input on Enter
+const testerInputEl = document.querySelector('#tester-symbol-input');
+if (testerInputEl) {
+  testerInputEl.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runStrategyTester();
+    }
+  };
+}
+
+// AI News Analyzer Input on Enter
+const newsInputEl = document.querySelector('#news-custom-input');
+if (newsInputEl) {
+  newsInputEl.onkeydown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      const sym = (newsInputEl.value || '').trim().toUpperCase();
+      if (sym) analyzeStockNews(sym);
+    }
+  };
+}
 
 // Watchlist Manager Card Toggle & Submit Handlers
 document.querySelector('#btn-import-modal').onclick = toggleWatchlistManager;
@@ -910,8 +993,10 @@ document.querySelector('#scan').onclick = async () => {
 };
 
 // Initial Load
+loadUniverseSymbols();
 loadCustomWatchlists();
 fetchLookbackSignals();
+
 
 
 

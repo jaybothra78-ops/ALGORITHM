@@ -57,6 +57,8 @@ def get_lookback_screener(
     rsi_length: int = Query(14, ge=2, le=100, description="RSI period length"),
     index: str | None = Query(None, description="Index or Watchlist filter"),
     signal_filter: str | None = Query(None, description="Filter: oversold, overbought, buy, sell, signals_only"),
+    symbol: str | None = Query(None, description="Specific ticker search"),
+    include_neutral: bool = Query(False, description="Include neutral unflagged stocks"),
     refresh: bool = Query(False, description="Force fresh market data download"),
 ) -> LookbackResponse:
     """Multi-condition lookback screener for RSI extremes and strategy signals."""
@@ -66,10 +68,24 @@ def get_lookback_screener(
             rsi_length=rsi_length,
             index_filter=index,
             signal_filter=signal_filter,
+            symbol=symbol,
+            include_neutral=include_neutral,
             force_refresh=refresh,
         )
     except Exception as exc:
         raise HTTPException(500, f"Lookback screener failed: {exc}") from exc
+
+
+@router.get("/universe/symbols", response_model=list[dict[str, Any]])
+def get_universe_symbols_endpoint() -> list[dict[str, Any]]:
+    """Retrieve full list of universe symbols and index memberships for auto-complete."""
+    try:
+        from services.universe import load_universe
+        universe = load_universe()
+        return [{"symbol": s, "membership": sorted(list(m))} for s, m in sorted(universe.items())]
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to retrieve universe symbols: {exc}") from exc
+
 
 
 @router.post("/scan/run", response_model=ScanResponse)

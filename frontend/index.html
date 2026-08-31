@@ -154,12 +154,13 @@
 
         <div class="toolbar-spacer"></div>
 
-        <!-- Search Bar with Shortcut Badge -->
+        <!-- Search Bar with Shortcut Badge and Datalist -->
         <div class="search-wrapper">
           <span class="search-icon">🔍</span>
-          <input type="text" id="symbol-search" placeholder="Search ticker..." autocomplete="off">
+          <input type="text" id="symbol-search" list="all-universe-stocks" placeholder="Search any ticker (e.g. RELIANCE, TVS, KEI)..." autocomplete="off">
           <span class="search-shortcut" title="Press / to focus">/</span>
         </div>
+
       </div>
 
       <!-- Minimal Live Stats Bar -->
@@ -292,8 +293,9 @@
           <!-- Individual Stock Input (Optional override) -->
           <div class="stock-input-wrapper">
             <span class="stock-input-icon">🎯</span>
-            <input type="text" id="tester-symbol-input" placeholder="Individual Stock (e.g. TVSMOTOR)" autocomplete="off" title="Leave blank to test full universe, or enter any stock ticker">
+            <input type="text" id="tester-symbol-input" list="all-universe-stocks" placeholder="Individual Stock (e.g. TVSMOTOR)" autocomplete="off" title="Leave blank to test full universe, or enter any stock ticker">
           </div>
+
 
           <div class="toolbar-sep"></div>
 
@@ -487,8 +489,9 @@
           <!-- Direct Stock Ticker Input -->
           <div class="stock-input-wrapper">
             <span class="stock-input-icon">🔍</span>
-            <input type="text" id="news-custom-input" placeholder="Or enter ticker (e.g. TVSMOTOR)" autocomplete="off">
+            <input type="text" id="news-custom-input" list="all-universe-stocks" placeholder="Or enter ticker (e.g. TVSMOTOR)" autocomplete="off">
           </div>
+
 
           <!-- Quick Chip Pills for Popular Stocks -->
           <div class="control-unit">
@@ -604,9 +607,14 @@
     </section>
   </main>
 
-  <script src="/static/app.js?v=5.0"></script>
+
+  <!-- Universal Auto-Complete Ticker Datalist -->
+  <datalist id="all-universe-stocks"></datalist>
+
+  <script src="/static/app.js?v=5.2"></script>
 </body>
 </html>
+
 
 
 

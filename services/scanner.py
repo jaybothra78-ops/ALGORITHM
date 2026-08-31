@@ -82,22 +82,32 @@ class ScannerEngine:
 
     @classmethod
     def screen_lookback(
+
         cls,
         lookback_days: int = 1,
         rsi_length: int = 14,
         index_filter: str | None = None,
         signal_filter: str | None = None,
+        symbol: str | None = None,
+        include_neutral: bool = False,
         force_refresh: bool = False,
     ) -> LookbackResponse:
         """Perform high-speed lookback screening with in-memory caching."""
-        cache_key = f"{lookback_days}_{rsi_length}_{index_filter}_{signal_filter}"
+        clean_sym = symbol.strip().upper() if symbol else None
+        cache_key = f"{lookback_days}_{rsi_length}_{index_filter}_{signal_filter}_{clean_sym}_{include_neutral}"
         if not force_refresh and cache_key in cls._LOOKBACK_CACHE:
             cached_data, timestamp = cls._LOOKBACK_CACHE[cache_key]
             if time.time() - timestamp < settings.CACHE_TTL_SECONDS:
                 return cached_data
 
         universe = load_universe()
-        if index_filter:
+        if clean_sym:
+            if clean_sym in universe:
+                filtered_universe = {clean_sym: universe[clean_sym]}
+            else:
+                filtered_universe = {clean_sym: {"Custom"}}
+            include_neutral = True
+        elif index_filter:
             filtered_universe = {s: m for s, m in universe.items() if index_filter in m}
         else:
             filtered_universe = universe
@@ -105,17 +115,17 @@ class ScannerEngine:
         ohlc_data = MarketDataProvider.get_universe_ohlc(list(filtered_universe.keys()), force_refresh=force_refresh)
         flagged_items: list[LookbackItem] = []
 
-        for symbol, memberships in filtered_universe.items():
-            if symbol not in ohlc_data:
+        for sym, memberships in filtered_universe.items():
+            if sym not in ohlc_data:
                 continue
-            df = ohlc_data[symbol]
+            df = ohlc_data[sym]
             if len(df) < max(rsi_length + 5, 20):
                 continue
 
-            item = cls._analyze_symbol(symbol, df, lookback_days, rsi_length, "|".join(sorted(memberships)))
+            item = cls._analyze_symbol(sym, df, lookback_days, rsi_length, "|".join(sorted(memberships)), include_neutral=include_neutral)
             if item:
                 # Apply signal_filter if present
-                if signal_filter:
+                if signal_filter and not clean_sym:
                     sf = signal_filter.lower()
                     if sf == "oversold" and item.primary_type != "oversold":
                         continue
@@ -156,6 +166,7 @@ class ScannerEngine:
         lookback_days: int,
         rsi_length: int,
         index_membership: str,
+        include_neutral: bool = False,
     ) -> LookbackItem | None:
         window_df = df.iloc[-lookback_days:]
         latest_close = float(df["Close"].iloc[-1])
@@ -163,6 +174,7 @@ class ScannerEngine:
         window_dates = {idx.date().isoformat() for idx in window_df.index}
 
         reasons: list[ReasonTag] = []
+
         is_flagged = False
         primary_type = "neutral"
         most_recent_signal_date = latest_date_str
@@ -305,7 +317,16 @@ class ScannerEngine:
             pass
 
         if not is_flagged:
-            return None
+            if not include_neutral:
+                return None
+            reasons.append(ReasonTag(
+                category="Status",
+                strategy="Monitor",
+                type="neutral",
+                text=f"No active breakout signals in {lookback_days}D lookback",
+                date=latest_date_str,
+                entry_price=round(latest_close, 2),
+            ))
 
         return LookbackItem(
             symbol=symbol,
@@ -319,4 +340,5 @@ class ScannerEngine:
             reason_summary=" | ".join(r.text for r in reasons),
             index_membership=index_membership,
         )
+
 
