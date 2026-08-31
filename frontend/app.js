@@ -872,7 +872,7 @@ window.addEventListener('keydown', (e) => {
 });
 
 // -------------------------------------------------------------
-// Watchlist-Scoped Auto-Complete & Dropdown Search Logic
+// Watchlist-Scoped Auto-Complete & Modern Search Controller
 // -------------------------------------------------------------
 state.allSymbols = [];
 
@@ -885,13 +885,6 @@ function getFilteredSymbols(universeFilter) {
 function updateLookbackSearchScope() {
   const uni = document.querySelector('#lookback-index').value;
   const filtered = getFilteredSymbols(uni);
-  const datalist = document.querySelector('#lookback-stocks-datalist');
-  if (datalist) {
-    datalist.innerHTML = filtered.map(item => 
-      `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
-    ).join('');
-  }
-
   const badge = document.querySelector('#search-scope-badge');
   const input = document.querySelector('#symbol-search');
   if (badge) {
@@ -905,13 +898,6 @@ function updateLookbackSearchScope() {
 function updateTesterSearchScope() {
   const uni = document.querySelector('#tester-universe').value;
   const filtered = getFilteredSymbols(uni);
-  const datalist = document.querySelector('#tester-stocks-datalist');
-  if (datalist) {
-    datalist.innerHTML = filtered.map(item => 
-      `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
-    ).join('');
-  }
-
   const input = document.querySelector('#tester-symbol-input');
   if (input) {
     input.placeholder = uni ? `Individual ${uni} stock (${filtered.length})...` : `Individual stock (e.g. TVSMOTOR)...`;
@@ -921,13 +907,6 @@ function updateTesterSearchScope() {
 function updateNewsSearchScope() {
   const uni = document.querySelector('#news-universe-filter').value;
   const filtered = getFilteredSymbols(uni);
-  const datalist = document.querySelector('#news-stocks-datalist');
-  if (datalist) {
-    datalist.innerHTML = filtered.map(item => 
-      `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
-    ).join('');
-  }
-
   const select = document.querySelector('#news-stock-select');
   if (select && filtered.length) {
     select.innerHTML = filtered.map(item => `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`).join('');
@@ -937,6 +916,104 @@ function updateNewsSearchScope() {
   if (input) {
     input.placeholder = uni ? `Enter ${uni} ticker (${filtered.length} stocks)...` : `Or enter ticker (e.g. TVSMOTOR)...`;
   }
+}
+
+// Universal Custom Floating Autocomplete Engine
+function attachModernAutocomplete(inputEl, getUniverseFn, onSelectFn) {
+  if (!inputEl) return;
+  const wrapper = inputEl.closest('.search-wrapper') || inputEl.closest('.stock-input-wrapper') || inputEl.parentElement;
+  
+  let dropdown = wrapper.querySelector('.stock-search-dropdown');
+  if (!dropdown) {
+    dropdown = document.createElement('div');
+    dropdown.className = 'stock-search-dropdown';
+    dropdown.style.display = 'none';
+    wrapper.appendChild(dropdown);
+  }
+
+  let activeIndex = -1;
+
+  function renderList(query = '') {
+    const cleanQuery = query.trim().toUpperCase();
+    const universe = getUniverseFn();
+    const filtered = getFilteredSymbols(universe);
+    
+    let matches = filtered;
+    if (cleanQuery) {
+      matches = filtered.filter(item => 
+        item.symbol.toUpperCase().includes(cleanQuery) || 
+        (item.membership && item.membership.some(m => m.toUpperCase().includes(cleanQuery)))
+      );
+    }
+
+    const displayMatches = matches.slice(0, 10);
+    if (!displayMatches.length) {
+      dropdown.innerHTML = `<div class="ss-empty">No stocks found in ${universe || 'watchlist'}</div>`;
+      dropdown.style.display = 'flex';
+      return;
+    }
+
+    dropdown.innerHTML = displayMatches.map((item, idx) => `
+      <div class="stock-search-item" data-sym="${item.symbol}" data-idx="${idx}">
+        <div class="ss-left">
+          <span class="ss-sym">${item.symbol}</span>
+        </div>
+        <div class="ss-right">
+          ${item.membership.slice(0, 2).map(m => `<span class="ss-tag">${m}</span>`).join('')}
+        </div>
+      </div>
+    `).join('');
+
+    dropdown.style.display = 'flex';
+    activeIndex = -1;
+
+    dropdown.querySelectorAll('.stock-search-item').forEach(itemEl => {
+      itemEl.onmousedown = (e) => {
+        e.preventDefault();
+        const sym = itemEl.dataset.sym;
+        inputEl.value = sym;
+        dropdown.style.display = 'none';
+        onSelectFn(sym);
+      };
+    });
+  }
+
+  inputEl.addEventListener('focus', () => {
+    renderList(inputEl.value);
+  });
+
+  inputEl.addEventListener('input', () => {
+    renderList(inputEl.value);
+  });
+
+  inputEl.addEventListener('blur', () => {
+    setTimeout(() => { dropdown.style.display = 'none'; }, 200);
+  });
+
+  inputEl.addEventListener('keydown', (e) => {
+    const items = dropdown.querySelectorAll('.stock-search-item');
+    if (!items.length || dropdown.style.display === 'none') return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      activeIndex = Math.min(activeIndex + 1, items.length - 1);
+      items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+      if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      activeIndex = Math.max(activeIndex - 1, 0);
+      items.forEach((it, i) => it.classList.toggle('active', i === activeIndex));
+      if (items[activeIndex]) items[activeIndex].scrollIntoView({ block: 'nearest' });
+    } else if (e.key === 'Enter' && activeIndex >= 0) {
+      e.preventDefault();
+      const selectedSym = items[activeIndex].dataset.sym;
+      inputEl.value = selectedSym;
+      dropdown.style.display = 'none';
+      onSelectFn(selectedSym);
+    } else if (e.key === 'Escape') {
+      dropdown.style.display = 'none';
+    }
+  });
 }
 
 async function loadUniverseSymbols() {
@@ -949,6 +1026,50 @@ async function loadUniverseSymbols() {
     updateLookbackSearchScope();
     updateTesterSearchScope();
     updateNewsSearchScope();
+
+    // Attach modern floating autocomplete to all stock inputs
+    attachModernAutocomplete(
+      document.querySelector('#symbol-search'),
+      () => document.querySelector('#lookback-index').value,
+      async (sym) => {
+        state.searchQuery = sym;
+        const existing = state.lookbackData.find(item => item.symbol.toUpperCase() === sym.toUpperCase());
+        if (!existing) {
+          statusEl.textContent = `Searching live data for ${sym}…`;
+          try {
+            const res = await fetch(`/screener/lookback?symbol=${encodeURIComponent(sym)}&lookback_days=${state.lookbackDays}&rsi_length=14&include_neutral=true`);
+            if (res.ok) {
+              const data = await res.json();
+              if (data.items && data.items.length) {
+                state.lookbackData = [...data.items, ...state.lookbackData];
+                renderLookbackTable();
+                statusEl.textContent = `Loaded ${sym} status successfully.`;
+              }
+            }
+          } catch (err) {
+            console.error('Symbol search fetch error', err);
+          }
+        }
+        renderLookbackTable();
+      }
+    );
+
+    attachModernAutocomplete(
+      document.querySelector('#tester-symbol-input'),
+      () => document.querySelector('#tester-universe').value,
+      (sym) => {
+        runStrategyTester();
+      }
+    );
+
+    attachModernAutocomplete(
+      document.querySelector('#news-custom-input'),
+      () => document.querySelector('#news-universe-filter').value,
+      (sym) => {
+        analyzeStockNews(sym);
+      }
+    );
+
   } catch (err) {
     console.error('Failed to load universe symbols', err);
   }
@@ -982,7 +1103,6 @@ symbolSearchEl.onkeydown = async (e) => {
     const query = (symbolSearchEl.value || '').trim().toUpperCase();
     if (!query) return;
 
-    // Check if symbol already in table
     const existing = state.lookbackData.find(item => item.symbol.toUpperCase() === query);
     if (!existing) {
       statusEl.textContent = `Searching live data for ${query}…`;
@@ -1082,6 +1202,7 @@ document.querySelector('#scan').onclick = async () => {
 loadUniverseSymbols();
 loadCustomWatchlists();
 fetchLookbackSignals();
+
 
 
 

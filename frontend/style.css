@@ -553,8 +553,8 @@ select option:checked {
   position: relative;
   display: flex;
   align-items: center;
-  background: rgba(13, 20, 36, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(13, 20, 36, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 20px;
   padding: 1px 6px;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -563,7 +563,7 @@ select option:checked {
 .search-wrapper:focus-within {
   border-color: #38bdf8;
   background: rgba(13, 20, 36, 0.95);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2), 0 4px 14px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2), 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .search-icon {
@@ -581,13 +581,13 @@ select option:checked {
   font-family: var(--font-sans);
   font-size: 0.82rem;
   padding: 6px 26px 6px 26px;
-  width: 180px;
+  width: 190px;
   outline: none;
   transition: width 0.2s ease;
 }
 
 .search-wrapper input:focus {
-  width: 230px;
+  width: 240px;
 }
 
 .search-scope-badge {
@@ -637,6 +637,90 @@ select option:checked {
   pointer-events: none;
   margin-left: 2px;
 }
+
+/* Floating Custom Auto-Complete Dropdown */
+.stock-search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  width: 320px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: #0b1326;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 10px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 9999;
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.stock-search-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+}
+
+.stock-search-item:hover,
+.stock-search-item.active {
+  background: rgba(56, 189, 248, 0.14);
+}
+
+.ss-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ss-sym {
+  font-family: var(--font-mono);
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: #38bdf8;
+  letter-spacing: -0.3px;
+}
+
+.ss-name {
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.ss-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.ss-tag {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+
+.ss-empty {
+  padding: 14px 12px;
+  text-align: center;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
 
 
 /* =========================================================
@@ -944,42 +1028,52 @@ select option:checked {
   position: relative;
   display: flex;
   align-items: center;
+  background: rgba(13, 20, 36, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 1px 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.stock-input-wrapper:focus-within {
+  border-color: #38bdf8;
+  background: rgba(13, 20, 36, 0.95);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2), 0 6px 20px rgba(0, 0, 0, 0.4);
 }
 
 .stock-input-icon {
   position: absolute;
-  left: 9px;
+  left: 10px;
   font-size: 0.76rem;
+  opacity: 0.55;
   pointer-events: none;
 }
 
-#tester-symbol-input {
-  background-color: #0d1424;
-  border: 1px solid var(--border);
-  border-radius: 7px;
+.stock-input-wrapper input {
+  background: transparent;
+  border: none;
   color: #38bdf8;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
+  font-size: 0.82rem;
   font-weight: 700;
   padding: 6px 12px 6px 28px;
-  width: 220px;
+  width: 200px;
   outline: none;
-  transition: all 0.15s ease;
+  transition: width 0.2s ease;
   text-transform: uppercase;
 }
 
-#tester-symbol-input::placeholder {
+.stock-input-wrapper input::placeholder {
   color: var(--text-muted);
   font-weight: 400;
   text-transform: none;
   font-family: var(--font-sans);
 }
 
-#tester-symbol-input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.15);
-  background-color: #121c31;
+.stock-input-wrapper input:focus {
+  width: 240px;
 }
+
 
 .tester-date-toolbar {
   margin-top: 4px;
