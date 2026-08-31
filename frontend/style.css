@@ -548,43 +548,85 @@ select option:checked {
   color: #38bdf8 !important;
 }
 
-/* Search Box */
+/* Search Box (Modern & Minimal) */
 .search-wrapper {
   position: relative;
   display: flex;
   align-items: center;
+  background: rgba(13, 20, 36, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  padding: 1px 6px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.search-wrapper:focus-within {
+  border-color: #38bdf8;
+  background: rgba(13, 20, 36, 0.95);
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2), 0 4px 14px rgba(0, 0, 0, 0.3);
 }
 
 .search-icon {
   position: absolute;
-  left: 9px;
+  left: 10px;
   font-size: 0.76rem;
-  opacity: 0.6;
+  opacity: 0.55;
   pointer-events: none;
 }
 
 .search-wrapper input {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border);
-  border-radius: 7px;
+  background: transparent;
+  border: none;
   color: var(--text-main);
   font-family: var(--font-sans);
   font-size: 0.82rem;
-  padding: 6px 30px 6px 28px;
-  width: 170px;
+  padding: 6px 26px 6px 26px;
+  width: 180px;
   outline: none;
-  transition: all 0.15s ease;
+  transition: width 0.2s ease;
 }
 
 .search-wrapper input:focus {
-  border-color: var(--accent);
-  background: rgba(0, 0, 0, 0.6);
-  width: 210px;
+  width: 230px;
+}
+
+.search-scope-badge {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 10px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  margin-right: 4px;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.search-clear-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  color: var(--text-secondary);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  margin-right: 4px;
+  padding: 0;
+  transition: all 0.15s ease;
+}
+
+.search-clear-btn:hover {
+  background: rgba(244, 63, 94, 0.25);
+  color: #f43f5e;
 }
 
 .search-shortcut {
-  position: absolute;
-  right: 8px;
   font-family: var(--font-mono);
   font-size: 0.65rem;
   font-weight: 700;
@@ -593,7 +635,9 @@ select option:checked {
   border-radius: 4px;
   padding: 1px 5px;
   pointer-events: none;
+  margin-left: 2px;
 }
+
 
 /* =========================================================
    LIVE STATS BAR

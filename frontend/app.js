@@ -872,9 +872,72 @@ window.addEventListener('keydown', (e) => {
 });
 
 // -------------------------------------------------------------
-// Universal Universe Symbols Loader & Search Auto-Complete
+// Watchlist-Scoped Auto-Complete & Dropdown Search Logic
 // -------------------------------------------------------------
 state.allSymbols = [];
+
+function getFilteredSymbols(universeFilter) {
+  if (!state.allSymbols || !state.allSymbols.length) return [];
+  if (!universeFilter) return state.allSymbols;
+  return state.allSymbols.filter(item => item.membership && item.membership.includes(universeFilter));
+}
+
+function updateLookbackSearchScope() {
+  const uni = document.querySelector('#lookback-index').value;
+  const filtered = getFilteredSymbols(uni);
+  const datalist = document.querySelector('#lookback-stocks-datalist');
+  if (datalist) {
+    datalist.innerHTML = filtered.map(item => 
+      `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
+    ).join('');
+  }
+
+  const badge = document.querySelector('#search-scope-badge');
+  const input = document.querySelector('#symbol-search');
+  if (badge) {
+    badge.textContent = uni ? `${uni} · ${filtered.length}` : `All · ${filtered.length}`;
+  }
+  if (input) {
+    input.placeholder = uni ? `Search ${uni} (${filtered.length} stocks)...` : `Search all stocks (${filtered.length})...`;
+  }
+}
+
+function updateTesterSearchScope() {
+  const uni = document.querySelector('#tester-universe').value;
+  const filtered = getFilteredSymbols(uni);
+  const datalist = document.querySelector('#tester-stocks-datalist');
+  if (datalist) {
+    datalist.innerHTML = filtered.map(item => 
+      `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
+    ).join('');
+  }
+
+  const input = document.querySelector('#tester-symbol-input');
+  if (input) {
+    input.placeholder = uni ? `Individual ${uni} stock (${filtered.length})...` : `Individual stock (e.g. TVSMOTOR)...`;
+  }
+}
+
+function updateNewsSearchScope() {
+  const uni = document.querySelector('#news-universe-filter').value;
+  const filtered = getFilteredSymbols(uni);
+  const datalist = document.querySelector('#news-stocks-datalist');
+  if (datalist) {
+    datalist.innerHTML = filtered.map(item => 
+      `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
+    ).join('');
+  }
+
+  const select = document.querySelector('#news-stock-select');
+  if (select && filtered.length) {
+    select.innerHTML = filtered.map(item => `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`).join('');
+  }
+
+  const input = document.querySelector('#news-custom-input');
+  if (input) {
+    input.placeholder = uni ? `Enter ${uni} ticker (${filtered.length} stocks)...` : `Or enter ticker (e.g. TVSMOTOR)...`;
+  }
+}
 
 async function loadUniverseSymbols() {
   try {
@@ -883,14 +946,9 @@ async function loadUniverseSymbols() {
     const symbols = await res.json();
     state.allSymbols = symbols;
 
-    const datalist = document.querySelector('#all-universe-stocks');
-    if (datalist) {
-      datalist.innerHTML = symbols.map(item => 
-        `<option value="${item.symbol}">${item.symbol} (${item.membership.join(', ')})</option>`
-      ).join('');
-    }
-
-    populateNewsStockSelect();
+    updateLookbackSearchScope();
+    updateTesterSearchScope();
+    updateNewsSearchScope();
   } catch (err) {
     console.error('Failed to load universe symbols', err);
   }
@@ -898,10 +956,25 @@ async function loadUniverseSymbols() {
 
 // Search input for Lookback Screener
 const symbolSearchEl = document.querySelector('#symbol-search');
+const clearSearchBtn = document.querySelector('#btn-clear-search');
+
 symbolSearchEl.oninput = (e) => {
   state.searchQuery = e.target.value;
+  if (clearSearchBtn) {
+    clearSearchBtn.style.display = state.searchQuery ? 'flex' : 'none';
+  }
   renderLookbackTable();
 };
+
+if (clearSearchBtn) {
+  clearSearchBtn.onclick = () => {
+    symbolSearchEl.value = '';
+    state.searchQuery = '';
+    clearSearchBtn.style.display = 'none';
+    symbolSearchEl.focus();
+    renderLookbackTable();
+  };
+}
 
 symbolSearchEl.onkeydown = async (e) => {
   if (e.key === 'Enter') {
@@ -953,13 +1026,26 @@ if (newsInputEl) {
   };
 }
 
+// Universe Change Listeners
+document.querySelector('#lookback-index').onchange = () => {
+  updateLookbackSearchScope();
+  fetchLookbackSignals();
+};
+
+document.querySelector('#tester-universe').onchange = () => {
+  updateTesterSearchScope();
+};
+
+document.querySelector('#news-universe-filter').onchange = () => {
+  updateNewsSearchScope();
+};
+
 // Watchlist Manager Card Toggle & Submit Handlers
 document.querySelector('#btn-import-modal').onclick = toggleWatchlistManager;
 document.querySelector('#btn-close-wm').onclick = hideWatchlistManager;
 document.querySelector('#btn-modal-submit').onclick = handleImportSubmit;
 
 // Lookback Selectors & Buttons
-document.querySelector('#lookback-index').onchange = () => fetchLookbackSignals();
 document.querySelector('#lookback-sort').onchange = () => renderLookbackTable();
 document.querySelector('#lookback-refresh').onclick = () => fetchLookbackSignals(false);
 document.querySelector('#lookback-rescan').onclick = () => fetchLookbackSignals(true);
@@ -996,6 +1082,7 @@ document.querySelector('#scan').onclick = async () => {
 loadUniverseSymbols();
 loadCustomWatchlists();
 fetchLookbackSignals();
+
 
 
 
