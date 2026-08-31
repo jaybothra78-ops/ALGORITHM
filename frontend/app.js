@@ -176,9 +176,13 @@ function renderLookbackTable() {
             <button type="button" class="sub-btn-ai-news" onclick="switchTab('news'); analyzeStockNews('${item.symbol}');" title="Analyze latest news with AI">
               📰 AI News
             </button>
+            <button type="button" class="sub-btn-paper-trade" onclick="prefillPaperTrade('${item.symbol}', ${item.current_price || 0}, '${(item.reasons && item.reasons[0] && item.reasons[0].text) || 'Knoxville Divergence'}');" title="Take Paper Trade on this stock">
+              💼 Paper Trade
+            </button>
           </div>
         </div>
       </td>
+
       <td class="price-cell">${money(item.current_price)}</td>
       <td>${smaDisplay}</td>
       <td>${rsiBadge(item.rsi)}</td>
@@ -338,15 +342,15 @@ async function handleImportSubmit() {
 
 
 // -------------------------------------------------------------
-// Navigation Tab Switching (Lookback Screener & AI News Analyzer)
+// Navigation Tab Switching (Lookback, AI News, Paper Trading)
 // -------------------------------------------------------------
 function switchTab(targetTab) {
   state.activeTab = targetTab;
-  ['#tab-lookback', '#tab-news'].forEach(sel => {
+  ['#tab-lookback', '#tab-news', '#tab-paper'].forEach(sel => {
     const el = document.querySelector(sel);
     if (el) el.classList.remove('active');
   });
-  ['#section-lookback', '#section-news'].forEach(sel => {
+  ['#section-lookback', '#section-news', '#section-paper'].forEach(sel => {
     const el = document.querySelector(sel);
     if (el) el.style.display = 'none';
   });
@@ -357,10 +361,13 @@ function switchTab(targetTab) {
   if (secEl) secEl.style.display = 'block';
 
   if (targetTab === 'lookback') fetchLookbackSignals();
+  if (targetTab === 'paper') loadPaperData();
 }
 
 document.querySelector('#tab-lookback').onclick = () => switchTab('lookback');
 document.querySelector('#tab-news').onclick = () => switchTab('news');
+document.querySelector('#tab-paper').onclick = () => switchTab('paper');
+
 
 
 // -------------------------------------------------------------
@@ -903,9 +910,21 @@ async function loadUniverseSymbols() {
       }
     );
 
+    attachModernAutocomplete(
+      document.querySelector('#paper-stock-input'),
+      () => '',
+      async (sym) => {
+        const input = document.querySelector('#paper-stock-input');
+        if (input) input.value = sym;
+        const btn = document.querySelector('#btn-paper-fetch-ltp');
+        if (btn) btn.click();
+      }
+    );
+
   } catch (err) {
     console.error('Failed to load universe symbols', err);
   }
+
 }
 
 // Search input for Lookback Screener
@@ -988,10 +1007,397 @@ document.querySelector('#lookback-sort').onchange = () => renderLookbackTable();
 document.querySelector('#lookback-refresh').onclick = () => fetchLookbackSignals(false);
 document.querySelector('#lookback-rescan').onclick = () => fetchLookbackSignals(true);
 
+// =============================================================
+// Paper Trading & Virtual Portfolio Controller
+// =============================================================
+state.paperSide = 'BUY';
+state.paperSummary = null;
+state.paperPositions = [];
+state.paperHistory = [];
+
+async function loadPaperData() {
+  statusEl.textContent = 'Updating virtual portfolio & live mark-to-market positions…';
+  try {
+    const [summaryRes, positionsRes, historyRes] = await Promise.all([
+      fetch('/paper/summary').then(r => r.json()),
+      fetch('/paper/positions').then(r => r.json()),
+      fetch('/paper/history').then(r => r.json()),
+    ]);
+
+    state.paperSummary = summaryRes;
+    state.paperPositions = positionsRes;
+    state.paperHistory = historyRes;
+
+    renderPaperSummary(summaryRes);
+    renderPaperPositions(positionsRes);
+    renderPaperHistory(historyRes);
+    statusEl.textContent = `Portfolio loaded: Equity ${money(summaryRes.total_equity)} (${summaryRes.open_positions_count} open positions)`;
+  } catch (err) {
+    statusEl.textContent = 'Failed to load paper trading data: ' + err.message;
+  }
+}
+
+function renderPaperSummary(s) {
+  if (!s) return;
+  document.querySelector('#paper-total-equity').textContent = money(s.total_equity);
+  
+  const totalPnlEl = document.querySelector('#paper-total-pnl');
+  const pnlSign = s.total_pnl >= 0 ? '+' : '';
+  totalPnlEl.textContent = `${money(s.total_pnl)} (${pnlSign}${s.total_pnl_pct.toFixed(2)}%)`;
+  totalPnlEl.className = s.total_pnl > 0 ? 'kpi-pnl-pos' : (s.total_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral');
+
+  document.querySelector('#paper-cash-balance').textContent = money(s.cash_balance);
+  document.querySelector('#paper-invested-amount').textContent = money(s.invested_amount);
+  document.querySelector('#paper-open-count').textContent = `${s.open_positions_count} active positions`;
+
+  const unPnlEl = document.querySelector('#paper-unrealized-pnl');
+  unPnlEl.textContent = money(s.unrealized_pnl);
+  unPnlEl.className = `kpi-main-val ${s.unrealized_pnl > 0 ? 'kpi-pnl-pos' : (s.unrealized_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
+  
+  const uSign = s.unrealized_pnl >= 0 ? '+' : '';
+  document.querySelector('#paper-unrealized-pct').textContent = `${uSign}${s.unrealized_pnl_pct.toFixed(2)}%`;
+
+  const rPnlEl = document.querySelector('#paper-realized-pnl');
+  rPnlEl.textContent = money(s.realized_pnl);
+  rPnlEl.className = `kpi-main-val ${s.realized_pnl > 0 ? 'kpi-pnl-pos' : (s.realized_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
+
+  document.querySelector('#paper-win-rate').textContent = `Win Rate: ${s.win_rate_pct.toFixed(1)}% · ${s.winning_trades}W / ${s.losing_trades}L (${s.total_trades} Trades)`;
+  document.querySelector('#badge-open-positions').textContent = s.open_positions_count;
+  document.querySelector('#badge-history-trades').textContent = s.total_trades;
+}
+
+function renderPaperPositions(positions) {
+  const tbody = document.querySelector('#paper-positions-rows');
+  if (!positions || !positions.length) {
+    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = positions.map(pos => {
+    const pnlCls = pos.unrealized_pnl > 0 ? 'positive' : (pos.unrealized_pnl < 0 ? 'negative' : '');
+    const pnlSign = pos.unrealized_pnl >= 0 ? '+' : '';
+    const sideCls = pos.side.toLowerCase();
+
+    return `<tr>
+      <td>
+        <div class="ticker-cell-wrapper">
+          <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(pos.symbol)}">
+            ${pos.symbol} ↗
+          </a>
+          <div class="ticker-sub-links">
+            <a class="sub-link-screener" target="_blank" rel="noopener noreferrer" href="https://www.screener.in/company/${encodeURIComponent(pos.symbol)}/consolidated/">
+              📊 Screener
+            </a>
+          </div>
+        </div>
+      </td>
+      <td><span class="badge-side ${sideCls}">${pos.side}</span></td>
+      <td class="price-cell"><strong>${pos.quantity}</strong></td>
+      <td class="price-cell">${money(pos.entry_price)}</td>
+      <td class="price-cell">${money(pos.current_price)}</td>
+      <td class="price-cell">${money(pos.invested_amount)}</td>
+      <td class="price-cell ${pnlCls}">
+        <strong>${money(pos.unrealized_pnl)}</strong>
+        <div style="font-size: 0.72rem;">${pnlSign}${pos.unrealized_pnl_pct.toFixed(2)}%</div>
+      </td>
+      <td>
+        <div style="font-size: 0.76rem; font-family: var(--font-mono);">
+          <span style="color: #10b981;">T: ${money(pos.target_price)}</span><br>
+          <span style="color: #f43f5e;">SL: ${money(pos.stop_loss_price)}</span>
+        </div>
+      </td>
+      <td><span class="strategy-tag">${pos.strategy}</span></td>
+      <td>
+        <button type="button" class="btn-close-pos" onclick="closePaperPosition(${pos.id})" title="Close position at current market price">
+          ✕ Close
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPaperHistory(history) {
+  const tbody = document.querySelector('#paper-history-rows');
+  if (!history || !history.length) {
+    tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">No closed trades yet in your journal.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = history.map(t => {
+    const pnlCls = t.pnl_amount > 0 ? 'positive' : (t.pnl_amount < 0 ? 'negative' : '');
+    const pnlSign = t.pnl_amount >= 0 ? '+' : '';
+    const sideCls = t.side.toLowerCase();
+
+    return `<tr>
+      <td>
+        <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(t.symbol)}">
+          ${t.symbol} ↗
+        </a>
+      </td>
+      <td><span class="badge-side ${sideCls}">${t.side}</span></td>
+      <td>${t.quantity}</td>
+      <td class="price-cell">${money(t.entry_price)}</td>
+      <td class="price-cell">${money(t.exit_price)}</td>
+      <td class="date-cell">${(t.exit_time || '').split(' ')[0]}</td>
+      <td class="price-cell ${pnlCls}"><strong>${money(t.pnl_amount)}</strong></td>
+      <td class="price-cell ${pnlCls}">${pnlSign}${t.pnl_pct.toFixed(2)}%</td>
+      <td class="date-cell">${t.holding_duration}</td>
+      <td><span class="reason-pill">${t.exit_reason}</span></td>
+      <td><span class="strategy-tag">${t.strategy}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// Side Selector Events
+document.querySelector('#btn-order-side-buy').onclick = () => {
+  state.paperSide = 'BUY';
+  document.querySelector('#btn-order-side-buy').classList.add('active');
+  document.querySelector('#btn-order-side-sell').classList.remove('active');
+  updateEstimatedCapital();
+};
+
+document.querySelector('#btn-order-side-sell').onclick = () => {
+  state.paperSide = 'SELL';
+  document.querySelector('#btn-order-side-sell').classList.add('active');
+  document.querySelector('#btn-order-side-buy').classList.remove('active');
+  updateEstimatedCapital();
+};
+
+// Quantity Quick Chips
+document.querySelectorAll('.btn-qty-chip').forEach(btn => {
+  btn.onclick = () => {
+    const qtyInput = document.querySelector('#paper-qty-input');
+    const curr = parseInt(qtyInput.value || 0, 10);
+    const add = parseInt(btn.dataset.qty, 10);
+    qtyInput.value = curr + add;
+    updateEstimatedCapital();
+  };
+});
+
+// Target Quick Chips
+document.querySelectorAll('.field-target .btn-pct-chip').forEach(btn => {
+  btn.onclick = () => {
+    const entry = parseFloat(document.querySelector('#paper-price-input').value || 0);
+    if (!entry) return;
+    const pct = parseFloat(btn.dataset.pct) / 100.0;
+    const target = state.paperSide === 'BUY' ? entry * (1 + pct) : entry * (1 - pct);
+    document.querySelector('#paper-target-input').value = target.toFixed(2);
+  };
+});
+
+// Stop Loss Quick Chips
+document.querySelectorAll('.field-sl .btn-pct-chip').forEach(btn => {
+  btn.onclick = () => {
+    const entry = parseFloat(document.querySelector('#paper-price-input').value || 0);
+    if (!entry) return;
+    const pct = Math.abs(parseFloat(btn.dataset.pct)) / 100.0;
+    const sl = state.paperSide === 'BUY' ? entry * (1 - pct) : entry * (1 + pct);
+    document.querySelector('#paper-sl-input').value = sl.toFixed(2);
+  };
+});
+
+function updateEstimatedCapital() {
+  const qty = parseInt(document.querySelector('#paper-qty-input').value || 0, 10);
+  const price = parseFloat(document.querySelector('#paper-price-input').value || 0);
+  const est = qty * price;
+  document.querySelector('#paper-est-capital').textContent = money(est);
+}
+
+document.querySelector('#paper-qty-input').oninput = updateEstimatedCapital;
+document.querySelector('#paper-price-input').oninput = updateEstimatedCapital;
+
+// Fetch Live LTP Button
+document.querySelector('#btn-paper-fetch-ltp').onclick = async () => {
+  const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
+  if (!sym) {
+    alert('Please enter a stock symbol first.');
+    return;
+  }
+  const btn = document.querySelector('#btn-paper-fetch-ltp');
+  btn.textContent = '⏳ Fetching…';
+  
+  try {
+    // Try matching lookback cached price first
+    const matched = (state.lookbackData || []).find(i => i.symbol === sym);
+    if (matched && matched.current_price) {
+      document.querySelector('#paper-price-input').value = matched.current_price.toFixed(2);
+      updateTargetAndSl(matched.current_price);
+      updateEstimatedCapital();
+      return;
+    }
+
+    // Otherwise fetch via server
+    const res = await fetch('/paper/positions');
+    const positions = await res.json();
+    const pos = (positions || []).find(p => p.symbol === sym);
+    if (pos && pos.current_price) {
+      document.querySelector('#paper-price-input').value = pos.current_price.toFixed(2);
+      updateTargetAndSl(pos.current_price);
+      updateEstimatedCapital();
+    }
+  } catch (err) {
+    console.warn('LTP fetch failed:', err);
+  } finally {
+    btn.textContent = '⚡ Fetch LTP';
+  }
+};
+
+function updateTargetAndSl(entryPrice) {
+  if (!entryPrice || entryPrice <= 0) return;
+  const isBuy = state.paperSide === 'BUY';
+  const target = isBuy ? entryPrice * 1.05 : entryPrice * 0.95;
+  const sl = isBuy ? entryPrice * 0.98 : entryPrice * 1.02;
+  document.querySelector('#paper-target-input').value = target.toFixed(2);
+  document.querySelector('#paper-sl-input').value = sl.toFixed(2);
+}
+
+// Execute Paper Order
+document.querySelector('#btn-paper-execute').onclick = async () => {
+  const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
+  if (!sym) {
+    showPaperStatus('Please enter a valid stock symbol.', 'error');
+    return;
+  }
+
+  const qty = parseInt(document.querySelector('#paper-qty-input').value || 10, 10);
+  const price = parseFloat(document.querySelector('#paper-price-input').value || 0) || null;
+  const target = parseFloat(document.querySelector('#paper-target-input').value || 0) || null;
+  const sl = parseFloat(document.querySelector('#paper-sl-input').value || 0) || null;
+  const strategy = document.querySelector('#paper-strategy-select').value;
+
+  const btn = document.querySelector('#btn-paper-execute');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳ Executing Order…</span>';
+
+  try {
+    const res = await fetch('/paper/order', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        symbol: sym,
+        side: state.paperSide,
+        quantity: qty,
+        entry_price: price,
+        target_price: target,
+        stop_loss_price: sl,
+        strategy: strategy,
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Error status ${res.status}`);
+    }
+
+    const data = await res.json();
+    showPaperStatus(`✅ Order filled! ${state.paperSide} ${qty} ${sym} @ ${money(data.entry_price)}.`, 'success');
+    loadPaperData();
+  } catch (err) {
+    showPaperStatus('Order execution failed: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>⚡ Execute Paper Order</span>';
+  }
+};
+
+function showPaperStatus(msg, type) {
+  const el = document.querySelector('#paper-order-status');
+  if (!el) return;
+  el.className = `wm-status-box ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4000);
+}
+
+// Close Position Function
+async function closePaperPosition(positionId) {
+  if (!confirm(`Are you sure you want to close position #${positionId} at current market price?`)) return;
+
+  statusEl.textContent = `Closing position #${positionId}…`;
+  try {
+    const res = await fetch('/paper/close', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ position_id: positionId, exit_reason: 'Manual Exit' }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Error status ${res.status}`);
+    }
+
+    const data = await res.json();
+    const pnlSign = data.pnl_amount >= 0 ? '+' : '';
+    statusEl.textContent = `Position closed! Realized P&L: ${money(data.pnl_amount)} (${pnlSign}${data.pnl_pct.toFixed(2)}%)`;
+    loadPaperData();
+  } catch (err) {
+    statusEl.textContent = 'Failed to close position: ' + err.message;
+  }
+}
+
+// Reset Portfolio Function
+document.querySelector('#btn-paper-reset').onclick = async () => {
+  if (!confirm('⚠️ Reset virtual portfolio? This will clear all open & closed paper trades and restore balance to ₹10,00,000.')) return;
+
+  statusEl.textContent = 'Resetting virtual portfolio…';
+  try {
+    const res = await fetch('/paper/reset', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capital: 1000000.0 }),
+    });
+
+    if (!res.ok) throw new Error('Reset failed');
+    statusEl.textContent = 'Portfolio reset to ₹10,00,000.00 successfully!';
+    loadPaperData();
+  } catch (err) {
+    statusEl.textContent = 'Reset failed: ' + err.message;
+  }
+};
+
+// Subtabs Toggle (Active Positions vs Trade History)
+document.querySelector('#paper-tab-positions').onclick = () => {
+  document.querySelector('#paper-tab-positions').classList.add('active');
+  document.querySelector('#paper-tab-history').classList.remove('active');
+  document.querySelector('#paper-view-positions').style.display = 'block';
+  document.querySelector('#paper-view-history').style.display = 'none';
+};
+
+document.querySelector('#paper-tab-history').onclick = () => {
+  document.querySelector('#paper-tab-history').classList.add('active');
+  document.querySelector('#paper-tab-positions').classList.remove('active');
+  document.querySelector('#paper-view-history').style.display = 'block';
+  document.querySelector('#paper-view-positions').style.display = 'none';
+};
+
+// 1-Click Prefill Paper Trade from Lookback Screener
+function prefillPaperTrade(symbol, price, strategy) {
+  switchTab('paper');
+  const stockInput = document.querySelector('#paper-stock-input');
+  const priceInput = document.querySelector('#paper-price-input');
+  const stratSelect = document.querySelector('#paper-strategy-select');
+
+  if (stockInput) stockInput.value = symbol;
+  if (priceInput && price > 0) priceInput.value = Number(price).toFixed(2);
+  if (stratSelect && strategy) {
+    for (let opt of stratSelect.options) {
+      if (opt.value.toLowerCase().includes(strategy.toLowerCase()) || strategy.toLowerCase().includes(opt.value.toLowerCase())) {
+        stratSelect.value = opt.value;
+        break;
+      }
+    }
+  }
+
+  updateTargetAndSl(price);
+  updateEstimatedCapital();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 // Initial Load
 loadUniverseSymbols();
 loadCustomWatchlists();
 fetchLookbackSignals();
+
 
 
 

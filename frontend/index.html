@@ -37,7 +37,12 @@
           <span class="tab-icon">📰</span>
           <span>AI News Analyzer</span>
         </button>
+        <button id="tab-paper" class="nav-tab">
+          <span class="tab-icon">💼</span>
+          <span>Paper Trading</span>
+        </button>
       </nav>
+
 
 
       <!-- Quick Action Utilities -->
@@ -417,16 +422,221 @@
               <!-- Dynamically populated article cards -->
             </div>
           </div>
+    <!-- Section 3: Paper Trading / Virtual Portfolio -->
+    <section id="section-paper" class="view-section" style="display: none;">
+      <!-- Portfolio Overview KPI Banner -->
+      <div class="paper-kpi-grid">
+        <div class="paper-kpi-card equity-card">
+          <div class="kpi-meta-row">
+            <span class="kpi-title">Total Portfolio Equity</span>
+            <span class="kpi-badge-live">LIVE</span>
+          </div>
+          <div class="kpi-value-row">
+            <span id="paper-total-equity" class="kpi-main-val">₹10,00,000.00</span>
+          </div>
+          <div class="kpi-sub-row">
+            <span>Overall P&amp;L:</span>
+            <strong id="paper-total-pnl" class="kpi-pnl-neutral">₹0.00 (+0.00%)</strong>
+          </div>
         </div>
+
+        <div class="paper-kpi-card">
+          <span class="kpi-title">Available Cash Balance</span>
+          <span id="paper-cash-balance" class="kpi-main-val">₹10,00,000.00</span>
+          <span class="kpi-sub-text">Unallocated virtual capital</span>
+        </div>
+
+        <div class="paper-kpi-card">
+          <span class="kpi-title">Invested Margin</span>
+          <span id="paper-invested-amount" class="kpi-main-val">₹0.00</span>
+          <span id="paper-open-count" class="kpi-sub-text">0 active positions</span>
+        </div>
+
+        <div class="paper-kpi-card">
+          <span class="kpi-title">Unrealized P&amp;L (Open)</span>
+          <span id="paper-unrealized-pnl" class="kpi-main-val kpi-pnl-neutral">₹0.00</span>
+          <span id="paper-unrealized-pct" class="kpi-sub-text">+0.00%</span>
+        </div>
+
+        <div class="paper-kpi-card">
+          <div class="kpi-meta-row">
+            <span class="kpi-title">Realized P&amp;L (Closed)</span>
+            <button id="btn-paper-reset" class="btn-subtle btn-xs" title="Reset virtual capital to ₹10,00,000">
+              <span>🔄 Reset</span>
+            </button>
+          </div>
+          <span id="paper-realized-pnl" class="kpi-main-val kpi-pnl-neutral">₹0.00</span>
+          <span id="paper-win-rate" class="kpi-sub-text">Win Rate: 0.0% · 0 Trades</span>
+        </div>
+      </div>
+
+      <!-- New Trade Placement Card -->
+      <div class="paper-order-card">
+        <div class="order-card-header">
+          <div class="order-title-group">
+            <span class="order-card-icon">⚡</span>
+            <div>
+              <h3 class="order-card-title">Place New Paper Order</h3>
+              <p class="order-card-sub">Test strategies, Knoxville divergences, and breakouts in real-time with zero risk.</p>
+            </div>
+          </div>
+          <div class="side-selector-pill-group">
+            <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY (Long)</button>
+            <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL (Short)</button>
+          </div>
+        </div>
+
+        <div class="order-form-grid">
+          <!-- Stock Symbol with scoped autocomplete -->
+          <div class="form-group field-symbol">
+            <label for="paper-stock-input">Stock Symbol</label>
+            <div class="stock-input-wrapper">
+              <span class="stock-input-icon">🔍</span>
+              <input type="text" id="paper-stock-input" list="paper-stocks-datalist" placeholder="e.g. TVSMOTOR" autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Quantity -->
+          <div class="form-group field-qty">
+            <label for="paper-qty-input">Quantity (Shares)</label>
+            <div class="qty-input-row">
+              <input type="number" id="paper-qty-input" value="10" min="1" step="1">
+              <div class="qty-quick-btns">
+                <button type="button" class="btn-qty-chip" data-qty="10">+10</button>
+                <button type="button" class="btn-qty-chip" data-qty="50">+50</button>
+                <button type="button" class="btn-qty-chip" data-qty="100">+100</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Entry Price -->
+          <div class="form-group field-price">
+            <div class="label-with-action">
+              <label for="paper-price-input">Entry Price (₹)</label>
+              <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch LTP</button>
+            </div>
+            <input type="number" id="paper-price-input" placeholder="Leave blank for live LTP" step="0.05">
+          </div>
+
+          <!-- Target Price -->
+          <div class="form-group field-target">
+            <div class="label-with-action">
+              <label for="paper-target-input">Target (₹)</label>
+              <div class="quick-pct-row">
+                <button type="button" class="btn-pct-chip" data-pct="2">+2%</button>
+                <button type="button" class="btn-pct-chip" data-pct="5">+5%</button>
+                <button type="button" class="btn-pct-chip" data-pct="10">+10%</button>
+              </div>
+            </div>
+            <input type="number" id="paper-target-input" placeholder="Auto-calculated (5%)" step="0.05">
+          </div>
+
+          <!-- Stop Loss Price -->
+          <div class="form-group field-sl">
+            <div class="label-with-action">
+              <label for="paper-sl-input">Stop Loss (₹)</label>
+              <div class="quick-pct-row">
+                <button type="button" class="btn-pct-chip" data-pct="-1">-1%</button>
+                <button type="button" class="btn-pct-chip" data-pct="-2">-2%</button>
+                <button type="button" class="btn-pct-chip" data-pct="-3">-3%</button>
+              </div>
+            </div>
+            <input type="number" id="paper-sl-input" placeholder="Auto-calculated (2%)" step="0.05">
+          </div>
+
+          <!-- Strategy Tag -->
+          <div class="form-group field-strategy">
+            <label for="paper-strategy-select">Strategy Reason</label>
+            <div class="select-wrapper">
+              <select id="paper-strategy-select">
+                <option value="Knoxville Divergence" selected>Knoxville Divergence</option>
+                <option value="Dual RSI Oversold">Dual RSI Oversold</option>
+                <option value="200 SMA Support Touch">200 SMA Support Touch</option>
+                <option value="AI News Breakout">AI News Breakout</option>
+                <option value="Manual Discretionary">Manual Discretionary</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="order-footer-row">
+          <div class="order-est-summary">
+            <span>Estimated Capital Required:</span>
+            <strong id="paper-est-capital">₹0.00</strong>
+          </div>
+          <button id="btn-paper-execute" class="btn-primary btn-execute-order">
+            <span>⚡ Execute Paper Order</span>
+          </button>
+        </div>
+        <div id="paper-order-status" class="wm-status-box" style="display: none;"></div>
+      </div>
+
+      <!-- Positions & Journal Subtabs -->
+      <div class="paper-subtabs-row">
+        <button id="paper-tab-positions" class="paper-subtab active">
+          <span>📌 Active Positions</span>
+          <span id="badge-open-positions" class="subtab-count-badge">0</span>
+        </button>
+        <button id="paper-tab-history" class="paper-subtab">
+          <span>📜 Trade History Journal</span>
+          <span id="badge-history-trades" class="subtab-count-badge">0</span>
+        </button>
+      </div>
+
+      <!-- Active Open Positions Table View -->
+      <div id="paper-view-positions" class="table-container">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Stock &amp; Chart</th>
+              <th>Side</th>
+              <th>Qty</th>
+              <th>Entry Price</th>
+              <th>Live LTP</th>
+              <th>Invested</th>
+              <th>Unrealized P&amp;L</th>
+              <th>Target / SL</th>
+              <th>Strategy</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="paper-positions-rows">
+            <tr><td colspan="10" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Trade History Journal Table View -->
+      <div id="paper-view-history" class="table-container" style="display: none;">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Stock</th>
+              <th>Side</th>
+              <th>Qty</th>
+              <th>Entry Price</th>
+              <th>Exit Price</th>
+              <th>Exit Date</th>
+              <th>Realized P&amp;L</th>
+              <th>Return %</th>
+              <th>Duration</th>
+              <th>Exit Reason</th>
+              <th>Strategy</th>
+            </tr>
+          </thead>
+          <tbody id="paper-history-rows">
+            <tr><td colspan="11" class="empty-cell">No closed trades yet in your journal.</td></tr>
+          </tbody>
+        </table>
       </div>
     </section>
   </main>
 
-
   <!-- Scoped Auto-Complete Ticker Datalists -->
   <datalist id="lookback-stocks-datalist"></datalist>
-  <datalist id="tester-stocks-datalist"></datalist>
+  <datalist id="paper-stocks-datalist"></datalist>
   <datalist id="news-stocks-datalist"></datalist>
+
 
   <script src="/static/app.js?v=5.4"></script>
 </body>

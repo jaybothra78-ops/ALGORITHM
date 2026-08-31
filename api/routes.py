@@ -7,8 +7,16 @@ from fastapi import APIRouter, HTTPException, Query
 from db.repository import SignalRepository
 from models.backtest import BacktestRequest, BacktestResponse
 from models.news import NewsAnalysisRequest, NewsAnalysisResponse
+from models.paper import (
+    PaperCloseRequest,
+    PaperOrderRequest,
+    PaperPortfolioSummary,
+    PaperPosition,
+    PaperTradeRecord,
+)
 from models.signal import LookbackResponse, ScanResponse
 from services.scanner import ScannerEngine
+
 
 
 
@@ -156,6 +164,82 @@ def analyze_news_endpoint(
         return NewsService.analyze_news(payload)
     except Exception as exc:
         raise HTTPException(500, f"News analysis failed: {exc}") from exc
+
+
+# -------------------------------------------------------------
+# Paper Trading & Virtual Portfolio Endpoints
+# -------------------------------------------------------------
+@router.get("/paper/summary", response_model=PaperPortfolioSummary)
+def get_paper_summary_endpoint() -> PaperPortfolioSummary:
+    """Return overall virtual portfolio summary and KPIs."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.get_summary()
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to calculate paper summary: {exc}") from exc
+
+
+@router.get("/paper/positions", response_model=list[PaperPosition])
+def get_paper_positions_endpoint() -> list[PaperPosition]:
+    """Return active open paper positions with live mark-to-market prices."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.get_open_positions()
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to get paper positions: {exc}") from exc
+
+
+@router.post("/paper/order", response_model=dict[str, Any])
+def place_paper_order_endpoint(
+    payload: PaperOrderRequest,
+) -> dict[str, Any]:
+    """Execute a new paper trade order."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.place_order(payload)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"Order placement failed: {exc}") from exc
+
+
+@router.post("/paper/close", response_model=dict[str, Any])
+def close_paper_position_endpoint(
+    payload: PaperCloseRequest,
+) -> dict[str, Any]:
+    """Close an open paper position."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.close_position(payload)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to close position: {exc}") from exc
+
+
+@router.get("/paper/history", response_model=list[PaperTradeRecord])
+def get_paper_history_endpoint() -> list[PaperTradeRecord]:
+    """Return completed trade history journal."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.get_history()
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to get paper trade history: {exc}") from exc
+
+
+@router.post("/paper/reset", response_model=dict[str, Any])
+def reset_paper_portfolio_endpoint(
+    payload: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Reset virtual account balance to initial capital."""
+    capital = float((payload or {}).get("capital", 1000000.0))
+    try:
+        from services.paper_service import PaperTradingService
+        PaperTradingService.reset_portfolio(capital)
+        return {"status": "success", "message": f"Portfolio reset to ₹{capital:,.2f}"}
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to reset portfolio: {exc}") from exc
+
 
 
 
