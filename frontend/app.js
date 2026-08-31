@@ -1202,37 +1202,37 @@ document.querySelector('#paper-price-input').oninput = updateEstimatedCapital;
 document.querySelector('#btn-paper-fetch-ltp').onclick = async () => {
   const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
   if (!sym) {
-    alert('Please enter a stock symbol first.');
+    showPaperStatus('Please enter a stock symbol first (e.g. TVSMOTOR, RELIANCE).', 'error');
     return;
   }
   const btn = document.querySelector('#btn-paper-fetch-ltp');
   btn.textContent = '⏳ Fetching…';
+  statusEl.textContent = `Fetching live real-time market LTP for ${sym}…`;
   
   try {
-    // Try matching lookback cached price first
-    const matched = (state.lookbackData || []).find(i => i.symbol === sym);
-    if (matched && matched.current_price) {
-      document.querySelector('#paper-price-input').value = matched.current_price.toFixed(2);
-      updateTargetAndSl(matched.current_price);
-      updateEstimatedCapital();
-      return;
+    const res = await fetch(`/market/ltp?symbol=${encodeURIComponent(sym)}`);
+    if (!res.ok) {
+      throw new Error(`Failed to fetch LTP (status ${res.status})`);
     }
-
-    // Otherwise fetch via server
-    const res = await fetch('/paper/positions');
-    const positions = await res.json();
-    const pos = (positions || []).find(p => p.symbol === sym);
-    if (pos && pos.current_price) {
-      document.querySelector('#paper-price-input').value = pos.current_price.toFixed(2);
-      updateTargetAndSl(pos.current_price);
+    const data = await res.json();
+    const ltp = data.ltp;
+    
+    if (ltp && ltp > 0) {
+      document.querySelector('#paper-price-input').value = ltp.toFixed(2);
+      updateTargetAndSl(ltp);
       updateEstimatedCapital();
+      const changeSign = data.change >= 0 ? '+' : '';
+      showPaperStatus(`⚡ Live LTP for ${data.symbol}: ${money(ltp)} (${changeSign}${data.change_pct}% from prev close · ${data.source})`, 'success');
+      statusEl.textContent = `Live LTP for ${data.symbol}: ${money(ltp)} (${changeSign}${data.change_pct}%)`;
     }
   } catch (err) {
-    console.warn('LTP fetch failed:', err);
+    showPaperStatus('Could not fetch real-time LTP: ' + err.message, 'error');
+    statusEl.textContent = 'LTP fetch error: ' + err.message;
   } finally {
     btn.textContent = '⚡ Fetch LTP';
   }
 };
+
 
 function updateTargetAndSl(entryPrice) {
   if (!entryPrice || entryPrice <= 0) return;
@@ -1382,8 +1382,14 @@ function prefillPaperTrade(symbol, price, strategy) {
 
   updateTargetAndSl(price);
   updateEstimatedCapital();
+  
+  // Auto-fetch fresh live LTP in background
+  const fetchBtn = document.querySelector('#btn-paper-fetch-ltp');
+  if (fetchBtn) fetchBtn.click();
+
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
+
 
 // Initial Load
 loadUniverseSymbols();

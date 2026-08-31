@@ -169,8 +169,21 @@ def analyze_news_endpoint(
 # -------------------------------------------------------------
 # Paper Trading & Virtual Portfolio Endpoints
 # -------------------------------------------------------------
+@router.get("/market/ltp", response_model=dict[str, Any])
+def get_market_ltp_endpoint(
+    symbol: str = Query(..., description="Stock ticker symbol (e.g. TVSMOTOR)"),
+) -> dict[str, Any]:
+    """Fetch exact live Last Traded Price (LTP) and market quote."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.get_live_ltp(symbol)
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to fetch live price for {symbol}: {exc}") from exc
+
+
 @router.get("/paper/summary", response_model=PaperPortfolioSummary)
 def get_paper_summary_endpoint() -> PaperPortfolioSummary:
+
     """Return overall virtual portfolio summary and KPIs."""
     try:
         from services.paper_service import PaperTradingService
