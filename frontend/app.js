@@ -165,9 +165,19 @@ function renderLookbackTable() {
 
     return `<tr>
       <td>
-        <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(item.symbol)}">
-          ${item.symbol} ↗
-        </a>
+        <div class="ticker-cell-wrapper">
+          <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(item.symbol)}">
+            ${item.symbol} ↗
+          </a>
+          <div class="ticker-sub-links">
+            <a class="sub-link-screener" target="_blank" rel="noopener noreferrer" href="https://www.screener.in/company/${encodeURIComponent(item.symbol)}/consolidated/" title="Open fundamentals on Screener.in">
+              📊 Screener
+            </a>
+            <button type="button" class="sub-btn-ai-news" onclick="switchTab('news'); analyzeStockNews('${item.symbol}');" title="Analyze latest news with AI">
+              📰 AI News
+            </button>
+          </div>
+        </div>
       </td>
       <td class="price-cell">${money(item.current_price)}</td>
       <td>${smaDisplay}</td>
@@ -179,6 +189,7 @@ function renderLookbackTable() {
     </tr>`;
   }).join('');
 }
+
 
 
 // -------------------------------------------------------------
@@ -576,7 +587,13 @@ function renderNewsAnalysis(data) {
   document.querySelector('#ai-company-name').textContent = data.company_name;
   document.querySelector('#ai-exec-summary').textContent = data.executive_summary;
 
+  const screenerBtn = document.querySelector('#btn-open-screener');
+  const tvBtn = document.querySelector('#btn-open-tv');
+  if (screenerBtn) screenerBtn.href = `https://www.screener.in/company/${encodeURIComponent(data.symbol)}/consolidated/`;
+  if (tvBtn) tvBtn.href = `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(data.symbol)}`;
+
   // Sentiment verdict
+
   const sentBadge = document.querySelector('#ai-sentiment-badge');
   const sentText = document.querySelector('#ai-sentiment-text');
   const sentLower = data.sentiment.toLowerCase();

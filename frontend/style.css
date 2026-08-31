@@ -1401,6 +1401,49 @@ select option:checked {
   color: var(--text-secondary);
 }
 
+.hero-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 2px 0;
+}
+
+.hero-link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.hero-link-btn.screener-btn {
+  background: rgba(56, 189, 248, 0.12);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.hero-link-btn.screener-btn:hover {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+}
+
+.hero-link-btn.tv-btn {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+
+.hero-link-btn.tv-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #fff;
+}
+
 .hero-summary-text {
   font-size: 0.88rem;
   line-height: 1.55;
@@ -1408,8 +1451,61 @@ select option:checked {
   margin: 0;
 }
 
+/* Ticker Table Sub-Links */
+.ticker-cell-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ticker-sub-links {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sub-link-screener {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--text-muted);
+  text-decoration: none;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 5px;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.12s ease;
+}
+
+.sub-link-screener:hover {
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.35);
+  background: rgba(56, 189, 248, 0.1);
+}
+
+.sub-btn-ai-news {
+  background: none;
+  border: none;
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: #a855f7;
+  cursor: pointer;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: rgba(168, 85, 247, 0.1);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  transition: all 0.12s ease;
+}
+
+.sub-btn-ai-news:hover {
+  background: rgba(168, 85, 247, 0.22);
+  color: #c084fc;
+}
+
 /* Sentiment Meter Box */
 .hero-right {
+
   display: flex;
   align-items: center;
 }
