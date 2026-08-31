@@ -8,13 +8,14 @@ from services.backtester import BacktesterEngine
 
 
 def _dummy_ohlc(n=250):
+    np.random.seed(42)
     dates = pd.date_range("2025-01-01", periods=n, freq="D")
     prices = 100.0 + np.cumsum(np.random.randn(n) * 2.0)
     return pd.DataFrame(
         {
             "Open": prices,
-            "High": prices + 3.0,
-            "Low": prices - 3.0,
+            "High": prices + 1.0,
+            "Low": prices - 1.0,
             "Close": prices,
         },
         index=dates,
@@ -26,6 +27,7 @@ def test_simulate_trade_target_exit():
     entry_price = float(df["Close"].iloc[5])
     # Keep low above stop loss for days 6, 7, 8
     df.loc[df.index[6]:df.index[8], "Low"] = entry_price * 0.99
+    df.loc[df.index[6]:df.index[7], "High"] = entry_price * 1.01
     # Force a 6% gain on day 8
     df.loc[df.index[8], "High"] = entry_price * 1.06
 
@@ -52,7 +54,9 @@ def test_simulate_trade_stop_loss_exit():
     df = _dummy_ohlc(50)
     # Force a 3% drop on day 2
     entry_price = float(df["Close"].iloc[5])
+    df.loc[df.index[6]:df.index[8], "High"] = entry_price * 1.01
     df.loc[df.index[7], "Low"] = entry_price * 0.97
+
 
     trade = BacktesterEngine._simulate_trade(
         symbol="TEST",

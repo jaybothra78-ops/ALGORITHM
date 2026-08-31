@@ -1022,6 +1022,7 @@ async function loadPaperData() {
 
     renderPaperSummary(summaryRes);
     renderPaperPositions(positionsRes);
+    renderPaperHoldings(positionsRes);
     renderPaperHistory(historyRes);
     statusEl.textContent = `Portfolio loaded: Equity ${money(summaryRes.total_equity)} (${summaryRes.open_positions_count} open positions)`;
   } catch (err) {
@@ -1031,44 +1032,72 @@ async function loadPaperData() {
 
 function renderPaperSummary(s) {
   if (!s) return;
-  document.querySelector('#paper-total-equity').textContent = money(s.total_equity);
-  
-  const totalPnlEl = document.querySelector('#paper-total-pnl');
-  const pnlSign = s.total_pnl >= 0 ? '+' : '';
-  totalPnlEl.textContent = `${money(s.total_pnl)} (${pnlSign}${s.total_pnl_pct.toFixed(2)}%)`;
-  totalPnlEl.className = s.total_pnl > 0 ? 'kpi-pnl-pos' : (s.total_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral');
+  // 1. Day's P&L (Today's Earnings)
+  const dayPnlEl = document.querySelector('#paper-day-pnl');
+  const daySign = s.day_pnl >= 0 ? '+' : '';
+  dayPnlEl.textContent = `${money(s.day_pnl)} (${daySign}${s.day_pnl_pct.toFixed(2)}%)`;
+  dayPnlEl.className = `kpi-main-val ${s.day_pnl > 0 ? 'kpi-pnl-pos' : (s.day_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
 
+  const todayRealEl = document.querySelector('#paper-today-realized');
+  todayRealEl.textContent = money(s.today_realized_pnl || 0);
+  todayRealEl.style.color = (s.today_realized_pnl || 0) > 0 ? '#10b981' : ((s.today_realized_pnl || 0) < 0 ? '#f43f5e' : '#cbd5e1');
+
+  const todayUnrealEl = document.querySelector('#paper-today-unrealized');
+  todayUnrealEl.textContent = money(s.today_unrealized_pnl || 0);
+  todayUnrealEl.style.color = (s.today_unrealized_pnl || 0) > 0 ? '#10b981' : ((s.today_unrealized_pnl || 0) < 0 ? '#f43f5e' : '#cbd5e1');
+
+  // 2. Overall P&L (Earned Till Date)
+  const totalPnlEl = document.querySelector('#paper-total-pnl');
+  const totalSign = s.total_earned_till_date >= 0 ? '+' : '';
+  totalPnlEl.textContent = `${money(s.total_earned_till_date)} (${totalSign}${s.total_earned_pct.toFixed(2)}%)`;
+  totalPnlEl.className = `kpi-main-val ${s.total_earned_till_date > 0 ? 'kpi-pnl-pos' : (s.total_earned_till_date < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
+
+  const grossRealEl = document.querySelector('#paper-realized-pnl');
+  grossRealEl.textContent = money(s.realized_pnl);
+  grossRealEl.style.color = s.realized_pnl > 0 ? '#10b981' : (s.realized_pnl < 0 ? '#f43f5e' : '#cbd5e1');
+
+  const overallUnrealEl = document.querySelector('#paper-unrealized-pnl');
+  overallUnrealEl.textContent = money(s.unrealized_pnl);
+  overallUnrealEl.style.color = s.unrealized_pnl > 0 ? '#10b981' : (s.unrealized_pnl < 0 ? '#f43f5e' : '#cbd5e1');
+
+  // 3. Total Account Value & Holdings
+  document.querySelector('#paper-total-equity').textContent = money(s.total_equity);
+  document.querySelector('#paper-holdings-value').textContent = money(s.current_holdings_value || s.invested_amount);
+
+  // 4. Margins & Funds
   document.querySelector('#paper-cash-balance').textContent = money(s.cash_balance);
   document.querySelector('#paper-invested-amount').textContent = money(s.invested_amount);
-  document.querySelector('#paper-open-count').textContent = `${s.open_positions_count} active positions`;
+  const footerAvail = document.querySelector('#paper-footer-avail-cash');
+  if (footerAvail) footerAvail.textContent = money(s.cash_balance);
 
-  const unPnlEl = document.querySelector('#paper-unrealized-pnl');
-  unPnlEl.textContent = money(s.unrealized_pnl);
-  unPnlEl.className = `kpi-main-val ${s.unrealized_pnl > 0 ? 'kpi-pnl-pos' : (s.unrealized_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
-  
-  const uSign = s.unrealized_pnl >= 0 ? '+' : '';
-  document.querySelector('#paper-unrealized-pct').textContent = `${uSign}${s.unrealized_pnl_pct.toFixed(2)}%`;
+  // 5. Performance Analytics
+  document.querySelector('#paper-win-rate').textContent = `${s.win_rate_pct.toFixed(1)}% Win Rate`;
+  document.querySelector('#paper-trade-counts').textContent = `${s.winning_trades} Wins · ${s.losing_trades} Losses (${s.total_trades} Trades)`;
 
-  const rPnlEl = document.querySelector('#paper-realized-pnl');
-  rPnlEl.textContent = money(s.realized_pnl);
-  rPnlEl.className = `kpi-main-val ${s.realized_pnl > 0 ? 'kpi-pnl-pos' : (s.realized_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
-
-  document.querySelector('#paper-win-rate').textContent = `Win Rate: ${s.win_rate_pct.toFixed(1)}% · ${s.winning_trades}W / ${s.losing_trades}L (${s.total_trades} Trades)`;
+  // Badges
   document.querySelector('#badge-open-positions').textContent = s.open_positions_count;
+  const cncCount = (state.paperPositions || []).filter(p => p.product_type === 'CNC').length;
+  const holdingsBadge = document.querySelector('#badge-holdings-count');
+  if (holdingsBadge) holdingsBadge.textContent = cncCount;
   document.querySelector('#badge-history-trades').textContent = s.total_trades;
 }
 
 function renderPaperPositions(positions) {
   const tbody = document.querySelector('#paper-positions-rows');
   if (!positions || !positions.length) {
-    tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">No open positions. Use the order pad above or click "Paper Trade" from the Lookback Screener.</td></tr>`;
     return;
   }
 
   tbody.innerHTML = positions.map(pos => {
     const pnlCls = pos.unrealized_pnl > 0 ? 'positive' : (pos.unrealized_pnl < 0 ? 'negative' : '');
     const pnlSign = pos.unrealized_pnl >= 0 ? '+' : '';
-    const sideCls = pos.side.toLowerCase();
+    const dayCls = pos.day_pnl > 0 ? 'positive' : (pos.day_pnl < 0 ? 'negative' : '');
+    const daySign = pos.day_pnl >= 0 ? '+' : '';
+    const qtyCls = pos.side === 'BUY' ? 'qty-positive' : 'qty-negative';
+    const signedQty = pos.side === 'BUY' ? `+${pos.quantity}` : `-${pos.quantity}`;
+    const prod = (pos.product_type || 'CNC').toUpperCase();
+    const prodCls = prod === 'MIS' ? 'mis' : 'cnc';
 
     return `<tr>
       <td>
@@ -1083,25 +1112,80 @@ function renderPaperPositions(positions) {
           </div>
         </div>
       </td>
-      <td><span class="badge-side ${sideCls}">${pos.side}</span></td>
-      <td class="price-cell"><strong>${pos.quantity}</strong></td>
+      <td><span class="product-tag-pill ${prodCls}">${prod}</span></td>
+      <td class="price-cell"><span class="${qtyCls}">${signedQty}</span></td>
       <td class="price-cell">${money(pos.entry_price)}</td>
-      <td class="price-cell">${money(pos.current_price)}</td>
-      <td class="price-cell">${money(pos.invested_amount)}</td>
+      <td class="price-cell"><strong>${money(pos.current_price)}</strong></td>
+      <td class="price-cell">${money(pos.current_value || (pos.current_price * pos.quantity))}</td>
+      <td class="price-cell ${dayCls}">
+        <strong>${money(pos.day_pnl)}</strong>
+        <div style="font-size: 0.7rem;">${daySign}${pos.day_pnl_pct.toFixed(2)}%</div>
+      </td>
       <td class="price-cell ${pnlCls}">
         <strong>${money(pos.unrealized_pnl)}</strong>
-        <div style="font-size: 0.72rem;">${pnlSign}${pos.unrealized_pnl_pct.toFixed(2)}%</div>
+        <div style="font-size: 0.7rem;">${pnlSign}${pos.unrealized_pnl_pct.toFixed(2)}%</div>
       </td>
       <td>
-        <div style="font-size: 0.76rem; font-family: var(--font-mono);">
+        <div style="font-size: 0.74rem; font-family: var(--font-mono);">
           <span style="color: #10b981;">T: ${money(pos.target_price)}</span><br>
           <span style="color: #f43f5e;">SL: ${money(pos.stop_loss_price)}</span>
         </div>
       </td>
       <td><span class="strategy-tag">${pos.strategy}</span></td>
       <td>
-        <button type="button" class="btn-close-pos" onclick="closePaperPosition(${pos.id})" title="Close position at current market price">
-          ✕ Close
+        <button type="button" class="btn-square-off" onclick="closePaperPosition(${pos.id})" title="Square off / exit position at market price">
+          Exit
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderPaperHoldings(positions) {
+  const tbody = document.querySelector('#paper-holdings-rows');
+  if (!tbody) return;
+  const cncHoldings = (positions || []).filter(p => (p.product_type || 'CNC').toUpperCase() === 'CNC');
+
+  if (!cncHoldings.length) {
+    tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No CNC holdings in your portfolio.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = cncHoldings.map(pos => {
+    const pnlCls = pos.unrealized_pnl > 0 ? 'positive' : (pos.unrealized_pnl < 0 ? 'negative' : '');
+    const pnlSign = pos.unrealized_pnl >= 0 ? '+' : '';
+    const dayCls = pos.day_pnl > 0 ? 'positive' : (pos.day_pnl < 0 ? 'negative' : '');
+    const daySign = pos.day_pnl >= 0 ? '+' : '';
+
+    return `<tr>
+      <td>
+        <div class="ticker-cell-wrapper">
+          <a class="ticker-link" target="_blank" rel="noopener" href="https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(pos.symbol)}">
+            ${pos.symbol} ↗
+          </a>
+          <div class="ticker-sub-links">
+            <a class="sub-link-screener" target="_blank" rel="noopener noreferrer" href="https://www.screener.in/company/${encodeURIComponent(pos.symbol)}/consolidated/">
+              📊 Screener
+            </a>
+          </div>
+        </div>
+      </td>
+      <td class="price-cell"><strong>${pos.quantity}</strong></td>
+      <td class="price-cell">${money(pos.entry_price)}</td>
+      <td class="price-cell"><strong>${money(pos.current_price)}</strong></td>
+      <td class="price-cell">${money(pos.current_value || (pos.current_price * pos.quantity))}</td>
+      <td class="price-cell">${money(pos.invested_amount)}</td>
+      <td class="price-cell ${dayCls}">
+        <strong>${money(pos.day_pnl)}</strong>
+        <div style="font-size: 0.7rem;">${daySign}${pos.day_pnl_pct.toFixed(2)}%</div>
+      </td>
+      <td class="price-cell ${pnlCls}">
+        <strong>${money(pos.unrealized_pnl)}</strong>
+        <div style="font-size: 0.7rem;">${pnlSign}${pos.unrealized_pnl_pct.toFixed(2)}%</div>
+      </td>
+      <td>
+        <button type="button" class="btn-square-off" onclick="closePaperPosition(${pos.id})" title="Sell holding">
+          Exit
         </button>
       </td>
     </tr>`;
@@ -1111,7 +1195,7 @@ function renderPaperPositions(positions) {
 function renderPaperHistory(history) {
   const tbody = document.querySelector('#paper-history-rows');
   if (!history || !history.length) {
-    tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">No closed trades yet in your journal.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="12" class="empty-cell">No closed trades yet in your journal.</td></tr>`;
     return;
   }
 
@@ -1119,6 +1203,8 @@ function renderPaperHistory(history) {
     const pnlCls = t.pnl_amount > 0 ? 'positive' : (t.pnl_amount < 0 ? 'negative' : '');
     const pnlSign = t.pnl_amount >= 0 ? '+' : '';
     const sideCls = t.side.toLowerCase();
+    const prod = (t.product_type || 'CNC').toUpperCase();
+    const prodCls = prod === 'MIS' ? 'mis' : 'cnc';
 
     return `<tr>
       <td>
@@ -1127,7 +1213,8 @@ function renderPaperHistory(history) {
         </a>
       </td>
       <td><span class="badge-side ${sideCls}">${t.side}</span></td>
-      <td>${t.quantity}</td>
+      <td><span class="product-tag-pill ${prodCls}">${prod}</span></td>
+      <td><strong>${t.quantity}</strong></td>
       <td class="price-cell">${money(t.entry_price)}</td>
       <td class="price-cell">${money(t.exit_price)}</td>
       <td class="date-cell">${(t.exit_time || '').split(' ')[0]}</td>
@@ -1138,6 +1225,23 @@ function renderPaperHistory(history) {
       <td><span class="strategy-tag">${t.strategy}</span></td>
     </tr>`;
   }).join('');
+}
+
+// Product Selector (CNC vs MIS)
+state.paperProduct = 'CNC';
+const btnCnc = document.querySelector('#btn-prod-cnc');
+const btnMis = document.querySelector('#btn-prod-mis');
+if (btnCnc && btnMis) {
+  btnCnc.onclick = () => {
+    state.paperProduct = 'CNC';
+    btnCnc.classList.add('active');
+    btnMis.classList.remove('active');
+  };
+  btnMis.onclick = () => {
+    state.paperProduct = 'MIS';
+    btnMis.classList.add('active');
+    btnCnc.classList.remove('active');
+  };
 }
 
 // Side Selector Events
@@ -1229,10 +1333,9 @@ document.querySelector('#btn-paper-fetch-ltp').onclick = async () => {
     showPaperStatus('Could not fetch real-time LTP: ' + err.message, 'error');
     statusEl.textContent = 'LTP fetch error: ' + err.message;
   } finally {
-    btn.textContent = '⚡ Fetch LTP';
+    btn.textContent = '⚡ Fetch Live LTP';
   }
 };
-
 
 function updateTargetAndSl(entryPrice) {
   if (!entryPrice || entryPrice <= 0) return;
@@ -1259,7 +1362,7 @@ document.querySelector('#btn-paper-execute').onclick = async () => {
 
   const btn = document.querySelector('#btn-paper-execute');
   btn.disabled = true;
-  btn.innerHTML = '<span>⏳ Executing Order…</span>';
+  btn.innerHTML = '<span>⏳ Placing Order…</span>';
 
   try {
     const res = await fetch('/paper/order', {
@@ -1268,6 +1371,7 @@ document.querySelector('#btn-paper-execute').onclick = async () => {
       body: JSON.stringify({
         symbol: sym,
         side: state.paperSide,
+        product_type: state.paperProduct || 'CNC',
         quantity: qty,
         entry_price: price,
         target_price: target,
@@ -1282,13 +1386,13 @@ document.querySelector('#btn-paper-execute').onclick = async () => {
     }
 
     const data = await res.json();
-    showPaperStatus(`✅ Order filled! ${state.paperSide} ${qty} ${sym} @ ${money(data.entry_price)}.`, 'success');
+    showPaperStatus(`✅ Order placed! ${state.paperProduct} ${state.paperSide} ${qty} ${sym} @ ${money(data.entry_price)}.`, 'success');
     loadPaperData();
   } catch (err) {
-    showPaperStatus('Order execution failed: ' + err.message, 'error');
+    showPaperStatus('Order placement failed: ' + err.message, 'error');
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<span>⚡ Execute Paper Order</span>';
+    btn.innerHTML = '<span>⚡ Place Order</span>';
   }
 };
 
@@ -1303,14 +1407,14 @@ function showPaperStatus(msg, type) {
 
 // Close Position Function
 async function closePaperPosition(positionId) {
-  if (!confirm(`Are you sure you want to close position #${positionId} at current market price?`)) return;
+  if (!confirm(`Are you sure you want to square off position #${positionId} at current market price?`)) return;
 
-  statusEl.textContent = `Closing position #${positionId}…`;
+  statusEl.textContent = `Squaring off position #${positionId}…`;
   try {
     const res = await fetch('/paper/close', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ position_id: positionId, exit_reason: 'Manual Exit' }),
+      body: JSON.stringify({ position_id: positionId, exit_reason: 'Square Off' }),
     });
 
     if (!res.ok) {
@@ -1320,16 +1424,16 @@ async function closePaperPosition(positionId) {
 
     const data = await res.json();
     const pnlSign = data.pnl_amount >= 0 ? '+' : '';
-    statusEl.textContent = `Position closed! Realized P&L: ${money(data.pnl_amount)} (${pnlSign}${data.pnl_pct.toFixed(2)}%)`;
+    statusEl.textContent = `Position squared off! Realized P&L: ${money(data.pnl_amount)} (${pnlSign}${data.pnl_pct.toFixed(2)}%)`;
     loadPaperData();
   } catch (err) {
-    statusEl.textContent = 'Failed to close position: ' + err.message;
+    statusEl.textContent = 'Failed to square off position: ' + err.message;
   }
 }
 
 // Reset Portfolio Function
 document.querySelector('#btn-paper-reset').onclick = async () => {
-  if (!confirm('⚠️ Reset virtual portfolio? This will clear all open & closed paper trades and restore balance to ₹10,00,000.')) return;
+  if (!confirm('⚠️ Reset virtual capital? This will clear all positions & trades and restore your available margin to ₹10,00,000.')) return;
 
   statusEl.textContent = 'Resetting virtual portfolio…';
   try {
@@ -1347,20 +1451,28 @@ document.querySelector('#btn-paper-reset').onclick = async () => {
   }
 };
 
-// Subtabs Toggle (Active Positions vs Trade History)
-document.querySelector('#paper-tab-positions').onclick = () => {
-  document.querySelector('#paper-tab-positions').classList.add('active');
-  document.querySelector('#paper-tab-history').classList.remove('active');
-  document.querySelector('#paper-view-positions').style.display = 'block';
-  document.querySelector('#paper-view-history').style.display = 'none';
-};
+// Zerodha Subtabs Switcher (Positions, Holdings, Tradebook)
+const tabPos = document.querySelector('#paper-tab-positions');
+const tabHold = document.querySelector('#paper-tab-holdings');
+const tabHist = document.querySelector('#paper-tab-history');
+const viewPos = document.querySelector('#paper-view-positions');
+const viewHold = document.querySelector('#paper-view-holdings');
+const viewHist = document.querySelector('#paper-view-history');
 
-document.querySelector('#paper-tab-history').onclick = () => {
-  document.querySelector('#paper-tab-history').classList.add('active');
-  document.querySelector('#paper-tab-positions').classList.remove('active');
-  document.querySelector('#paper-view-history').style.display = 'block';
-  document.querySelector('#paper-view-positions').style.display = 'none';
-};
+function switchPaperSubtab(tabName) {
+  if (tabPos) tabPos.classList.toggle('active', tabName === 'positions');
+  if (tabHold) tabHold.classList.toggle('active', tabName === 'holdings');
+  if (tabHist) tabHist.classList.toggle('active', tabName === 'history');
+
+  if (viewPos) viewPos.style.display = tabName === 'positions' ? 'block' : 'none';
+  if (viewHold) viewHold.style.display = tabName === 'holdings' ? 'block' : 'none';
+  if (viewHist) viewHist.style.display = tabName === 'history' ? 'block' : 'none';
+}
+
+if (tabPos) tabPos.onclick = () => switchPaperSubtab('positions');
+if (tabHold) tabHold.onclick = () => switchPaperSubtab('holdings');
+if (tabHist) tabHist.onclick = () => switchPaperSubtab('history');
+
 
 // 1-Click Prefill Paper Trade from Lookback Screener
 function prefillPaperTrade(symbol, price, strategy) {

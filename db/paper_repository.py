@@ -36,6 +36,7 @@ class PaperRepository:
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     symbol TEXT NOT NULL,
                     side TEXT NOT NULL CHECK(side IN ('BUY', 'SELL')),
+                    product_type TEXT NOT NULL DEFAULT 'CNC',
                     quantity INTEGER NOT NULL,
                     entry_price REAL NOT NULL,
                     target_price REAL,
@@ -53,6 +54,9 @@ class PaperRepository:
                 );
                 """
             )
+            existing_cols = {row["name"] for row in conn.execute("PRAGMA table_info(paper_trades)").fetchall()}
+            if "product_type" not in existing_cols:
+                conn.execute("ALTER TABLE paper_trades ADD COLUMN product_type TEXT NOT NULL DEFAULT 'CNC'")
 
     @staticmethod
     def get_account() -> dict[str, Any]:
@@ -77,11 +81,12 @@ class PaperRepository:
     @staticmethod
     def create_trade(data: dict[str, Any]) -> int:
         PaperRepository.initialize_paper_tables()
-        columns = "symbol, side, quantity, entry_price, target_price, stop_loss_price, strategy, notes, status, entry_time"
-        placeholders = "?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+        columns = "symbol, side, product_type, quantity, entry_price, target_price, stop_loss_price, strategy, notes, status, entry_time"
+        placeholders = "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
         values = (
             data["symbol"],
             data["side"],
+            data.get("product_type", "CNC"),
             data["quantity"],
             data["entry_price"],
             data.get("target_price"),
@@ -91,6 +96,7 @@ class PaperRepository:
             "OPEN",
             data.get("entry_time") or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S"),
         )
+
         with get_db_connection() as conn:
             cursor = conn.execute(f"INSERT INTO paper_trades ({columns}) VALUES ({placeholders})", values)
             return cursor.lastrowid

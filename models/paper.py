@@ -16,11 +16,17 @@ class PositionStatus(str, Enum):
     CLOSED = "CLOSED"
 
 
+class ProductType(str, Enum):
+    CNC = "CNC"  # Cash & Carry / Long-Term Holdings
+    MIS = "MIS"  # Intraday with leverage
+
+
 class PaperOrderRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     symbol: str = Field(..., description="Stock ticker (e.g. TVSMOTOR, RELIANCE)")
     side: OrderSide = Field(default=OrderSide.BUY, description="BUY or SELL")
+    product_type: ProductType = Field(default=ProductType.CNC, description="CNC (Holdings) or MIS (Intraday)")
     quantity: int = Field(default=10, gt=0, description="Number of shares")
     entry_price: float | None = Field(default=None, description="Custom entry price or None for live market price")
     target_price: float | None = Field(default=None, description="Take profit target price")
@@ -41,9 +47,14 @@ class PaperPosition(BaseModel):
     id: int
     symbol: str
     side: str
+    product_type: str = "CNC"
     quantity: int
     entry_price: float
     current_price: float
+    previous_close: float
+    current_value: float
+    day_pnl: float
+    day_pnl_pct: float
     target_price: float | None = None
     stop_loss_price: float | None = None
     strategy: str = "Manual"
@@ -58,6 +69,7 @@ class PaperTradeRecord(BaseModel):
     id: int
     symbol: str
     side: str
+    product_type: str = "CNC"
     quantity: int
     entry_price: float
     entry_time: str
@@ -74,12 +86,23 @@ class PaperTradeRecord(BaseModel):
 class PaperPortfolioSummary(BaseModel):
     initial_capital: float
     cash_balance: float
+    available_margin: float
+    used_margin: float
     invested_amount: float
     total_equity: float
-    unrealized_pnl: float
-    unrealized_pnl_pct: float
+    current_holdings_value: float
+    # Zerodha Day's P&L (Today's Realized + Today's Unrealized)
+    day_pnl: float
+    day_pnl_pct: float
+    today_realized_pnl: float
+    today_unrealized_pnl: float
+    # Zerodha Overall / Till-Date P&L
+    total_earned_till_date: float
+    total_earned_pct: float
     realized_pnl: float
     realized_pnl_pct: float
+    unrealized_pnl: float
+    unrealized_pnl_pct: float
     total_pnl: float
     total_pnl_pct: float
     win_rate_pct: float
@@ -87,3 +110,4 @@ class PaperPortfolioSummary(BaseModel):
     winning_trades: int
     losing_trades: int
     open_positions_count: int
+
