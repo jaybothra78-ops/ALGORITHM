@@ -100,13 +100,13 @@ class NewsService:
         clean_sym = request.symbol.strip().upper()
         articles = cls.fetch_news(clean_sym, limit=12)
 
-        # Check for Anthropic Claude API Key
-        anthropic_key = os.getenv("ANTHROPIC_API_KEY", "").strip()
+        # Check for Anthropic Claude API Key (from request payload or environment)
+        anthropic_key = (request.api_key or os.getenv("ANTHROPIC_API_KEY", "")).strip()
         if anthropic_key and articles:
             try:
                 return cls._analyze_with_claude(clean_sym, articles, anthropic_key)
             except Exception as exc:
-                logger.warning(f"Claude API analysis failed, falling back to NLP engine: {exc}")
+                logger.warning(f"Claude API analysis failed, falling back to deep NLP engine: {exc}")
 
         # Default institutional financial NLP analysis engine
         return cls._analyze_with_nlp_engine(clean_sym, articles)
@@ -117,12 +117,12 @@ class NewsService:
         bullish_keywords = {
             "surge", "jump", "growth", "profit", "gain", "rally", "upgrade", "buy", "target", "record",
             "order", "contract", "expansion", "dividend", "revenue", "outperform", "bullish", "acquisition",
-            "high", "soar", "deal", "positive", "strong", "beats", "guidance", "boost", "inflows"
+            "high", "soar", "deal", "positive", "strong", "beats", "guidance", "boost", "inflows", "q4", "q3", "ebitda"
         }
         bearish_keywords = {
             "fall", "drop", "loss", "decline", "slump", "downgrade", "sell", "plunge", "cut", "weak",
             "probe", "penalty", "fine", "lawsuit", "debt", "default", "underperform", "bearish", "crash",
-            "low", "negative", "cautious", "slowdown", "headwind", "margin pressure", "concerns"
+            "low", "negative", "cautious", "slowdown", "headwind", "margin pressure", "concerns", "investigation"
         }
 
         bull_count = 0
@@ -136,6 +136,7 @@ class NewsService:
                 company_name=f"{symbol} Equity",
                 sentiment="Neutral",
                 sentiment_score=50,
+                analysis_engine="Institutional Financial NLP Engine",
                 executive_summary=f"No major breaking news headlines detected for {symbol} in the selected window. The stock is currently trading based on standard technical momentum and market-wide sentiment.",
                 catalysts=[
                     f"Consolidation pattern forming on {symbol} chart.",
@@ -160,9 +161,11 @@ class NewsService:
             bear_count += r_matches
 
             if b_matches > r_matches and len(extracted_catalysts) < 4:
-                extracted_catalysts.append(art.title)
+                clean_title = art.title.replace("  ", " ").strip()
+                extracted_catalysts.append(clean_title)
             elif r_matches > b_matches and len(extracted_risks) < 4:
-                extracted_risks.append(art.title)
+                clean_title = art.title.replace("  ", " ").strip()
+                extracted_risks.append(clean_title)
 
         # Calculate sentiment score 0 - 100
         total_signals = bull_count + bear_count
@@ -182,25 +185,25 @@ class NewsService:
         # Fallback catalyst / risk bullets if empty
         if not extracted_catalysts:
             extracted_catalysts = [
-                f"Sustained business momentum across key operating segments for {symbol}.",
-                "Positive institutional analyst coverage and stable quarterly delivery.",
-                "Strategic market positioning within the sector."
+                f"Sustained volume expansion and corporate business momentum in {symbol}.",
+                "Positive institutional analyst coverage and solid quarterly operational trajectory.",
+                "Favorable sector tailwinds and capacity utilization."
             ]
         if not extracted_risks:
             extracted_risks = [
-                "Sensitivity to input cost fluctuations and macro interest rate cycles.",
-                "Potential sector-wide multiple compression during market pullbacks."
+                "Macro interest rate sensitivity and potential input cost fluctuations.",
+                "Broader benchmark index consolidation or sector-wide multiple compression."
             ]
 
         summary = (
             f"Recent news flow for {symbol} indicates a predominantly {verdict.lower()} bias (Sentiment Score: {score}/100) "
             f"across {len(articles)} analyzed media publications. Coverage highlights active developments including '{articles[0].title}' "
-            f"with key focus on growth execution and quarterly performance."
+            f"with core focus on revenue growth, institutional positioning, and operational execution."
         )
 
         tech_correlation = (
-            f"Given the {verdict.lower()} news backdrop, monitor key technical trigger zones on {symbol}. "
-            f"If RSI shows oversold conditions or price touches the 200-day Moving Average, this fundamental narrative provides "
+            f"Given the {verdict.lower()} news backdrop, monitor technical trigger zones on {symbol}. "
+            f"If RSI shows oversold conditions or price touches key moving averages, this fundamental narrative provides "
             f"favorable risk-reward confirmation for trend continuation."
         )
 
@@ -209,6 +212,7 @@ class NewsService:
             company_name=f"{symbol} (NSE)",
             sentiment=verdict,
             sentiment_score=score,
+            analysis_engine="Institutional Financial NLP Engine",
             executive_summary=summary,
             catalysts=extracted_catalysts[:4],
             risks=extracted_risks[:3],
@@ -241,8 +245,8 @@ Respond ONLY in valid JSON with this exact schema:
 }}
 """
         req_data = {
-            "model": "claude-3-haiku-20240307",
-            "max_tokens": 800,
+            "model": "claude-3-5-sonnet-20241022",
+            "max_tokens": 1000,
             "temperature": 0.2,
             "messages": [{"role": "user", "content": prompt}],
         }
@@ -257,16 +261,22 @@ Respond ONLY in valid JSON with this exact schema:
             },
         )
 
-        with urllib.request.urlopen(req, timeout=15) as resp:
+        with urllib.request.urlopen(req, timeout=25) as resp:
             data = json.loads(resp.read().decode("utf-8"))
             content_text = data["content"][0]["text"].strip()
-            parsed = json.loads(content_text)
+            # Clean possible markdown block
+            if content_text.startswith("```json"):
+                content_text = content_text[7:]
+            if content_text.endswith("```"):
+                content_text = content_text[:-3]
+            parsed = json.loads(content_text.strip())
 
             return NewsAnalysisResponse(
                 symbol=symbol,
                 company_name=parsed.get("company_name", f"{symbol} (NSE)"),
                 sentiment=parsed.get("sentiment", "Neutral"),
                 sentiment_score=parsed.get("sentiment_score", 50),
+                analysis_engine="Claude 3.5 Sonnet (Live AI)",
                 executive_summary=parsed.get("executive_summary", ""),
                 catalysts=parsed.get("catalysts", []),
                 risks=parsed.get("risks", []),
@@ -274,3 +284,4 @@ Respond ONLY in valid JSON with this exact schema:
                 articles=articles,
                 timestamp=time.time(),
             )
+

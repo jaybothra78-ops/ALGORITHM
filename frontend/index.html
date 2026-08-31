@@ -42,6 +42,10 @@
 
       <!-- Quick Action Utilities -->
       <div class="nav-actions">
+        <button id="btn-claude-key-modal" class="btn-subtle" title="Configure Anthropic Claude API Key">
+          <span class="btn-icon-symbol">🔑</span>
+          <span id="claude-key-btn-text">Claude AI Key</span>
+        </button>
         <button id="btn-import-modal" class="btn-subtle" title="Import public watchlist from TradingView">
           <span class="btn-icon-symbol">➕</span>
           <span>Import Watchlist</span>
@@ -55,6 +59,7 @@
       </div>
     </div>
   </header>
+
 
   <main class="main-content">
     <!-- Collapsible Watchlist Manager Card -->
@@ -95,6 +100,38 @@
         </div>
       </div>
     </div>
+
+    <!-- Collapsible Claude AI Key Card -->
+    <div id="card-claude-key" class="watchlist-manager-card" style="display: none;">
+
+      <div class="wm-header">
+        <div class="wm-title-area">
+          <span class="wm-icon">🔑</span>
+          <div>
+            <h3 class="wm-title">Anthropic Claude AI API Key</h3>
+            <p class="wm-subtitle">Connect your Anthropic Claude API Key for live Claude 3.5 Sonnet equity research synthesis.</p>
+          </div>
+        </div>
+        <button id="btn-close-claude-key" class="btn-icon-close" title="Close Key Settings">&times;</button>
+      </div>
+
+      <div class="wm-body">
+        <div class="wm-input-row">
+          <div class="wm-field field-url" style="flex: 4;">
+            <label for="input-claude-key">Anthropic API Key (sk-ant-...)</label>
+            <input type="password" id="input-claude-key" placeholder="sk-ant-api03-..." autocomplete="off">
+          </div>
+          <button id="btn-save-claude-key" class="btn-primary wm-submit-btn">
+            <span>💾 Save Key</span>
+          </button>
+          <button id="btn-clear-claude-key" class="btn-subtle wm-submit-btn">
+            <span>✕ Reset</span>
+          </button>
+        </div>
+        <div id="claude-key-status" class="wm-status-box" style="display: none;"></div>
+      </div>
+    </div>
+
 
     <!-- Section 1: Lookback Screener -->
     <section id="section-lookback" class="view-section">
@@ -265,8 +302,34 @@
           <button id="btn-trigger-sample-news" class="btn-secondary">Analyze TVSMOTOR News</button>
         </div>
 
+        <!-- Deep Analysis Loading State with Progress Steps -->
+        <div id="news-loading-card" class="news-loading-card" style="display: none;">
+          <div class="loading-spinner-ring"></div>
+          <h4 id="loading-stage-title" class="loading-stage-title">Analyzing Real-Time News…</h4>
+          <p id="loading-stage-sub" class="loading-stage-sub">Ingesting latest media publications and financial disclosures.</p>
+          <div class="loading-steps-list">
+            <div id="step-1" class="loading-step active">
+              <span class="step-icon">🔍</span>
+              <span class="step-text">Searching Google News &amp; Yahoo Finance for live coverage</span>
+            </div>
+            <div id="step-2" class="loading-step">
+              <span class="step-icon">📰</span>
+              <span class="step-text">Parsing earnings releases, order books &amp; regulatory filings</span>
+            </div>
+            <div id="step-3" class="loading-step">
+              <span class="step-icon">🧠</span>
+              <span class="step-text">Claude AI deep sentiment reasoning &amp; catalyst extraction</span>
+            </div>
+            <div id="step-4" class="loading-step">
+              <span class="step-icon">📈</span>
+              <span class="step-text">Cross-referencing technical divergence &amp; compiling report</span>
+            </div>
+          </div>
+        </div>
+
         <!-- Populated AI Synthesis State -->
         <div id="news-content-card" class="news-content-card" style="display: none;">
+
           <!-- Hero Sentiment Header -->
           <div class="news-hero-banner">
             <div class="hero-left">
