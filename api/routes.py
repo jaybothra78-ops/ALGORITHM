@@ -6,8 +6,10 @@ from typing import Any
 from fastapi import APIRouter, HTTPException, Query
 from db.repository import SignalRepository
 from models.backtest import BacktestRequest, BacktestResponse
+from models.news import NewsAnalysisRequest, NewsAnalysisResponse
 from models.signal import LookbackResponse, ScanResponse
 from services.scanner import ScannerEngine
+
 
 
 router = APIRouter(tags=["Scanner & Screener"])
@@ -126,5 +128,18 @@ def run_backtest_endpoint(
         return BacktesterEngine.run_backtest(payload)
     except Exception as exc:
         raise HTTPException(500, f"Backtest simulation failed: {exc}") from exc
+
+
+@router.post("/news/analyze", response_model=NewsAnalysisResponse)
+def analyze_news_endpoint(
+    payload: NewsAnalysisRequest,
+) -> NewsAnalysisResponse:
+    """Fetch live financial news and perform AI sentiment synthesis."""
+    try:
+        from services.news_service import NewsService
+        return NewsService.analyze_news(payload)
+    except Exception as exc:
+        raise HTTPException(500, f"News analysis failed: {exc}") from exc
+
 
 

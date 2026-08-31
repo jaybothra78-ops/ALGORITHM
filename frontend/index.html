@@ -36,6 +36,10 @@
           <span class="tab-icon">📈</span>
           <span>Strategy Tester</span>
         </button>
+        <button id="tab-news" class="nav-tab">
+          <span class="tab-icon">📰</span>
+          <span>AI News Analyzer</span>
+        </button>
       </nav>
 
       <!-- Quick Action Utilities -->
@@ -443,11 +447,162 @@
         </table>
       </div>
     </section>
+
+    <!-- Section 4: AI NEWS ANALYZER -->
+    <section id="section-news" class="view-section" style="display: none;">
+      <!-- News Controls Toolbar -->
+      <div class="toolbar news-toolbar">
+        <div class="filter-controls">
+          <!-- Universe Filter to populate ticker select -->
+          <div class="select-wrapper">
+            <select id="news-universe-filter" aria-label="Watchlist Filter">
+              <option value="FNO">📊 F&amp;O Universe (178)</option>
+              <option value="Watchlist">⭐ My Watchlist</option>
+              <option value="Nifty50">NIFTY 50</option>
+              <option value="IT">NIFTY IT</option>
+              <option value="Bank">NIFTY BANK</option>
+              <option value="">All Tickers</option>
+            </select>
+          </div>
+
+          <!-- Stock Dropdown -->
+          <div class="select-wrapper">
+            <select id="news-stock-select" aria-label="Select Stock for AI News Analysis">
+              <option value="TVSMOTOR" selected>TVSMOTOR (TVS Motor Company)</option>
+              <option value="RELIANCE">RELIANCE (Reliance Industries)</option>
+              <option value="TRENT">TRENT (Trent Ltd)</option>
+              <option value="TATAMOTORS">TATAMOTORS (Tata Motors)</option>
+              <option value="HDFCBANK">HDFCBANK (HDFC Bank)</option>
+              <option value="INFY">INFY (Infosys)</option>
+              <option value="IDFCFIRSTB">IDFCFIRSTB (IDFC First Bank)</option>
+              <option value="KEI">KEI (KEI Industries)</option>
+            </select>
+          </div>
+
+          <!-- Direct Stock Ticker Input -->
+          <div class="stock-input-wrapper">
+            <span class="stock-input-icon">🔍</span>
+            <input type="text" id="news-custom-input" placeholder="Or enter ticker (e.g. TVSMOTOR)" autocomplete="off">
+          </div>
+
+          <!-- Quick Chip Pills for Popular Stocks -->
+          <div class="control-unit">
+            <span class="control-label">⚡ Quick:</span>
+            <div class="pill-group" id="news-quick-chips">
+              <button type="button" class="pill active" data-sym="TVSMOTOR">TVSMOTOR</button>
+              <button type="button" class="pill" data-sym="RELIANCE">RELIANCE</button>
+              <button type="button" class="pill" data-sym="TRENT">TRENT</button>
+              <button type="button" class="pill" data-sym="TATAMOTORS">TATAMOTORS</button>
+              <button type="button" class="pill" data-sym="IDFCFIRSTB">IDFCFIRSTB</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="toolbar-spacer"></div>
+
+        <!-- AI Analyze Action Button -->
+        <button id="btn-run-news" class="btn-primary" title="Analyze live news &amp; market catalysts with Claude AI">
+          <span>✨ Analyze News with AI</span>
+        </button>
+      </div>
+
+      <!-- AI News Analysis Dashboard -->
+      <div id="news-dashboard" class="news-dashboard-container">
+        <!-- Initial Blank Placeholder State -->
+        <div id="news-placeholder" class="news-empty-placeholder">
+          <div class="placeholder-icon">📰</div>
+          <h3>Institutional AI News &amp; Catalyst Analyzer</h3>
+          <p>Select any stock from your watchlist or enter a custom ticker to analyze live news, market sentiment, key growth catalysts, and risk factors.</p>
+          <button id="btn-trigger-sample-news" class="btn-secondary">Analyze TVSMOTOR News</button>
+        </div>
+
+        <!-- Populated AI Synthesis State -->
+        <div id="news-content-card" class="news-content-card" style="display: none;">
+          <!-- Hero Sentiment Header -->
+          <div class="news-hero-banner">
+            <div class="hero-left">
+              <div class="hero-ticker-badge">
+                <span id="ai-stock-ticker" class="ticker-name">TVSMOTOR</span>
+                <span id="ai-company-name" class="company-sub">TVS Motor Company (NSE)</span>
+              </div>
+              <p id="ai-exec-summary" class="hero-summary-text">
+                Analyzing latest market catalysts and institutional announcements...
+              </p>
+            </div>
+
+            <div class="hero-right">
+              <div class="sentiment-meter-box">
+                <span class="meter-label">AI Sentiment Verdict</span>
+                <div id="ai-sentiment-badge" class="sentiment-badge-pill bullish">
+                  <span class="sentiment-icon">🟢</span>
+                  <span id="ai-sentiment-text">Bullish</span>
+                </div>
+                <div class="sentiment-score-bar-container">
+                  <div class="score-label-row">
+                    <span>Confidence Score</span>
+                    <strong id="ai-score-number">80%</strong>
+                  </div>
+                  <div class="score-track">
+                    <div id="ai-score-fill" class="score-fill" style="width: 80%;"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Two-Column Catalysts & Risks Grid -->
+          <div class="news-breakdown-grid">
+            <div class="breakdown-card catalysts-card">
+              <div class="breakdown-header">
+                <span class="card-icon">🚀</span>
+                <h4>Key Catalysts &amp; Growth Drivers</h4>
+              </div>
+              <ul id="ai-catalysts-list" class="breakdown-list catalysts-list">
+                <li>Loading catalysts...</li>
+              </ul>
+            </div>
+
+            <div class="breakdown-card risks-card">
+              <div class="breakdown-header">
+                <span class="card-icon">⚠️</span>
+                <h4>Risks &amp; Potential Headwinds</h4>
+              </div>
+              <ul id="ai-risks-list" class="breakdown-list risks-list">
+                <li>Loading risk factors...</li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Technical & Fundamental Correlation Banner -->
+          <div class="technical-correlation-card">
+            <div class="tc-header">
+              <span class="tc-icon">⚡</span>
+              <h4>Technical Setup &amp; Fundamental Correlation</h4>
+            </div>
+            <p id="ai-technical-correlation" class="tc-text">
+              Loading technical setup synthesis...
+            </p>
+          </div>
+
+          <!-- Underlying Live News Feed Grid -->
+          <div class="articles-feed-section">
+            <div class="feed-header-row">
+              <h4 class="feed-title">🗞️ Recent Live News Articles &amp; Corporate Filings</h4>
+              <span id="ai-articles-count" class="feed-count-badge">0 articles</span>
+            </div>
+            <div id="news-articles-grid" class="articles-grid">
+              <!-- Dynamically populated article cards -->
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
 
-  <script src="/static/app.js?v=4.0"></script>
+  <script src="/static/app.js?v=5.0"></script>
 </body>
 </html>
+
 
 
 

@@ -373,38 +373,190 @@ async function refreshScanner() {
 // -------------------------------------------------------------
 // Navigation Tab Switching
 // -------------------------------------------------------------
-document.querySelector('#tab-lookback').onclick = () => {
-  state.activeTab = 'lookback';
-  document.querySelector('#tab-lookback').classList.add('active');
-  document.querySelector('#tab-scanner').classList.remove('active');
-  document.querySelector('#tab-tester').classList.remove('active');
-  document.querySelector('#section-lookback').style.display = 'block';
-  document.querySelector('#section-scanner').style.display = 'none';
-  document.querySelector('#section-tester').style.display = 'none';
-  fetchLookbackSignals();
+function switchTab(targetTab) {
+  state.activeTab = targetTab;
+  ['#tab-lookback', '#tab-scanner', '#tab-tester', '#tab-news'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) el.classList.remove('active');
+  });
+  ['#section-lookback', '#section-scanner', '#section-tester', '#section-news'].forEach(sel => {
+    const el = document.querySelector(sel);
+    if (el) el.style.display = 'none';
+  });
+
+  const tabBtn = document.querySelector(`#tab-${targetTab}`);
+  const secEl = document.querySelector(`#section-${targetTab}`);
+  if (tabBtn) tabBtn.classList.add('active');
+  if (secEl) secEl.style.display = 'block';
+
+  if (targetTab === 'lookback') fetchLookbackSignals();
+  else if (targetTab === 'scanner') refreshScanner();
+}
+
+document.querySelector('#tab-lookback').onclick = () => switchTab('lookback');
+document.querySelector('#tab-scanner').onclick = () => switchTab('scanner');
+document.querySelector('#tab-tester').onclick = () => switchTab('tester');
+document.querySelector('#tab-news').onclick = () => switchTab('news');
+
+// -------------------------------------------------------------
+// AI News Analyzer Controller
+// -------------------------------------------------------------
+state.newsData = null;
+
+// Populate News Stock Dropdown based on Universe
+function populateNewsStockSelect() {
+  const select = document.querySelector('#news-stock-select');
+  if (!select) return;
+  const uni = document.querySelector('#news-universe-filter').value;
+  
+  const defaultList = [
+    { s: 'TVSMOTOR', n: 'TVS Motor Company' },
+    { s: 'RELIANCE', n: 'Reliance Industries' },
+    { s: 'TRENT', n: 'Trent Ltd' },
+    { s: 'TATAMOTORS', n: 'Tata Motors' },
+    { s: 'HDFCBANK', n: 'HDFC Bank' },
+    { s: 'INFY', n: 'Infosys' },
+    { s: 'IDFCFIRSTB', n: 'IDFC First Bank' },
+    { s: 'KEI', n: 'KEI Industries' },
+    { s: 'BAJAJ-AUTO', n: 'Bajaj Auto' },
+    { s: 'BHARTIARTL', n: 'Bharti Airtel' },
+    { s: 'IRCON', n: 'Ircon International' },
+    { s: 'RVNL', n: 'Rail Vikas Nigam' },
+    { s: 'COFORGE', n: 'Coforge Ltd' },
+    { s: 'OFSS', n: 'Oracle Financial' },
+    { s: 'SOLARINDS', n: 'Solar Industries' },
+    { s: 'DIVISLAB', n: 'Divis Laboratories' },
+  ];
+
+  select.innerHTML = defaultList.map(item => `<option value="${item.s}">${item.s} (${item.n})</option>`).join('');
+}
+populateNewsStockSelect();
+
+document.querySelector('#news-universe-filter').onchange = populateNewsStockSelect;
+
+// News Quick Chips Listeners
+document.querySelectorAll('#news-quick-chips .pill').forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll('#news-quick-chips .pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const sym = btn.dataset.sym;
+    document.querySelector('#news-custom-input').value = sym;
+    document.querySelector('#news-stock-select').value = sym;
+    analyzeStockNews(sym);
+  };
+});
+
+document.querySelector('#news-stock-select').onchange = (e) => {
+  const sym = e.target.value;
+  document.querySelector('#news-custom-input').value = sym;
+  document.querySelectorAll('#news-quick-chips .pill').forEach(b => b.classList.toggle('active', b.dataset.sym === sym));
 };
 
-
-document.querySelector('#tab-scanner').onclick = () => {
-  state.activeTab = 'scanner';
-  document.querySelector('#tab-scanner').classList.add('active');
-  document.querySelector('#tab-lookback').classList.remove('active');
-  document.querySelector('#tab-tester').classList.remove('active');
-  document.querySelector('#section-scanner').style.display = 'block';
-  document.querySelector('#section-lookback').style.display = 'none';
-  document.querySelector('#section-tester').style.display = 'none';
-  refreshScanner();
+document.querySelector('#btn-trigger-sample-news').onclick = () => {
+  analyzeStockNews('TVSMOTOR');
 };
 
-document.querySelector('#tab-tester').onclick = () => {
-  state.activeTab = 'tester';
-  document.querySelector('#tab-tester').classList.add('active');
-  document.querySelector('#tab-lookback').classList.remove('active');
-  document.querySelector('#tab-scanner').classList.remove('active');
-  document.querySelector('#section-tester').style.display = 'block';
-  document.querySelector('#section-lookback').style.display = 'none';
-  document.querySelector('#section-scanner').style.display = 'none';
+document.querySelector('#btn-run-news').onclick = () => {
+  const custom = (document.querySelector('#news-custom-input').value || '').trim().toUpperCase();
+  const selected = document.querySelector('#news-stock-select').value;
+  const sym = custom || selected || 'TVSMOTOR';
+  analyzeStockNews(sym);
 };
+
+async function analyzeStockNews(symbol) {
+  const btn = document.querySelector('#btn-run-news');
+  btn.disabled = true;
+  btn.innerHTML = '<span>⏳ Claude AI Analyzing…</span>';
+  statusEl.textContent = `Fetching live news & analyzing market sentiment for ${symbol}…`;
+
+  try {
+    const res = await fetch('/news/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ symbol: symbol, days: 7 }),
+    });
+
+    if (!res.ok) {
+      const errJson = await res.json().catch(() => ({}));
+      throw new Error(errJson.detail || `Server returned status ${res.status}`);
+    }
+
+    const data = await res.json();
+    state.newsData = data;
+    renderNewsAnalysis(data);
+    statusEl.textContent = `AI analysis complete for ${data.symbol}: ${data.sentiment} (${data.sentiment_score}/100)`;
+  } catch (err) {
+    statusEl.textContent = 'News analysis failed: ' + err.message;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>✨ Analyze News with AI</span>';
+  }
+}
+
+function renderNewsAnalysis(data) {
+  document.querySelector('#news-placeholder').style.display = 'none';
+  const card = document.querySelector('#news-content-card');
+  card.style.display = 'flex';
+
+  // Hero section
+  document.querySelector('#ai-stock-ticker').textContent = data.symbol;
+  document.querySelector('#ai-company-name').textContent = data.company_name;
+  document.querySelector('#ai-exec-summary').textContent = data.executive_summary;
+
+  // Sentiment verdict
+  const sentBadge = document.querySelector('#ai-sentiment-badge');
+  const sentText = document.querySelector('#ai-sentiment-text');
+  const sentLower = data.sentiment.toLowerCase();
+  sentBadge.className = `sentiment-badge-pill ${sentLower}`;
+  
+  let icon = '🟢';
+  if (sentLower === 'bearish') icon = '🔴';
+  else if (sentLower === 'neutral') icon = '🟡';
+  sentBadge.querySelector('.sentiment-icon').textContent = icon;
+  sentText.textContent = data.sentiment;
+
+  // Score
+  document.querySelector('#ai-score-number').textContent = `${data.sentiment_score}%`;
+  document.querySelector('#ai-score-fill').style.width = `${data.sentiment_score}%`;
+
+  // Catalysts
+  const catList = document.querySelector('#ai-catalysts-list');
+  catList.innerHTML = (data.catalysts || []).map(c => `<li>${c}</li>`).join('');
+
+  // Risks
+  const riskList = document.querySelector('#ai-risks-list');
+  riskList.innerHTML = (data.risks || []).map(r => `<li>${r}</li>`).join('');
+
+  // Technical correlation
+  document.querySelector('#ai-technical-correlation').textContent = data.technical_correlation;
+
+  // Articles Feed
+  const countBadge = document.querySelector('#ai-articles-count');
+  countBadge.textContent = `${(data.articles || []).length} articles`;
+
+  const articlesGrid = document.querySelector('#news-articles-grid');
+  if (!data.articles || !data.articles.length) {
+    articlesGrid.innerHTML = `<div class="empty-cell" style="grid-column: 1 / -1;">No breaking news articles found for ${data.symbol} in recent days.</div>`;
+    return;
+  }
+
+  articlesGrid.innerHTML = data.articles.map(art => `
+    <div class="news-article-card">
+      <div class="article-top">
+        <div class="article-meta-row">
+          <span class="article-publisher">${art.publisher}</span>
+          <span class="article-date">${art.published_at.split(' ').slice(0, 4).join(' ')}</span>
+        </div>
+        <h5 class="article-title">${art.title}</h5>
+        <p class="article-snippet">${art.summary || 'Click below to read the complete financial coverage.'}</p>
+      </div>
+      <a href="${art.link}" target="_blank" rel="noopener noreferrer" class="article-link">
+        <span>Read Full Story</span>
+        <span>↗</span>
+      </a>
+    </div>
+  `).join('');
+}
 
 // -------------------------------------------------------------
 // Strategy Tester Controller
