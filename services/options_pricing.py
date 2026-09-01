@@ -127,10 +127,12 @@ class OptionsPricingService:
             return 0.155
         elif clean_sym in ["ITC", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "SBIN", "BHARTIARTL", "LT", "KOTAKBANK"]:
             return 0.22
-        elif clean_sym in ["TVSMOTOR", "TRENT", "TATAMOTORS", "BAJFINANCE", "PFC", "IDFCFIRSTB", "COALINDIA", "TATASTEEL"]:
-            return 0.32
+        elif clean_sym in ["BOSCHLTD", "MARUTI", "BAJAJ-AUTO", "HEROMOTOCO", "EICHERMOT"]:
+            return 0.29
+        elif clean_sym in ["TVSMOTOR", "TRENT", "TATAMOTORS", "BAJFINANCE", "PFC", "IDFCFIRSTB", "COALINDIA", "TATASTEEL", "ADANIENT"]:
+            return 0.33
         else:
-            return 0.26
+            return 0.28
 
     @staticmethod
     def _norm_cdf(x: float) -> float:
@@ -165,9 +167,17 @@ class OptionsPricingService:
         
         # Volatility smile / skew factor based on moneyness ln(K / S)
         moneyness = math.log(max(strike, 0.01) / max(spot, 0.01))
-        # Call skew or put skew
-        skew_adjust = 0.25 * (moneyness ** 2) - 0.08 * moneyness
+        
+        # Asymmetric put/call skew (OTM Puts have elevated downside crash risk in Indian F&O)
+        if opt_type == "PE" and strike < spot:
+            skew_adjust = 0.35 * (moneyness ** 2) - 0.25 * moneyness
+        elif opt_type == "CE" and strike > spot:
+            skew_adjust = 0.20 * (moneyness ** 2) + 0.05 * moneyness
+        else:
+            skew_adjust = 0.15 * (moneyness ** 2)
+
         sigma = max(base_iv * (1.0 + skew_adjust), 0.08)
+
 
         # In case of immediate expiry
         if T <= 0.001:
