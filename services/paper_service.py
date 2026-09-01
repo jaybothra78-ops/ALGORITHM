@@ -161,6 +161,17 @@ class PaperTradingService:
         lot_size = OptionsPricingService.get_lot_size(clean_sym)
 
 
+        # Check if Zerodha live stream quote is available
+        from services.zerodha_service import ZerodhaService
+        zd_quote = ZerodhaService.get_instance().get_live_option_quote(clean_sym, strike, option_type, expiry_date)
+        
+        if zd_quote and zd_quote.get("ltp", 0.0) > 0:
+            live_premium = zd_quote["ltp"]
+            source_lbl = f"⚡ {zd_quote['source']}"
+        else:
+            live_premium = bsm["premium"]
+            source_lbl = f"Black-Scholes Live Model ({spot_data['source']})"
+
         return {
             "symbol": symbol.upper(),
             "display_symbol": display_sym,
@@ -171,16 +182,17 @@ class PaperTradingService:
             "days_to_expiry": days_to_expiry,
             "spot_price": spot,
             "lot_size": lot_size,
-            "premium": bsm["premium"],
+            "premium": live_premium,
             "intrinsic": bsm["intrinsic"],
             "time_value": bsm["time_value"],
             "delta": bsm["delta"],
             "theta": bsm["theta"],
             "gamma": bsm["gamma"],
             "vega": bsm["vega"],
-            "source": f"Black-Scholes Live Model ({spot_data['source']})",
+            "source": source_lbl,
             "timestamp": time.time(),
         }
+
 
     @classmethod
     def place_order(cls, request: PaperOrderRequest) -> dict[str, Any]:

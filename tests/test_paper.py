@@ -123,3 +123,21 @@ def test_options_trading_workflow():
     assert close_data["success"] is True
     assert close_data["pnl_amount"] == 2000.0  # (160 - 120) * 50
 
+
+def test_zerodha_service_endpoints():
+    # Test Zerodha Status
+    res_status = client.get("/zerodha/status")
+    assert res_status.status_code == 200
+    status_data = res_status.json()
+    assert "connected" in status_data
+    assert "method" in status_data
+
+    # Test Trading Symbol generation
+    from services.zerodha_service import ZerodhaService
+    zs = ZerodhaService.get_instance()
+    ts = zs.get_tradingsymbol("NIFTY", 25000, "CE", "2026-09-24")
+    assert ts == "NIFTY26SEP25000CE"
+    ts_bosch = zs.get_tradingsymbol("BOSCHLTD", 44000, "PE", "2026-09-24")
+    assert ts_bosch == "BOSCHLTD26SEP44000PE"
+
+

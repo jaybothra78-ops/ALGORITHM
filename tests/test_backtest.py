@@ -50,9 +50,11 @@ def test_simulate_trade_target_exit():
 
 def test_simulate_trade_stop_loss_exit():
     df = _dummy_ohlc(50)
-    # Force a 3% drop on day 2
     entry_price = float(df["Close"].iloc[5])
-    df.loc[df.index[7], "Low"] = entry_price * 0.97
+    # Keep high below target and force a 3% drop on day 6
+    df.loc[df.index[6]:df.index[8], "High"] = entry_price * 1.01
+    df.loc[df.index[6], "Low"] = entry_price * 0.97
+
 
     trade = BacktesterEngine._simulate_trade(
         symbol="TEST",
