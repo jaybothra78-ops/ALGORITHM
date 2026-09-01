@@ -123,11 +123,11 @@ class PaperTradingService:
         return float(data.get("ltp", 100.0))
 
     @classmethod
-    def get_option_strikes(cls, symbol: str, days_to_expiry: float = 3.0) -> dict[str, Any]:
-        """Fetch spot price and standard strike list for Options trading."""
+    def get_option_strikes(cls, symbol: str, expiry_date: str | None = None) -> dict[str, Any]:
+        """Fetch spot price and standard strike list for Options trading with accurate DTE."""
         spot_data = cls.get_live_ltp(symbol)
         spot_price = spot_data["ltp"]
-        strikes_data = OptionsPricingService.get_option_strikes(symbol, spot_price, days_to_expiry)
+        strikes_data = OptionsPricingService.get_option_strikes(symbol, spot_price, expiry_date_str=expiry_date)
         strikes_data["spot_quote"] = spot_data
         return strikes_data
 
@@ -140,31 +140,26 @@ class PaperTradingService:
         expiry_date: str | None = None,
         days_to_expiry: float | None = None,
     ) -> dict[str, Any]:
-        """Calculate real-time Call or Put option premium and Greeks based on underlying spot."""
-        spot_data = cls.get_live_ltp(symbol)
+        """Calculate real-time Call or Put option premium and Greeks based on underlying spot and exact expiry."""
+        clean_sym = symbol.strip().upper()
+        spot_data = cls.get_live_ltp(clean_sym)
         spot = spot_data["ltp"]
 
-        # Calculate days to expiry
+        # Calculate accurate days to expiry
         if days_to_expiry is None:
-            if expiry_date:
-                try:
-                    exp_dt = datetime.strptime(expiry_date, "%Y-%m-%d").date()
-                    today = datetime.now(timezone.utc).date()
-                    days_to_expiry = max(0.5, float((exp_dt - today).days))
-                except Exception:
-                    days_to_expiry = 3.0
-            else:
-                days_to_expiry = 3.0
+            days_to_expiry = OptionsPricingService.calculate_days_to_expiry(expiry_date, clean_sym)
 
         bsm = OptionsPricingService.calculate_bsm_price(
             spot=spot,
             strike=strike,
             days_to_expiry=days_to_expiry,
+            symbol=clean_sym,
             option_type=option_type,
         )
 
-        display_sym = f"{symbol.upper()} {int(strike) if strike.is_integer() else strike} {option_type.upper()}"
-        lot_size = OptionsPricingService.get_lot_size(symbol)
+        display_sym = f"{clean_sym} {int(strike) if strike.is_integer() else strike} {option_type.upper()}"
+        lot_size = OptionsPricingService.get_lot_size(clean_sym)
+
 
         return {
             "symbol": symbol.upper(),

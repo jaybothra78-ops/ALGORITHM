@@ -184,14 +184,15 @@ def get_market_ltp_endpoint(
 @router.get("/market/option-strikes", response_model=dict[str, Any])
 def get_option_strikes_endpoint(
     symbol: str = Query(..., description="Stock or Index ticker (e.g. NIFTY, TVSMOTOR, RELIANCE)"),
-    days_to_expiry: float = Query(3.0, ge=0.1, le=365.0, description="Estimated days to expiry"),
+    expiry_date: str | None = Query(None, description="Expiry date in YYYY-MM-DD format"),
 ) -> dict[str, Any]:
-    """Return spot price, ATM strike, standard step size, and strike ladder for Options trading."""
+    """Return spot price, ATM strike, standard step size, exact NSE expiries, and strike ladder for Options trading."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.get_option_strikes(symbol, days_to_expiry)
+        return PaperTradingService.get_option_strikes(symbol, expiry_date=expiry_date)
     except Exception as exc:
         raise HTTPException(500, f"Failed to fetch option strikes for {symbol}: {exc}") from exc
+
 
 
 @router.get("/market/option-price", response_model=dict[str, Any])

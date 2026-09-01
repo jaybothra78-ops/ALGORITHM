@@ -84,6 +84,21 @@ class OptionsPricingService:
         else:
             return 200.0
 
+    @classmethod
+    def get_asset_iv(cls, symbol: str) -> float:
+        """Return calibrated baseline implied volatility for NSE index or stock."""
+        clean_sym = symbol.strip().upper()
+        if clean_sym in ["NIFTY", "NIFTY50", "SENSEX"]:
+            return 0.135
+        elif clean_sym in ["BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "BANKEX"]:
+            return 0.155
+        elif clean_sym in ["ITC", "TCS", "INFY", "HDFCBANK", "ICICIBANK", "SBIN", "BHARTIARTL", "LT", "KOTAKBANK"]:
+            return 0.22
+        elif clean_sym in ["TVSMOTOR", "TRENT", "TATAMOTORS", "BAJFINANCE", "PFC", "IDFCFIRSTB", "COALINDIA", "TATASTEEL"]:
+            return 0.32
+        else:
+            return 0.26
+
     @staticmethod
     def _norm_cdf(x: float) -> float:
         """Standard cumulative normal distribution function."""
@@ -100,30 +115,39 @@ class OptionsPricingService:
         spot: float,
         strike: float,
         days_to_expiry: float,
-        iv: float = 0.18,
+        symbol: str = "NIFTY",
+        iv: float | None = None,
         r: float = 0.065,
         option_type: str = "CE",
     ) -> dict[str, Any]:
         """
-        Compute Black-Scholes-Merton theoretical option premium and Greeks.
+        Compute Black-Scholes-Merton theoretical option premium, Greeks, and volatility skew.
         option_type: 'CE' (Call) or 'PE' (Put)
         """
         opt_type = option_type.strip().upper()
-        T = max(days_to_expiry, 0.2) / 365.0
-        sigma = max(iv, 0.05)
+        T = max(days_to_expiry, 0.25) / 365.0
         r_rate = max(r, 0.01)
 
+        base_iv = iv if (iv is not None and iv > 0) else cls.get_asset_iv(symbol)
+        
+        # Volatility smile / skew factor based on moneyness ln(K / S)
+        moneyness = math.log(max(strike, 0.01) / max(spot, 0.01))
+        # Call skew or put skew
+        skew_adjust = 0.25 * (moneyness ** 2) - 0.08 * moneyness
+        sigma = max(base_iv * (1.0 + skew_adjust), 0.08)
+
         # In case of immediate expiry
-        if T <= 0:
+        if T <= 0.001:
             intrinsic = max(0.0, spot - strike) if opt_type == "CE" else max(0.0, strike - spot)
             return {
                 "premium": round(intrinsic, 2),
                 "intrinsic": round(intrinsic, 2),
                 "time_value": 0.0,
-                "delta": 1.0 if opt_type == "CE" and spot > strike else ( -1.0 if opt_type == "PE" and spot < strike else 0.0 ),
+                "delta": 1.0 if opt_type == "CE" and spot > strike else (-1.0 if opt_type == "PE" and spot < strike else 0.0),
                 "theta": 0.0,
                 "gamma": 0.0,
                 "vega": 0.0,
+                "iv": round(sigma * 100, 1),
             }
 
         d1 = (math.log(max(spot, 0.01) / max(strike, 0.01)) + (r_rate + 0.5 * sigma * sigma) * T) / (sigma * math.sqrt(T))
@@ -162,55 +186,114 @@ class OptionsPricingService:
             "theta": round(theta_daily, 2),
             "gamma": round(gamma, 5),
             "vega": round(vega, 2),
+            "iv": round(sigma * 100, 1),
         }
 
     @classmethod
-    def get_expiry_calendar(cls) -> list[dict[str, Any]]:
-        """Generate near-term NSE weekly and monthly Thursday expiry dates."""
+    def get_expiry_calendar_for_symbol(cls, symbol: str) -> list[dict[str, Any]]:
+        """
+        Generate exact NSE expiry dates based on Indian market regulations:
+        - Indices (NIFTY, BANKNIFTY, FINNIFTY, MIDCPNIFTY, SENSEX): Weekly expiries on specific weekday.
+        - F&O Equities (RELIANCE, TVSMOTOR, ITC, PFC, etc.): Monthly expiries (Last Thursday of Current, Next, Far month).
+        """
+        clean_sym = symbol.strip().upper()
         today = datetime.now(timezone.utc).date()
         expiries = []
 
-        # Find upcoming Thursdays
-        days_ahead = (3 - today.weekday() + 7) % 7
-        if days_ahead == 0:
-            # If today is Thursday, check time or count as today
-            first_thursday = today
+        is_stock = clean_sym not in ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX", "BANKEX", "NIFTY50"]
+
+        if not is_stock:
+            # Determine specific weekly expiry weekday:
+            # NIFTY: Thursday (3), BANKNIFTY: Wednesday (2), FINNIFTY: Tuesday (1), MIDCPNIFTY: Monday (0), SENSEX: Friday (4)
+            if clean_sym in ["NIFTY", "NIFTY50"]:
+                target_weekday = 3
+            elif clean_sym == "BANKNIFTY":
+                target_weekday = 2
+            elif clean_sym == "FINNIFTY":
+                target_weekday = 1
+            elif clean_sym == "MIDCPNIFTY":
+                target_weekday = 0
+            else:
+                target_weekday = 4
+
+            curr = today
+            while len(expiries) < 4:
+                days_ahead = (target_weekday - curr.weekday() + 7) % 7
+                exp_date = curr if days_ahead == 0 else curr + timedelta(days=days_ahead)
+                dte = max(0.5, float((exp_date - today).days))
+                
+                tag = "Current Weekly" if len(expiries) == 0 else "Next Weekly"
+                label = f"{exp_date.strftime('%d %b %Y')} ({int(dte)}d - {tag})"
+                
+                expiries.append({
+                    "label": label,
+                    "date": exp_date.strftime("%Y-%m-%d"),
+                    "days_to_expiry": dte,
+                    "type": "Weekly",
+                    "is_current": len(expiries) == 0,
+                })
+                curr = exp_date + timedelta(days=1)
         else:
-            first_thursday = today + timedelta(days=days_ahead)
-
-        expiries.append({
-            "label": f"Weekly Expiry ({first_thursday.strftime('%d %b %Y')})",
-            "date": first_thursday.strftime("%Y-%m-%d"),
-            "days_to_expiry": max(1, (first_thursday - today).days),
-            "is_current": True,
-        })
-
-        second_thursday = first_thursday + timedelta(days=7)
-        expiries.append({
-            "label": f"Next Week ({second_thursday.strftime('%d %b %Y')})",
-            "date": second_thursday.strftime("%Y-%m-%d"),
-            "days_to_expiry": max(8, (second_thursday - today).days),
-            "is_current": False,
-        })
-
-        # Monthly expiry (approx 30 days)
-        monthly_date = today + timedelta(days=28)
-        monthly_thursday = monthly_date + timedelta(days=((3 - monthly_date.weekday() + 7) % 7))
-        expiries.append({
-            "label": f"Monthly Expiry ({monthly_thursday.strftime('%d %b %Y')})",
-            "date": monthly_thursday.strftime("%Y-%m-%d"),
-            "days_to_expiry": max(20, (monthly_thursday - today).days),
-            "is_current": False,
-        })
+            # Equities / Stocks: Exactly Current Month Last Thursday, Next Month Last Thursday, Far Month
+            for month_offset in range(3):
+                y = today.year + (today.month + month_offset - 1) // 12
+                m = (today.month + month_offset - 1) % 12 + 1
+                next_m_first = datetime(y + 1, 1, 1).date() if m == 12 else datetime(y, m + 1, 1).date()
+                last_day = next_m_first - timedelta(days=1)
+                days_back = (last_day.weekday() - 3 + 7) % 7
+                last_thursday = last_day - timedelta(days=days_back)
+                
+                if last_thursday >= today:
+                    dte = max(0.5, float((last_thursday - today).days))
+                    tag = "Current Monthly" if month_offset == 0 else ("Next Month" if month_offset == 1 else "Far Month")
+                    label = f"{last_thursday.strftime('%d %b %Y')} ({int(dte)}d - {tag})"
+                    
+                    expiries.append({
+                        "label": label,
+                        "date": last_thursday.strftime("%Y-%m-%d"),
+                        "days_to_expiry": dte,
+                        "type": tag,
+                        "is_current": len(expiries) == 0,
+                    })
 
         return expiries
 
     @classmethod
-    def get_option_strikes(cls, symbol: str, spot_price: float, days_to_expiry: float = 3.0) -> dict[str, Any]:
-        """Generate standard ATM, ITM, and OTM strike ladder around spot price."""
+    def calculate_days_to_expiry(cls, expiry_date_str: str | None, symbol: str = "NIFTY") -> float:
+        """Parse expiry date string (YYYY-MM-DD) and return fractional days remaining."""
+        if not expiry_date_str:
+            # Use default first expiry for the symbol
+            expiries = cls.get_expiry_calendar_for_symbol(symbol)
+            return expiries[0]["days_to_expiry"] if expiries else 3.0
+
+        try:
+            exp_date = datetime.strptime(expiry_date_str.strip(), "%Y-%m-%d").date()
+            today = datetime.now(timezone.utc).date()
+            diff_days = (exp_date - today).days
+            return max(0.5, float(diff_days))
+        except Exception:
+            return 3.0
+
+    @classmethod
+    def get_option_strikes(
+        cls,
+        symbol: str,
+        spot_price: float,
+        expiry_date_str: str | None = None,
+    ) -> dict[str, Any]:
+        """Generate standard ATM, ITM, and OTM strike ladder around spot price with accurate DTE."""
         clean_sym = symbol.strip().upper()
         step = cls.get_strike_step(clean_sym, spot_price)
         lot_size = cls.get_lot_size(clean_sym)
+        expiries = cls.get_expiry_calendar_for_symbol(clean_sym)
+
+        # Determine effective days to expiry from selected or nearest expiry
+        if expiry_date_str:
+            days_to_expiry = cls.calculate_days_to_expiry(expiry_date_str, clean_sym)
+        elif expiries:
+            days_to_expiry = expiries[0]["days_to_expiry"]
+        else:
+            days_to_expiry = 3.0
 
         # Calculate nearest round ATM strike
         atm_strike = round(spot_price / step) * step
@@ -219,8 +302,8 @@ class OptionsPricingService:
         # Generate 11 strikes (-5 to +5 around ATM)
         for offset in range(-5, 6):
             strike = round(atm_strike + (offset * step), 2)
-            ce_calc = cls.calculate_bsm_price(spot_price, strike, days_to_expiry, option_type="CE")
-            pe_calc = cls.calculate_bsm_price(spot_price, strike, days_to_expiry, option_type="PE")
+            ce_calc = cls.calculate_bsm_price(spot_price, strike, days_to_expiry, symbol=clean_sym, option_type="CE")
+            pe_calc = cls.calculate_bsm_price(spot_price, strike, days_to_expiry, symbol=clean_sym, option_type="PE")
 
             tag = "ATM" if offset == 0 else (f"ITM {abs(offset)}" if offset < 0 else f"OTM +{offset}")
             pe_tag = "ATM" if offset == 0 else (f"OTM +{abs(offset)}" if offset < 0 else f"ITM {offset}")
@@ -242,6 +325,8 @@ class OptionsPricingService:
             "atm_strike": atm_strike,
             "strike_step": step,
             "lot_size": lot_size,
+            "days_to_expiry": days_to_expiry,
             "strikes": strikes,
-            "expiries": cls.get_expiry_calendar(),
+            "expiries": expiries,
         }
+

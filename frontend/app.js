@@ -1353,9 +1353,13 @@ document.querySelector('#paper-contracts-input').oninput = updateEstimatedCapita
 document.querySelector('#paper-price-input').oninput = updateEstimatedCapital;
 
 // Fetch Option Strikes & Calendar
-async function fetchOptionStrikes(sym) {
+async function fetchOptionStrikes(sym, selectedExpiry = null) {
   try {
-    const res = await fetch(`/market/option-strikes?symbol=${encodeURIComponent(sym)}`);
+    const url = selectedExpiry
+      ? `/market/option-strikes?symbol=${encodeURIComponent(sym)}&expiry_date=${encodeURIComponent(selectedExpiry)}`
+      : `/market/option-strikes?symbol=${encodeURIComponent(sym)}`;
+    
+    const res = await fetch(url);
     if (!res.ok) return;
     const data = await res.json();
 
@@ -1366,8 +1370,9 @@ async function fetchOptionStrikes(sym) {
     // Populate Expiry Select
     const expSelect = document.querySelector('#paper-expiry-select');
     if (expSelect && data.expiries && data.expiries.length) {
+      const currentVal = selectedExpiry || expSelect.value;
       expSelect.innerHTML = data.expiries.map((exp, idx) => `
-        <option value="${exp.date}" ${idx === 0 ? 'selected' : ''}>${exp.label}</option>
+        <option value="${exp.date}" ${(currentVal === exp.date || (!selectedExpiry && idx === 0)) ? 'selected' : ''}>${exp.label}</option>
       `).join('');
     }
 
@@ -1405,17 +1410,34 @@ async function fetchOptionStrikes(sym) {
 document.querySelector('#btn-auto-atm-strike').onclick = async () => {
   const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
   if (sym) {
-    fetchOptionStrikes(sym);
+    const expiry = document.querySelector('#paper-expiry-select').value || null;
+    fetchOptionStrikes(sym, expiry);
   }
 };
 
 document.querySelector('#paper-expiry-select').onchange = () => {
-  fetchLivePriceOrPremium();
+  const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
+  const expiry = document.querySelector('#paper-expiry-select').value || null;
+  if (sym) {
+    fetchOptionStrikes(sym, expiry);
+  }
 };
 
 document.querySelector('#paper-strike-input').onchange = () => {
   fetchLivePriceOrPremium();
 };
+
+document.querySelector('#paper-stock-input').addEventListener('change', () => {
+  const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
+  if (sym) {
+    if (state.paperInstrument === 'OPTION') {
+      fetchOptionStrikes(sym);
+    } else {
+      fetchLivePriceOrPremium();
+    }
+  }
+});
+
 
 // Fetch Live LTP / Option Premium
 async function fetchLivePriceOrPremium() {
