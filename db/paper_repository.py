@@ -12,7 +12,7 @@ class PaperRepository:
 
     @staticmethod
     def initialize_paper_tables() -> None:
-        """Create tables for paper trading and virtual account if they do not exist."""
+        """Create tables for paper trading and virtual account if they do not exist, and migrate columns."""
         with get_db_connection() as conn:
             conn.execute(
                 """
@@ -35,6 +35,13 @@ class PaperRepository:
                 CREATE TABLE IF NOT EXISTS paper_trades (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     symbol TEXT NOT NULL,
+                    display_symbol TEXT,
+                    instrument_type TEXT NOT NULL DEFAULT 'EQUITY',
+                    option_type TEXT,
+                    strike_price REAL,
+                    expiry_date TEXT,
+                    lot_size INTEGER NOT NULL DEFAULT 1,
+                    contracts INTEGER NOT NULL DEFAULT 1,
                     side TEXT NOT NULL CHECK(side IN ('BUY', 'SELL')),
                     quantity INTEGER NOT NULL,
                     entry_price REAL NOT NULL,
@@ -53,6 +60,22 @@ class PaperRepository:
                 );
                 """
             )
+            # Safe schema migration for existing SQLite databases
+            cursor = conn.execute("PRAGMA table_info(paper_trades);")
+            existing_cols = {row["name"] for row in cursor.fetchall()}
+            
+            migrations = [
+                ("display_symbol", "TEXT"),
+                ("instrument_type", "TEXT DEFAULT 'EQUITY'"),
+                ("option_type", "TEXT"),
+                ("strike_price", "REAL"),
+                ("expiry_date", "TEXT"),
+                ("lot_size", "INTEGER DEFAULT 1"),
+                ("contracts", "INTEGER DEFAULT 1"),
+            ]
+            for col_name, col_type in migrations:
+                if col_name not in existing_cols:
+                    conn.execute(f"ALTER TABLE paper_trades ADD COLUMN {col_name} {col_type};")
 
     @staticmethod
     def get_account() -> dict[str, Any]:
@@ -77,10 +100,21 @@ class PaperRepository:
     @staticmethod
     def create_trade(data: dict[str, Any]) -> int:
         PaperRepository.initialize_paper_tables()
-        columns = "symbol, side, quantity, entry_price, target_price, stop_loss_price, strategy, notes, status, entry_time"
-        placeholders = "?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
+        columns = (
+            "symbol, display_symbol, instrument_type, option_type, strike_price, expiry_date, "
+            "lot_size, contracts, side, quantity, entry_price, target_price, stop_loss_price, "
+            "strategy, notes, status, entry_time"
+        )
+        placeholders = "?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?"
         values = (
             data["symbol"],
+            data.get("display_symbol") or data["symbol"],
+            data.get("instrument_type", "EQUITY"),
+            data.get("option_type"),
+            data.get("strike_price"),
+            data.get("expiry_date"),
+            data.get("lot_size", 1),
+            data.get("contracts", 1),
             data["side"],
             data["quantity"],
             data["entry_price"],
@@ -128,3 +162,4 @@ class PaperRepository:
         with get_db_connection() as conn:
             rows = conn.execute("SELECT * FROM paper_trades WHERE status = 'CLOSED' ORDER BY id DESC").fetchall()
             return [dict(r) for r in rows]
+

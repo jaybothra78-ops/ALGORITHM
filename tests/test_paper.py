@@ -64,3 +64,62 @@ def test_paper_trading_workflow():
     assert len(history) >= 1
     assert history[0]["symbol"] == "TVSMOTOR"
     assert history[0]["pnl_amount"] == 1000.0
+
+
+def test_options_trading_workflow():
+    # 1. Test Option Strikes Endpoint
+    res_strikes = client.get("/market/option-strikes?symbol=NIFTY")
+    assert res_strikes.status_code == 200
+    strikes_data = res_strikes.json()
+    assert strikes_data["symbol"] == "NIFTY"
+    assert len(strikes_data["strikes"]) >= 5
+    assert strikes_data["lot_size"] == 25
+
+    # 2. Test Option Pricing Endpoint (Call CE)
+    res_opt_price = client.get("/market/option-price?symbol=NIFTY&option_type=CE&strike=25000")
+    assert res_opt_price.status_code == 200
+    opt_data = res_opt_price.json()
+    assert opt_data["symbol"] == "NIFTY"
+    assert opt_data["option_type"] == "CE"
+    assert opt_data["premium"] > 0
+    assert "delta" in opt_data
+
+    # 3. Place Call Option Order
+    call_order = {
+        "symbol": "NIFTY",
+        "instrument_type": "OPTION",
+        "option_type": "CE",
+        "strike_price": 25000.0,
+        "expiry_date": "2026-09-04",
+        "lot_size": 25,
+        "contracts": 2,
+        "side": "BUY",
+        "entry_price": 120.0,
+        "target_price": 180.0,
+        "stop_loss_price": 80.0,
+        "strategy": "Options Directional Breakout",
+    }
+    res_order = client.post("/paper/order", json=call_order)
+    assert res_order.status_code == 200
+    order_res = res_order.json()
+    assert order_res["success"] is True
+    assert order_res["quantity"] == 50  # 2 lots * 25
+    pos_id = order_res["position_id"]
+
+    # 4. Check Open Position
+    res_pos = client.get("/paper/positions")
+    assert res_pos.status_code == 200
+    pos_list = res_pos.json()
+    matching_pos = next((p for p in pos_list if p["id"] == pos_id), None)
+    assert matching_pos is not None
+    assert matching_pos["instrument_type"] == "OPTION"
+    assert matching_pos["option_type"] == "CE"
+    assert matching_pos["quantity"] == 50
+
+    # 5. Close Option Position
+    res_close = client.post("/paper/close", json={"position_id": pos_id, "exit_price": 160.0, "exit_reason": "Target Hit"})
+    assert res_close.status_code == 200
+    close_data = res_close.json()
+    assert close_data["success"] is True
+    assert close_data["pnl_amount"] == 2000.0  # (160 - 120) * 50
+

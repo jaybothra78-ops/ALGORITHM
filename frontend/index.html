@@ -483,31 +483,94 @@
             <span class="order-card-icon">⚡</span>
             <div>
               <h3 class="order-card-title">Place New Paper Order</h3>
-              <p class="order-card-sub">Test strategies, Knoxville divergences, and breakouts in real-time with zero risk.</p>
+              <p class="order-card-sub">Trade Cash Equities or Options (Calls &amp; Puts) with real-time mark-to-market execution.</p>
             </div>
           </div>
-          <div class="side-selector-pill-group">
-            <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY (Long)</button>
-            <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL (Short)</button>
+          
+          <div class="order-header-switches">
+            <!-- Instrument Switch: Equity vs Options -->
+            <div class="instrument-pill-group">
+              <button type="button" id="btn-inst-equity" class="inst-pill active">📈 Equity (Cash)</button>
+              <button type="button" id="btn-inst-option" class="inst-pill">⚡ Options (F&amp;O)</button>
+            </div>
+
+            <!-- Direction Switch: Buy vs Sell -->
+            <div class="side-selector-pill-group">
+              <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY (Long)</button>
+              <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL (Short)</button>
+            </div>
           </div>
         </div>
 
-        <div class="order-form-grid">
-          <!-- Stock Symbol with scoped autocomplete -->
-          <div class="form-group field-symbol">
-            <label for="paper-stock-input">Stock Symbol</label>
-            <div class="stock-input-wrapper">
-              <span class="stock-input-icon">🔍</span>
-              <input type="text" id="paper-stock-input" list="paper-stocks-datalist" placeholder="e.g. TVSMOTOR" autocomplete="off">
+        <!-- Options Specific Parameters Bar (Visible when Options active) -->
+        <div id="options-control-panel" class="options-params-bar" style="display: none;">
+          <!-- Call vs Put Toggle -->
+          <div class="option-type-toggle-group">
+            <button type="button" id="btn-opt-type-ce" class="opt-type-pill call active">🟢 CALL (CE)</button>
+            <button type="button" id="btn-opt-type-pe" class="opt-type-pill put">🔴 PUT (PE)</button>
+          </div>
+
+          <!-- Expiry Date Selector -->
+          <div class="form-group field-expiry">
+            <label for="paper-expiry-select">Expiry Date</label>
+            <div class="select-wrapper">
+              <select id="paper-expiry-select">
+                <option value="weekly">Current Weekly Expiry</option>
+                <option value="next_weekly">Next Weekly Expiry</option>
+                <option value="monthly">Monthly Expiry</option>
+              </select>
             </div>
           </div>
 
-          <!-- Quantity -->
-          <div class="form-group field-qty">
-            <label for="paper-qty-input">Quantity (Shares)</label>
+          <!-- Strike Price Selector -->
+          <div class="form-group field-strike">
+            <div class="label-with-action">
+              <label for="paper-strike-input">Strike Price (₹)</label>
+              <button type="button" id="btn-auto-atm-strike" class="btn-link-action">🎯 Auto ATM</button>
+            </div>
+            <div class="strike-input-row">
+              <input type="number" id="paper-strike-input" placeholder="e.g. 25000" step="50">
+              <select id="paper-strike-quick-select" class="strike-quick-dropdown" title="Select from Strike Ladder">
+                <option value="">⚡ Strike Ladder</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Lots & Lot Size -->
+          <div class="form-group field-contracts">
+            <div class="label-with-action">
+              <label for="paper-contracts-input">Number of Lots</label>
+              <span id="paper-lot-size-badge" class="lot-size-badge">Lot Size: 100</span>
+            </div>
+            <div class="qty-input-row">
+              <input type="number" id="paper-contracts-input" value="1" min="1" step="1">
+              <div class="qty-quick-btns">
+                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="1">1</button>
+                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="2">2</button>
+                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="5">5</button>
+                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="10">10</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Order Form Main Inputs Grid -->
+        <div class="order-form-grid">
+          <!-- Stock Symbol with scoped autocomplete -->
+          <div class="form-group field-symbol">
+            <label for="paper-stock-input">Underlying Stock / Index</label>
+            <div class="stock-input-wrapper">
+              <span class="stock-input-icon">🔍</span>
+              <input type="text" id="paper-stock-input" list="paper-stocks-datalist" placeholder="e.g. NIFTY, TVSMOTOR, RELIANCE" autocomplete="off">
+            </div>
+          </div>
+
+          <!-- Quantity / Total Units -->
+          <div class="form-group field-qty" id="form-group-equity-qty">
+            <label for="paper-qty-input" id="label-qty-shares">Quantity (Shares)</label>
             <div class="qty-input-row">
               <input type="number" id="paper-qty-input" value="10" min="1" step="1">
-              <div class="qty-quick-btns">
+              <div class="qty-quick-btns" id="equity-qty-quick-btns">
                 <button type="button" class="btn-qty-chip" data-qty="10">+10</button>
                 <button type="button" class="btn-qty-chip" data-qty="50">+50</button>
                 <button type="button" class="btn-qty-chip" data-qty="100">+100</button>
@@ -515,39 +578,39 @@
             </div>
           </div>
 
-          <!-- Entry Price -->
+          <!-- Entry Price / Premium -->
           <div class="form-group field-price">
             <div class="label-with-action">
-              <label for="paper-price-input">Entry Price (₹)</label>
-              <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch LTP</button>
+              <label for="paper-price-input" id="label-entry-price">Entry Price / Premium (₹)</label>
+              <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch Live Price</button>
             </div>
-            <input type="number" id="paper-price-input" placeholder="Leave blank for live LTP" step="0.05">
+            <input type="number" id="paper-price-input" placeholder="Leave blank for live market" step="0.05">
           </div>
 
           <!-- Target Price -->
           <div class="form-group field-target">
             <div class="label-with-action">
               <label for="paper-target-input">Target (₹)</label>
-              <div class="quick-pct-row">
-                <button type="button" class="btn-pct-chip" data-pct="2">+2%</button>
+              <div class="quick-pct-row" id="quick-target-chips">
                 <button type="button" class="btn-pct-chip" data-pct="5">+5%</button>
-                <button type="button" class="btn-pct-chip" data-pct="10">+10%</button>
+                <button type="button" class="btn-pct-chip" data-pct="20">+20%</button>
+                <button type="button" class="btn-pct-chip" data-pct="50">+50%</button>
               </div>
             </div>
-            <input type="number" id="paper-target-input" placeholder="Auto-calculated (5%)" step="0.05">
+            <input type="number" id="paper-target-input" placeholder="Take Profit Target" step="0.05">
           </div>
 
           <!-- Stop Loss Price -->
           <div class="form-group field-sl">
             <div class="label-with-action">
               <label for="paper-sl-input">Stop Loss (₹)</label>
-              <div class="quick-pct-row">
-                <button type="button" class="btn-pct-chip" data-pct="-1">-1%</button>
+              <div class="quick-pct-row" id="quick-sl-chips">
                 <button type="button" class="btn-pct-chip" data-pct="-2">-2%</button>
-                <button type="button" class="btn-pct-chip" data-pct="-3">-3%</button>
+                <button type="button" class="btn-pct-chip" data-pct="-15">-15%</button>
+                <button type="button" class="btn-pct-chip" data-pct="-30">-30%</button>
               </div>
             </div>
-            <input type="number" id="paper-sl-input" placeholder="Auto-calculated (2%)" step="0.05">
+            <input type="number" id="paper-sl-input" placeholder="Stop Loss" step="0.05">
           </div>
 
           <!-- Strategy Tag -->
@@ -557,12 +620,23 @@
               <select id="paper-strategy-select">
                 <option value="Knoxville Divergence" selected>Knoxville Divergence</option>
                 <option value="Dual RSI Oversold">Dual RSI Oversold</option>
+                <option value="Options Directional Breakout">Options Directional Breakout</option>
                 <option value="200 SMA Support Touch">200 SMA Support Touch</option>
                 <option value="AI News Breakout">AI News Breakout</option>
                 <option value="Manual Discretionary">Manual Discretionary</option>
               </select>
             </div>
           </div>
+        </div>
+
+        <!-- Live Option Greeks & Pricing Metrics Ribbon -->
+        <div id="options-greeks-ribbon" class="options-greeks-box" style="display: none;">
+          <div class="greek-item"><span class="greek-lbl">Underlying Spot:</span> <strong id="greek-spot">—</strong></div>
+          <div class="greek-item"><span class="greek-lbl">Option Premium:</span> <strong id="greek-premium" class="text-accent">—</strong></div>
+          <div class="greek-item"><span class="greek-lbl">Delta:</span> <strong id="greek-delta">—</strong></div>
+          <div class="greek-item"><span class="greek-lbl">Theta:</span> <strong id="greek-theta">—</strong></div>
+          <div class="greek-item"><span class="greek-lbl">Intrinsic:</span> <strong id="greek-intrinsic">—</strong></div>
+          <div class="greek-item"><span class="greek-lbl">Time Value:</span> <strong id="greek-time-val">—</strong></div>
         </div>
 
         <div class="order-footer-row">
@@ -594,12 +668,13 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Stock &amp; Chart</th>
+              <th>Instrument / Stock</th>
+              <th>Type</th>
               <th>Side</th>
-              <th>Qty</th>
+              <th>Lots &amp; Qty</th>
               <th>Entry Price</th>
-              <th>Live LTP</th>
-              <th>Invested</th>
+              <th>Live Market</th>
+              <th>Invested Margin</th>
               <th>Unrealized P&amp;L</th>
               <th>Target / SL</th>
               <th>Strategy</th>
@@ -607,7 +682,7 @@
             </tr>
           </thead>
           <tbody id="paper-positions-rows">
-            <tr><td colspan="10" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>
+            <tr><td colspan="11" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>
           </tbody>
         </table>
       </div>
@@ -617,9 +692,10 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Stock</th>
+              <th>Instrument / Stock</th>
+              <th>Type</th>
               <th>Side</th>
-              <th>Qty</th>
+              <th>Lots &amp; Qty</th>
               <th>Entry Price</th>
               <th>Exit Price</th>
               <th>Exit Date</th>
@@ -631,11 +707,12 @@
             </tr>
           </thead>
           <tbody id="paper-history-rows">
-            <tr><td colspan="11" class="empty-cell">No closed trades yet in your journal.</td></tr>
+            <tr><td colspan="12" class="empty-cell">No closed trades yet in your journal.</td></tr>
           </tbody>
         </table>
       </div>
     </section>
+
   </main>
 
   <!-- Scoped Auto-Complete Ticker Datalists -->

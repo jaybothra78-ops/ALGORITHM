@@ -1771,8 +1771,15 @@ select:focus, input:focus, textarea:focus {
   color: var(--text-secondary);
 }
 
-/* Side Selector Pills */
-.side-selector-pill-group {
+/* Order Header Switches (Instrument & Direction) */
+.order-header-switches {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.instrument-pill-group, .side-selector-pill-group {
   display: flex;
   background: rgba(0, 0, 0, 0.45);
   border: 1px solid var(--border-subtle);
@@ -1781,12 +1788,35 @@ select:focus, input:focus, textarea:focus {
   gap: 4px;
 }
 
+.inst-pill {
+  border: none;
+  background: transparent;
+  padding: 6px 14px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+
+.inst-pill:hover {
+  color: #fff;
+}
+
+.inst-pill.active {
+  background: var(--surface-2);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+}
+
 .side-pill {
   border: none;
   background: transparent;
-  padding: 6px 16px;
+  padding: 6px 14px;
   border-radius: 6px;
-  font-size: 0.82rem;
+  font-size: 0.8rem;
   font-weight: 800;
   cursor: pointer;
   color: var(--text-muted);
@@ -1806,6 +1836,155 @@ select:focus, input:focus, textarea:focus {
   border: 1px solid var(--rose-border);
   box-shadow: 0 0 10px var(--rose-glow);
 }
+
+/* Options Parameters Panel */
+.options-params-bar {
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  align-items: flex-end;
+  animation: fadeInView 0.2s ease-out;
+}
+
+.option-type-toggle-group {
+  display: flex;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+  height: 38px;
+  align-items: center;
+}
+
+.opt-type-pill {
+  flex: 1;
+  height: 100%;
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  font-weight: 800;
+  cursor: pointer;
+  color: var(--text-muted);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.opt-type-pill.call.active {
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-border);
+  box-shadow: 0 0 10px var(--emerald-glow);
+}
+
+.opt-type-pill.put.active {
+  background: var(--rose-soft);
+  color: var(--rose);
+  border: 1px solid var(--rose-border);
+  box-shadow: 0 0 10px var(--rose-glow);
+}
+
+.strike-input-row {
+  display: flex;
+  gap: 6px;
+}
+
+.strike-input-row input {
+  flex: 1;
+  min-width: 80px;
+}
+
+.strike-quick-dropdown {
+  max-width: 140px;
+  font-size: 0.76rem;
+  font-family: var(--font-mono);
+  padding: 4px 8px;
+}
+
+.lot-size-badge {
+  font-size: 0.65rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--accent-cyan);
+  background: var(--accent-cyan-soft);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 1px 6px;
+  border-radius: 4px;
+}
+
+/* Options Greeks & Live Metrics Ribbon */
+.options-greeks-box {
+  background: rgba(13, 18, 31, 0.95);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.greek-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+}
+
+.greek-lbl {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.greek-item strong {
+  font-family: var(--font-mono);
+  color: #fff;
+}
+
+.text-accent {
+  color: var(--accent-cyan) !important;
+}
+
+/* Option Badges in Tables */
+.badge-inst-type {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.badge-inst-type.equity {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-subtle);
+}
+
+.badge-inst-type.call {
+  background: var(--emerald-soft);
+  color: var(--emerald);
+  border: 1px solid var(--emerald-border);
+}
+
+.badge-inst-type.put {
+  background: var(--rose-soft);
+  color: var(--rose);
+  border: 1px solid var(--rose-border);
+}
+
 
 /* Order Form Grid */
 .order-form-grid {

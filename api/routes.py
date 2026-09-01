@@ -171,7 +171,7 @@ def analyze_news_endpoint(
 # -------------------------------------------------------------
 @router.get("/market/ltp", response_model=dict[str, Any])
 def get_market_ltp_endpoint(
-    symbol: str = Query(..., description="Stock ticker symbol (e.g. TVSMOTOR)"),
+    symbol: str = Query(..., description="Stock or Index ticker symbol (e.g. TVSMOTOR, NIFTY)"),
 ) -> dict[str, Any]:
     """Fetch exact live Last Traded Price (LTP) and market quote."""
     try:
@@ -181,8 +181,42 @@ def get_market_ltp_endpoint(
         raise HTTPException(500, f"Failed to fetch live price for {symbol}: {exc}") from exc
 
 
+@router.get("/market/option-strikes", response_model=dict[str, Any])
+def get_option_strikes_endpoint(
+    symbol: str = Query(..., description="Stock or Index ticker (e.g. NIFTY, TVSMOTOR, RELIANCE)"),
+    days_to_expiry: float = Query(3.0, ge=0.1, le=365.0, description="Estimated days to expiry"),
+) -> dict[str, Any]:
+    """Return spot price, ATM strike, standard step size, and strike ladder for Options trading."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.get_option_strikes(symbol, days_to_expiry)
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to fetch option strikes for {symbol}: {exc}") from exc
+
+
+@router.get("/market/option-price", response_model=dict[str, Any])
+def get_option_price_endpoint(
+    symbol: str = Query(..., description="Underlying Stock or Index (e.g. NIFTY, TVSMOTOR)"),
+    option_type: str = Query("CE", description="CE (Call) or PE (Put)"),
+    strike: float = Query(..., description="Strike price (e.g. 25000)"),
+    expiry_date: str | None = Query(None, description="Expiry date in YYYY-MM-DD format"),
+) -> dict[str, Any]:
+    """Fetch live option premium, intrinsic value, time value, and Greeks for a specific Call or Put strike."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.get_option_price(
+            symbol=symbol,
+            option_type=option_type,
+            strike=strike,
+            expiry_date=expiry_date,
+        )
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to calculate option price for {symbol}: {exc}") from exc
+
+
 @router.get("/paper/summary", response_model=PaperPortfolioSummary)
 def get_paper_summary_endpoint() -> PaperPortfolioSummary:
+
 
     """Return overall virtual portfolio summary and KPIs."""
     try:

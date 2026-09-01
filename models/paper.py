@@ -6,6 +6,16 @@ from typing import Any
 from pydantic import BaseModel, ConfigDict, Field
 
 
+class InstrumentType(str, Enum):
+    EQUITY = "EQUITY"
+    OPTION = "OPTION"
+
+
+class OptionType(str, Enum):
+    CE = "CE"
+    PE = "PE"
+
+
 class OrderSide(str, Enum):
     BUY = "BUY"
     SELL = "SELL"
@@ -19,13 +29,20 @@ class PositionStatus(str, Enum):
 class PaperOrderRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
-    symbol: str = Field(..., description="Stock ticker (e.g. TVSMOTOR, RELIANCE)")
+    symbol: str = Field(..., description="Stock or Index ticker (e.g. TVSMOTOR, RELIANCE, NIFTY)")
+    instrument_type: InstrumentType = Field(default=InstrumentType.EQUITY, description="EQUITY or OPTION")
+    option_type: OptionType | None = Field(default=None, description="CE (Call) or PE (Put) if OPTION")
+    strike_price: float | None = Field(default=None, description="Strike price if OPTION")
+    expiry_date: str | None = Field(default=None, description="Expiry date string (YYYY-MM-DD) if OPTION")
+    lot_size: int = Field(default=1, gt=0, description="Lot size per contract")
+    contracts: int = Field(default=1, gt=0, description="Number of lots / contracts")
+
     side: OrderSide = Field(default=OrderSide.BUY, description="BUY or SELL")
-    quantity: int = Field(default=10, gt=0, description="Number of shares")
-    entry_price: float | None = Field(default=None, description="Custom entry price or None for live market price")
-    target_price: float | None = Field(default=None, description="Take profit target price")
-    stop_loss_price: float | None = Field(default=None, description="Stop loss price")
-    strategy: str = Field(default="Manual", description="Strategy or signal reason (e.g. Knoxville, Dual RSI, AI News)")
+    quantity: int = Field(default=10, gt=0, description="Total number of shares or total units (lots * lot_size)")
+    entry_price: float | None = Field(default=None, description="Custom entry price/premium or None for live market price")
+    target_price: float | None = Field(default=None, description="Take profit target price/premium")
+    stop_loss_price: float | None = Field(default=None, description="Stop loss price/premium")
+    strategy: str = Field(default="Manual", description="Strategy or signal reason (e.g. Knoxville, Dual RSI, Options Momentum)")
     notes: str = Field(default="", description="Optional trade notes or rationale")
 
 
@@ -33,13 +50,20 @@ class PaperCloseRequest(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     position_id: int = Field(..., description="Unique ID of the open paper position")
-    exit_price: float | None = Field(default=None, description="Custom exit price or None for live market price")
+    exit_price: float | None = Field(default=None, description="Custom exit price/premium or None for live market price")
     exit_reason: str = Field(default="Manual Close", description="Reason for closing the position")
 
 
 class PaperPosition(BaseModel):
     id: int
     symbol: str
+    display_symbol: str
+    instrument_type: str = "EQUITY"
+    option_type: str | None = None
+    strike_price: float | None = None
+    expiry_date: str | None = None
+    lot_size: int = 1
+    contracts: int = 1
     side: str
     quantity: int
     entry_price: float
@@ -57,6 +81,13 @@ class PaperPosition(BaseModel):
 class PaperTradeRecord(BaseModel):
     id: int
     symbol: str
+    display_symbol: str
+    instrument_type: str = "EQUITY"
+    option_type: str | None = None
+    strike_price: float | None = None
+    expiry_date: str | None = None
+    lot_size: int = 1
+    contracts: int = 1
     side: str
     quantity: int
     entry_price: float
@@ -87,3 +118,4 @@ class PaperPortfolioSummary(BaseModel):
     winning_trades: int
     losing_trades: int
     open_positions_count: int
+
