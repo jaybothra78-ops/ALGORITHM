@@ -47,6 +47,21 @@ class OptionsPricingService:
         "TATASTEEL": 5500,
         "INDUSINDBK": 500,
         "IDFCFIRSTB": 7500,
+        "BOSCHLTD": 25,
+        "MRF": 10,
+        "PAGEIND": 15,
+        "BAJAJ-AUTO": 125,
+        "HEROMOTOCO": 150,
+        "EICHERMOT": 175,
+        "PFC": 1300,
+        "RECLTD": 1500,
+        "HAL": 150,
+        "BEL": 2850,
+        "DLF": 825,
+        "VEDL": 1150,
+        "ADANIENT": 300,
+        "ADANIPORTS": 400,
+        "NESTLEIND": 25,
     }
 
     # Standard Strike Step Sizes
@@ -57,12 +72,30 @@ class OptionsPricingService:
         "MIDCPNIFTY": 25.0,
         "SENSEX": 100.0,
         "BANKEX": 100.0,
+        "BOSCHLTD": 200.0,
+        "MRF": 500.0,
     }
 
     @classmethod
-    def get_lot_size(cls, symbol: str) -> int:
+    def get_lot_size(cls, symbol: str, spot_price: float = 0.0) -> int:
         clean_sym = symbol.strip().upper()
-        return cls.LOT_SIZES.get(clean_sym, 100)
+        if clean_sym in cls.LOT_SIZES:
+            return cls.LOT_SIZES[clean_sym]
+        
+        # Dynamic lot sizing based on spot price for unlisted F&O stocks
+        if spot_price >= 30000:
+            return 25
+        elif spot_price >= 10000:
+            return 50
+        elif spot_price >= 3000:
+            return 125
+        elif spot_price >= 1000:
+            return 250
+        elif spot_price >= 500:
+            return 500
+        else:
+            return 1000
+
 
     @classmethod
     def get_strike_step(cls, symbol: str, spot_price: float) -> float:
