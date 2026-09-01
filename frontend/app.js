@@ -372,82 +372,237 @@ App.Screener = {
 // =====================================================================
 App.News = {
   init() {
-    const btnSearch = document.querySelector('#btn-news-search');
-    const inputTicker = document.querySelector('#news-ticker-input');
+    const btnRun = document.querySelector('#btn-run-news');
+    const btnSample = document.querySelector('#btn-trigger-sample-news');
+    const stockSelect = document.querySelector('#news-stock-select');
+    const customInput = document.querySelector('#news-custom-input');
+    const universeFilter = document.querySelector('#news-universe-filter');
 
-    if (btnSearch && inputTicker) {
-      btnSearch.addEventListener('click', () => {
-        const sym = inputTicker.value.trim().toUpperCase();
+    // Analyze button click
+    if (btnRun) {
+      btnRun.addEventListener('click', () => {
+        const sym = this.getSelectedSymbol();
         if (sym) this.analyzeTicker(sym);
       });
+    }
 
-      inputTicker.addEventListener('keypress', (e) => {
+    // Sample button click
+    if (btnSample) {
+      btnSample.addEventListener('click', () => {
+        this.analyzeTicker('TVSMOTOR');
+      });
+    }
+
+    // Custom input enter key or change
+    if (customInput) {
+      customInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-          const sym = inputTicker.value.trim().toUpperCase();
+          const sym = customInput.value.trim().toUpperCase();
           if (sym) this.analyzeTicker(sym);
         }
+      });
+    }
+
+    // Quick Chips click
+    document.querySelectorAll('#news-quick-chips .pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#news-quick-chips .pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const sym = btn.dataset.sym;
+        if (stockSelect) stockSelect.value = sym;
+        if (customInput) customInput.value = sym;
+        this.analyzeTicker(sym);
+      });
+    });
+
+    // Universe filter to update stock dropdown
+    if (universeFilter) {
+      universeFilter.addEventListener('change', () => {
+        this.populateStockSelect(universeFilter.value);
       });
     }
 
     this.initClaudeKeyModal();
   },
 
+  getSelectedSymbol() {
+    const customInput = document.querySelector('#news-custom-input');
+    const stockSelect = document.querySelector('#news-stock-select');
+    const customVal = customInput ? customInput.value.trim().toUpperCase() : '';
+    if (customVal) return customVal;
+    return stockSelect ? stockSelect.value : 'TVSMOTOR';
+  },
+
+  async populateStockSelect(universe) {
+    try {
+      const res = await fetch(`/signals/lookback?days=1&index_name=${encodeURIComponent(universe || '')}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      const stockSelect = document.querySelector('#news-stock-select');
+      if (!stockSelect) return;
+
+      const symbols = Array.from(new Set((data.signals || []).map(s => s.symbol).filter(Boolean)));
+      if (symbols.length) {
+        stockSelect.innerHTML = symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+      }
+    } catch (err) {
+      console.debug('Failed to filter news stocks:', err);
+    }
+  },
+
   async loadTopMarketNews() {
-    this.analyzeTicker('NIFTY');
+    this.analyzeTicker('TVSMOTOR');
   },
 
   async analyzeTicker(symbol) {
     App.Router.switchTab('news');
     App.State.activeNewsTicker = symbol;
 
-    const inputTicker = document.querySelector('#news-ticker-input');
-    if (inputTicker) inputTicker.value = symbol;
+    const customInput = document.querySelector('#news-custom-input');
+    const stockSelect = document.querySelector('#news-stock-select');
+    if (customInput) customInput.value = symbol;
+    if (stockSelect) {
+      const exists = Array.from(stockSelect.options).some(opt => opt.value === symbol);
+      if (exists) stockSelect.value = symbol;
+    }
 
-    const titleEl = document.querySelector('#news-stock-title');
-    const briefingEl = document.querySelector('#news-briefing-content');
-    const sentimentBadge = document.querySelector('#news-sentiment-badge');
-    const scoreVal = document.querySelector('#news-score-val');
-    const catalystList = document.querySelector('#news-catalysts-list');
+    // Sync quick chip pills
+    document.querySelectorAll('#news-quick-chips .pill').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.sym === symbol);
+    });
 
-    if (titleEl) titleEl.textContent = `${symbol} Real-Time Equity Intelligence`;
-    if (briefingEl) briefingEl.innerHTML = '<div class="news-loading-skeleton">Fetching latest market intelligence & synthesizing with Claude AI…</div>';
+    const placeholder = document.querySelector('#news-placeholder');
+    const loadingCard = document.querySelector('#news-loading-card');
+    const contentCard = document.querySelector('#news-content-card');
+
+    if (placeholder) placeholder.style.display = 'none';
+    if (contentCard) contentCard.style.display = 'none';
+    if (loadingCard) loadingCard.style.display = 'block';
+
+    // Animate loading step progression
+    this.animateLoadingSteps();
 
     try {
       const res = await fetch(`/news/analyze?symbol=${encodeURIComponent(symbol)}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       const data = await res.json();
 
-      // Render Sentiment Score & Badge
-      if (sentimentBadge) {
-        sentimentBadge.textContent = data.overall_sentiment.toUpperCase();
-        sentimentBadge.className = `sentiment-badge ${data.overall_sentiment.toLowerCase()}`;
-      }
+      this.renderReport(data);
 
-      if (scoreVal) {
-        scoreVal.textContent = data.sentiment_score > 0 ? `+${data.sentiment_score.toFixed(2)}` : data.sentiment_score.toFixed(2);
-      }
-
-      // Render AI Synthesis
-      if (briefingEl) {
-        briefingEl.innerHTML = `<div class="synthesis-text">${this.formatMarkdown(data.synthesis_summary)}</div>`;
-      }
-
-      // Render Catalysts
-      if (catalystList && data.key_catalysts) {
-        catalystList.innerHTML = data.key_catalysts.map(c => `<li>${c}</li>`).join('');
+      if (loadingCard) loadingCard.style.display = 'none';
+      if (contentCard) {
+        contentCard.style.display = 'block';
+        contentCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     } catch (err) {
-      if (briefingEl) briefingEl.innerHTML = `<div class="news-error-box">Failed to analyze news for ${symbol}: ${err.message}</div>`;
+      if (loadingCard) loadingCard.style.display = 'none';
+      if (placeholder) {
+        placeholder.style.display = 'block';
+        placeholder.innerHTML = `
+          <div class="placeholder-icon">⚠️</div>
+          <h3>Analysis Failed for ${symbol}</h3>
+          <p style="color: #f43f5e;">${err.message || 'Unable to fetch news sentiment.'}</p>
+          <button onclick="App.News.analyzeTicker('${symbol}')" class="btn-secondary">Retry Analysis</button>
+        `;
+      }
     }
   },
 
-  formatMarkdown(text) {
-    if (!text) return '';
-    return text
-      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-      .replace(/\*(.*?)\*/g, '<em>$1</em>')
-      .replace(/\n\n/g, '<br><br>')
-      .replace(/\n/g, '<br>');
+  animateLoadingSteps() {
+    const steps = ['#step-1', '#step-2', '#step-3', '#step-4'];
+    steps.forEach((id, idx) => {
+      const el = document.querySelector(id);
+      if (el) {
+        el.classList.remove('active', 'completed');
+        setTimeout(() => {
+          if (idx > 0) {
+            const prev = document.querySelector(steps[idx - 1]);
+            if (prev) prev.classList.add('completed');
+          }
+          el.classList.add('active');
+        }, idx * 650);
+      }
+    });
+  },
+
+  renderReport(data) {
+    // Hero Elements
+    const tickerEl = document.querySelector('#ai-stock-ticker');
+    const companyEl = document.querySelector('#ai-company-name');
+    const screenerLink = document.querySelector('#btn-open-screener');
+    const tvLink = document.querySelector('#btn-open-tv');
+    const execSummary = document.querySelector('#ai-exec-summary');
+    const sentimentBadge = document.querySelector('#ai-sentiment-badge');
+    const sentimentText = document.querySelector('#ai-sentiment-text');
+    const scoreNum = document.querySelector('#ai-score-number');
+    const scoreFill = document.querySelector('#ai-score-fill');
+
+    if (tickerEl) tickerEl.textContent = data.symbol;
+    if (companyEl) companyEl.textContent = `${data.company_name || data.symbol} (NSE)`;
+    if (screenerLink) screenerLink.href = `https://www.screener.in/company/${encodeURIComponent(data.symbol)}/consolidated/`;
+    if (tvLink) tvLink.href = `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(data.symbol)}`;
+    if (execSummary) execSummary.textContent = data.executive_summary;
+
+    const sent = (data.sentiment || 'Neutral').toLowerCase();
+    if (sentimentBadge) {
+      sentimentBadge.className = `sentiment-badge-pill ${sent}`;
+      const icon = sent === 'bullish' ? '🟢' : (sent === 'bearish' ? '🔴' : '🟡');
+      sentimentBadge.querySelector('.sentiment-icon').textContent = icon;
+    }
+    if (sentimentText) sentimentText.textContent = data.sentiment || 'Neutral';
+    if (scoreNum) scoreNum.textContent = `${data.sentiment_score || 50}%`;
+    if (scoreFill) scoreFill.style.width = `${data.sentiment_score || 50}%`;
+
+    // Catalysts List
+    const catList = document.querySelector('#ai-catalysts-list');
+    if (catList) {
+      if (data.catalysts && data.catalysts.length) {
+        catList.innerHTML = data.catalysts.map(c => `<li>${c}</li>`).join('');
+      } else {
+        catList.innerHTML = '<li>No prominent positive catalysts identified in current news cycle.</li>';
+      }
+    }
+
+    // Risks List
+    const riskList = document.querySelector('#ai-risks-list');
+    if (riskList) {
+      if (data.risks && data.risks.length) {
+        riskList.innerHTML = data.risks.map(r => `<li>${r}</li>`).join('');
+      } else {
+        riskList.innerHTML = '<li>No acute headwinds or high-risk regulatory warnings reported.</li>';
+      }
+    }
+
+    // Technical Correlation
+    const tcEl = document.querySelector('#ai-technical-correlation');
+    if (tcEl) {
+      tcEl.textContent = data.technical_correlation || 'Technical and fundamental signals remain aligned with prevailing market direction.';
+    }
+
+    // Articles Grid
+    const articlesGrid = document.querySelector('#news-articles-grid');
+    const articlesCount = document.querySelector('#ai-articles-count');
+    if (articlesCount) articlesCount.textContent = `${(data.articles || []).length} articles`;
+
+    if (articlesGrid) {
+      if (!data.articles || !data.articles.length) {
+        articlesGrid.innerHTML = '<div class="empty-cell">No recent news articles found for this ticker.</div>';
+      } else {
+        articlesGrid.innerHTML = data.articles.map(a => `
+          <div class="news-article-card">
+            <div class="article-meta-row">
+              <span class="article-publisher">${a.publisher || 'Financial Media'}</span>
+              <span class="article-date">${a.published_at || 'Recent'}</span>
+            </div>
+            <h5 class="article-headline">
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer">${a.title}</a>
+            </h5>
+            <p class="article-summary">${a.summary || 'Click link to read full coverage on publisher site.'}</p>
+            <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-read-btn">Read Full Story ↗</a>
+          </div>
+        `).join('');
+      }
+    }
   },
 
   initClaudeKeyModal() {
@@ -520,6 +675,7 @@ App.News = {
     }
   },
 };
+
 
 // =====================================================================
 // 6. Paper Trading & Institutional Options Derivatives Module
