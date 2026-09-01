@@ -1837,8 +1837,113 @@ select:focus, input:focus, textarea:focus {
   box-shadow: 0 0 10px var(--rose-glow);
 }
 
+/* Zerodha Live Connect Tab Row & Info Banner */
+.zd-tab-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.zd-tab-btn {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid var(--border-subtle);
+  border-radius: 6px;
+  padding: 6px 14px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.zd-tab-btn.active {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: var(--accent-cyan);
+}
+
+.zd-info-banner {
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 6px;
+  padding: 10px 14px;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+}
+
+.zd-info-banner strong {
+  color: var(--accent-cyan);
+}
+
+.zd-info-banner code {
+  background: rgba(0, 0, 0, 0.4);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: #fff;
+  font-family: var(--font-mono);
+}
+
+/* Feed Source Ribbon */
+.feed-source-ribbon {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 6px;
+  padding: 6px 12px;
+  gap: 10px;
+}
+
+.feed-source-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.76rem;
+  color: var(--text-secondary);
+}
+
+.feed-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent-cyan);
+  box-shadow: 0 0 8px var(--accent-cyan);
+  animation: pulseDot 2s infinite ease-in-out;
+}
+
+.feed-dot.connected {
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+}
+
+.btn-zd-pill {
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 20px;
+  padding: 3px 10px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--accent-cyan);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-zd-pill:hover {
+  background: rgba(56, 189, 248, 0.25);
+  color: #fff;
+}
+
+.btn-zd-pill.connected {
+  background: var(--emerald-soft);
+  border-color: var(--emerald-border);
+  color: var(--emerald);
+}
+
 /* Options Parameters Panel */
 .options-params-bar {
+
   background: rgba(0, 0, 0, 0.35);
   border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: var(--radius-md);

@@ -1680,12 +1680,176 @@ function prefillPaperTrade(symbol, price, strategy) {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
+// -------------------------------------------------------------
+// Zerodha Live Stream Connection Frontend Logic
+// -------------------------------------------------------------
+const cardZerodha = document.querySelector('#card-zerodha');
+const btnZerodhaModal = document.querySelector('#btn-zerodha-modal');
+const btnCloseZerodha = document.querySelector('#btn-close-zerodha');
+const btnQuickZdConnect = document.querySelector('#btn-quick-zd-connect');
 
+function toggleZerodhaModal(show) {
+  if (!cardZerodha) return;
+  const isShown = show !== undefined ? show : cardZerodha.style.display === 'none';
+  cardZerodha.style.display = isShown ? 'block' : 'none';
+  if (isShown) {
+    cardZerodha.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+}
+
+if (btnZerodhaModal) btnZerodhaModal.onclick = () => toggleZerodhaModal();
+if (btnQuickZdConnect) btnQuickZdConnect.onclick = () => toggleZerodhaModal(true);
+if (btnCloseZerodha) btnCloseZerodha.onclick = () => toggleZerodhaModal(false);
+
+// Zerodha Tabs Toggle
+const zdTabEnctoken = document.querySelector('#zd-tab-enctoken');
+const zdTabApikey = document.querySelector('#zd-tab-apikey');
+const zdFormEnctoken = document.querySelector('#zd-form-enctoken');
+const zdFormApikey = document.querySelector('#zd-form-apikey');
+
+if (zdTabEnctoken && zdTabApikey) {
+  zdTabEnctoken.onclick = () => {
+    zdTabEnctoken.classList.add('active');
+    zdTabApikey.classList.remove('active');
+    if (zdFormEnctoken) zdFormEnctoken.style.display = 'block';
+    if (zdFormApikey) zdFormApikey.style.display = 'none';
+  };
+
+  zdTabApikey.onclick = () => {
+    zdTabApikey.classList.add('active');
+    zdTabEnctoken.classList.remove('active');
+    if (zdFormApikey) zdFormApikey.style.display = 'block';
+    if (zdFormEnctoken) zdFormEnctoken.style.display = 'none';
+  };
+}
+
+function showZerodhaStatus(msg, type) {
+  const el = document.querySelector('#zerodha-status-box');
+  if (!el) return;
+  el.className = `wm-status-box ${type}`;
+  el.textContent = msg;
+  el.style.display = 'block';
+  setTimeout(() => { el.style.display = 'none'; }, 4500);
+}
+
+// Connect via Web Enctoken
+const btnSaveZdEnctoken = document.querySelector('#btn-save-zd-enctoken');
+if (btnSaveZdEnctoken) {
+  btnSaveZdEnctoken.onclick = async () => {
+    const userId = (document.querySelector('#zd-input-userid').value || '').trim();
+    const enctoken = (document.querySelector('#zd-input-enctoken').value || '').trim();
+
+    if (!userId || !enctoken) {
+      showZerodhaStatus('Please provide both Zerodha Client ID and Enctoken value.', 'error');
+      return;
+    }
+
+    btnSaveZdEnctoken.disabled = true;
+    btnSaveZdEnctoken.innerHTML = '<span>⏳ Connecting to Zerodha…</span>';
+
+    try {
+      const res = await fetch('/zerodha/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: userId, enctoken: enctoken }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP Error ${res.status}`);
+      }
+
+      showZerodhaStatus(`✅ Connected to Zerodha Web Stream for ${userId}!`, 'success');
+      fetchZerodhaStatus();
+      setTimeout(() => toggleZerodhaModal(false), 1500);
+    } catch (err) {
+      showZerodhaStatus('Zerodha connection failed: ' + err.message, 'error');
+    } finally {
+      btnSaveZdEnctoken.disabled = false;
+      btnSaveZdEnctoken.innerHTML = '<span>⚡ Connect Live Feed</span>';
+    }
+  };
+}
+
+// Connect via Kite Developer API
+const btnSaveZdApikey = document.querySelector('#btn-save-zd-apikey');
+if (btnSaveZdApikey) {
+  btnSaveZdApikey.onclick = async () => {
+    const apiKey = (document.querySelector('#zd-input-apikey').value || '').trim();
+    const accessToken = (document.querySelector('#zd-input-accesstoken').value || '').trim();
+
+    if (!apiKey || !accessToken) {
+      showZerodhaStatus('Please provide both Kite API Key and Access Token.', 'error');
+      return;
+    }
+
+    btnSaveZdApikey.disabled = true;
+    btnSaveZdApikey.innerHTML = '<span>⏳ Connecting API…</span>';
+
+    try {
+      const res = await fetch('/zerodha/connect', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey, access_token: accessToken }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP Error ${res.status}`);
+      }
+
+      showZerodhaStatus('✅ Connected to Zerodha KiteConnect Developer API!', 'success');
+      fetchZerodhaStatus();
+      setTimeout(() => toggleZerodhaModal(false), 1500);
+    } catch (err) {
+      showZerodhaStatus('KiteConnect connection failed: ' + err.message, 'error');
+    } finally {
+      btnSaveZdApikey.disabled = false;
+      btnSaveZdApikey.innerHTML = '<span>⚡ Connect API</span>';
+    }
+  };
+}
+
+// Check Zerodha Status on Load
+async function fetchZerodhaStatus() {
+  try {
+    const res = await fetch('/zerodha/status');
+    if (!res.ok) return;
+    const data = await res.json();
+
+    const zdBtnText = document.querySelector('#zerodha-btn-text');
+    const feedDot = document.querySelector('#feed-source-dot');
+    const feedLabel = document.querySelector('#feed-source-label');
+    const quickBtn = document.querySelector('#btn-quick-zd-connect');
+
+    if (data.connected) {
+      if (zdBtnText) zdBtnText.textContent = `🟢 Zerodha (${data.user_id || 'Active'})`;
+      if (feedDot) feedDot.classList.add('connected');
+      if (feedLabel) feedLabel.innerHTML = `Market Feed: <strong style="color:#10b981;">🟢 Zerodha Live Stream</strong> (${data.method}${data.user_id ? ' · ' + data.user_id : ''})`;
+      if (quickBtn) {
+        quickBtn.classList.add('connected');
+        quickBtn.innerHTML = `<span>🟢 Zerodha Connected</span>`;
+      }
+    } else {
+      if (zdBtnText) zdBtnText.textContent = 'Zerodha Live Feed';
+      if (feedDot) feedDot.classList.remove('connected');
+      if (feedLabel) feedLabel.textContent = 'Market Feed: Real-Time NSE Spot Engine';
+      if (quickBtn) {
+        quickBtn.classList.remove('connected');
+        quickBtn.innerHTML = `<span>🪁 Connect Zerodha Live Ticks</span>`;
+      }
+    }
+  } catch (err) {
+    console.debug('Zerodha status check error:', err);
+  }
+}
 
 // Initial Load
 loadUniverseSymbols();
 loadCustomWatchlists();
 fetchLookbackSignals();
+fetchZerodhaStatus();
+
 
 
 

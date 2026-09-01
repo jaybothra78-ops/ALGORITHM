@@ -48,6 +48,10 @@
 
       <!-- Quick Action Utilities -->
       <div class="nav-actions">
+        <button id="btn-zerodha-modal" class="btn-subtle" title="Connect Zerodha Kite Live Feed">
+          <span class="btn-icon-symbol">🪁</span>
+          <span id="zerodha-btn-text">Zerodha Live Feed</span>
+        </button>
         <button id="btn-claude-key-modal" class="btn-subtle" title="Configure Anthropic Claude API Key">
           <span class="btn-icon-symbol">🔑</span>
           <span id="claude-key-btn-text">Claude AI Key</span>
@@ -68,6 +72,72 @@
 
 
   <main class="main-content">
+    <!-- Collapsible Zerodha Live Connect Card -->
+    <div id="card-zerodha" class="watchlist-manager-card" style="display: none;">
+      <div class="wm-header">
+        <div class="wm-title-area">
+          <span class="wm-icon">🪁</span>
+          <div>
+            <h3 class="wm-title">Zerodha Kite Live Options Streaming</h3>
+            <p class="wm-subtitle">Connect your Zerodha account to stream 100% exact tick-by-tick real-time option premiums directly from NFO.</p>
+          </div>
+        </div>
+        <button id="btn-close-zerodha" class="btn-icon-close" title="Close Zerodha Settings">&times;</button>
+      </div>
+
+      <div class="wm-body">
+        <!-- Tab switcher: Web Enctoken vs Developer API -->
+        <div class="zd-tab-row">
+          <button type="button" id="zd-tab-enctoken" class="zd-tab-btn active">⚡ Free Web Enctoken (Zero API Cost)</button>
+          <button type="button" id="zd-tab-apikey" class="zd-tab-btn">🔑 KiteConnect Developer API</button>
+        </div>
+
+        <!-- Enctoken Form -->
+        <div id="zd-form-enctoken" class="zd-form-pane">
+          <div class="zd-info-banner">
+            💡 <strong>How to get your free Enctoken in 30 seconds:</strong>
+            <ol style="margin: 4px 0 0 16px; font-size: 0.76rem; line-height: 1.4;">
+              <li>Log in to <strong>kite.zerodha.com</strong> in Chrome.</li>
+              <li>Press <strong>F12</strong> (Developer Tools) &rarr; Go to <strong>Application</strong> &rarr; <strong>Cookies</strong> &rarr; <code>kite.zerodha.com</code>.</li>
+              <li>Copy the value of the <strong>enctoken</strong> cookie and paste it below.</li>
+            </ol>
+          </div>
+          <div class="wm-input-row">
+            <div class="wm-field field-name" style="flex: 2;">
+              <label for="zd-input-userid">Zerodha Client ID / User ID</label>
+              <input type="text" id="zd-input-userid" placeholder="e.g. AB1234" autocomplete="off">
+            </div>
+            <div class="wm-field field-url" style="flex: 5;">
+              <label for="zd-input-enctoken">Enctoken Cookie Value</label>
+              <input type="password" id="zd-input-enctoken" placeholder="Paste enctoken here..." autocomplete="off">
+            </div>
+            <button id="btn-save-zd-enctoken" class="btn-primary wm-submit-btn">
+              <span>⚡ Connect Live Feed</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- API Key Form -->
+        <div id="zd-form-apikey" class="zd-form-pane" style="display: none;">
+          <div class="wm-input-row">
+            <div class="wm-field field-name" style="flex: 3;">
+              <label for="zd-input-apikey">Kite API Key</label>
+              <input type="text" id="zd-input-apikey" placeholder="your_api_key" autocomplete="off">
+            </div>
+            <div class="wm-field field-url" style="flex: 4;">
+              <label for="zd-input-accesstoken">Kite Access Token</label>
+              <input type="password" id="zd-input-accesstoken" placeholder="your_access_token" autocomplete="off">
+            </div>
+            <button id="btn-save-zd-apikey" class="btn-primary wm-submit-btn">
+              <span>⚡ Connect API</span>
+            </button>
+          </div>
+        </div>
+
+        <div id="zerodha-status-box" class="wm-status-box" style="display: none;"></div>
+      </div>
+    </div>
+
     <!-- Collapsible Watchlist Manager Card -->
     <div id="card-watchlist-manager" class="watchlist-manager-card" style="display: none;">
       <div class="wm-header">
@@ -137,6 +207,7 @@
         <div id="claude-key-status" class="wm-status-box" style="display: none;"></div>
       </div>
     </div>
+
 
 
     <!-- Section 1: Lookback Screener -->
@@ -502,8 +573,20 @@
           </div>
         </div>
 
+        <!-- Live Feed Source Banner -->
+        <div class="feed-source-ribbon" id="feed-source-ribbon">
+          <div class="feed-source-left">
+            <span class="feed-dot" id="feed-source-dot"></span>
+            <span class="feed-source-label" id="feed-source-label">Market Feed: Real-Time NSE Spot Engine</span>
+          </div>
+          <button type="button" id="btn-quick-zd-connect" class="btn-zd-pill">
+            <span>🪁 Connect Zerodha Live Ticks</span>
+          </button>
+        </div>
+
         <!-- Options Specific Parameters Bar (Visible when Options active) -->
         <div id="options-control-panel" class="options-params-bar" style="display: none;">
+
           <!-- Call vs Put Toggle -->
           <div class="option-type-toggle-group">
             <button type="button" id="btn-opt-type-ce" class="opt-type-pill call active">🟢 CALL (CE)</button>
