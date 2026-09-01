@@ -154,6 +154,20 @@ def run_backtest_endpoint(
         raise HTTPException(500, f"Backtest simulation failed: {exc}") from exc
 
 
+@router.get("/news/analyze", response_model=NewsAnalysisResponse)
+def analyze_news_get_endpoint(
+    symbol: str = Query(..., description="Stock ticker symbol (e.g. TVSMOTOR, RELIANCE)"),
+    days: int = Query(7, ge=1, le=30, description="Lookback window in days for news search"),
+) -> NewsAnalysisResponse:
+    """Fetch live financial news and perform AI sentiment synthesis via GET query params."""
+    try:
+        from services.news_service import NewsService
+        req = NewsAnalysisRequest(symbol=symbol, days=days)
+        return NewsService.analyze_news(req)
+    except Exception as exc:
+        raise HTTPException(500, f"News analysis failed for {symbol}: {exc}") from exc
+
+
 @router.post("/news/analyze", response_model=NewsAnalysisResponse)
 def analyze_news_endpoint(
     payload: NewsAnalysisRequest,
@@ -164,6 +178,7 @@ def analyze_news_endpoint(
         return NewsService.analyze_news(payload)
     except Exception as exc:
         raise HTTPException(500, f"News analysis failed: {exc}") from exc
+
 
 
 # -------------------------------------------------------------

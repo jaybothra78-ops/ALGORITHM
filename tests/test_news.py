@@ -54,3 +54,12 @@ def test_news_analyze_api_endpoint():
         assert "executive_summary" in data
         assert "catalysts" in data
         assert "articles" in data
+
+    # Test GET endpoint
+    with TestClient(app) as c:
+        resp_get = c.get("/news/analyze?symbol=TVSMOTOR&days=7")
+        assert resp_get.status_code == 200
+        data_get = resp_get.json()
+        assert data_get["symbol"] == "TVSMOTOR"
+        assert "sentiment" in data_get
+
