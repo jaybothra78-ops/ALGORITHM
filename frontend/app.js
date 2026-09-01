@@ -109,11 +109,10 @@ App.Router = {
 
     if (tabName === 'paper') {
       App.Paper.loadData();
-    } else if (tabName === 'news' && !App.State.activeNewsTicker) {
-      App.News.loadTopMarketNews();
     }
   },
 };
+
 
 // =====================================================================
 // 4. Lookback Screener & TradingView Module
@@ -371,12 +370,21 @@ App.Screener = {
 // 5. AI News Analyzer & Claude 3.5 Sonnet Synthesis Module
 // =====================================================================
 App.News = {
+  _stepTimers: [],
+
   init() {
     const btnRun = document.querySelector('#btn-run-news');
     const btnSample = document.querySelector('#btn-trigger-sample-news');
     const stockSelect = document.querySelector('#news-stock-select');
     const customInput = document.querySelector('#news-custom-input');
     const universeFilter = document.querySelector('#news-universe-filter');
+
+    // Stock dropdown sync with input
+    if (stockSelect && customInput) {
+      stockSelect.addEventListener('change', () => {
+        customInput.value = stockSelect.value;
+      });
+    }
 
     // Analyze button click
     if (btnRun) {
@@ -393,7 +401,7 @@ App.News = {
       });
     }
 
-    // Custom input enter key or change
+    // Custom input enter key
     if (customInput) {
       customInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
@@ -444,14 +452,42 @@ App.News = {
       const symbols = Array.from(new Set((data.signals || []).map(s => s.symbol).filter(Boolean)));
       if (symbols.length) {
         stockSelect.innerHTML = symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+        const customInput = document.querySelector('#news-custom-input');
+        if (customInput && !customInput.value) customInput.value = symbols[0];
       }
     } catch (err) {
       console.debug('Failed to filter news stocks:', err);
     }
   },
 
-  async loadTopMarketNews() {
-    this.analyzeTicker('TVSMOTOR');
+  clearLoadingSteps() {
+    this._stepTimers.forEach(t => clearTimeout(t));
+    this._stepTimers = [];
+    ['#step-1', '#step-2', '#step-3', '#step-4'].forEach(id => {
+      const el = document.querySelector(id);
+      if (el) el.classList.remove('active', 'completed');
+    });
+  },
+
+  animateLoadingSteps() {
+    this.clearLoadingSteps();
+    const steps = ['#step-1', '#step-2', '#step-3', '#step-4'];
+    steps.forEach((id, idx) => {
+      const timer = setTimeout(() => {
+        const el = document.querySelector(id);
+        if (el) {
+          if (idx > 0) {
+            const prev = document.querySelector(steps[idx - 1]);
+            if (prev) {
+              prev.classList.remove('active');
+              prev.classList.add('completed');
+            }
+          }
+          el.classList.add('active');
+        }
+      }, idx * 600);
+      this._stepTimers.push(timer);
+    });
   },
 
   async analyzeTicker(symbol) {
@@ -479,7 +515,7 @@ App.News = {
     if (contentCard) contentCard.style.display = 'none';
     if (loadingCard) loadingCard.style.display = 'block';
 
-    // Animate loading step progression
+    // Start progress animation
     this.animateLoadingSteps();
 
     try {
@@ -487,6 +523,7 @@ App.News = {
       if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
       const data = await res.json();
 
+      this.clearLoadingSteps();
       this.renderReport(data);
 
       if (loadingCard) loadingCard.style.display = 'none';
@@ -495,6 +532,7 @@ App.News = {
         contentCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       }
     } catch (err) {
+      this.clearLoadingSteps();
       if (loadingCard) loadingCard.style.display = 'none';
       if (placeholder) {
         placeholder.style.display = 'block';
@@ -506,23 +544,6 @@ App.News = {
         `;
       }
     }
-  },
-
-  animateLoadingSteps() {
-    const steps = ['#step-1', '#step-2', '#step-3', '#step-4'];
-    steps.forEach((id, idx) => {
-      const el = document.querySelector(id);
-      if (el) {
-        el.classList.remove('active', 'completed');
-        setTimeout(() => {
-          if (idx > 0) {
-            const prev = document.querySelector(steps[idx - 1]);
-            if (prev) prev.classList.add('completed');
-          }
-          el.classList.add('active');
-        }, idx * 650);
-      }
-    });
   },
 
   renderReport(data) {
@@ -546,8 +567,10 @@ App.News = {
     const sent = (data.sentiment || 'Neutral').toLowerCase();
     if (sentimentBadge) {
       sentimentBadge.className = `sentiment-badge-pill ${sent}`;
-      const icon = sent === 'bullish' ? '🟢' : (sent === 'bearish' ? '🔴' : '🟡');
-      sentimentBadge.querySelector('.sentiment-icon').textContent = icon;
+      const iconEl = sentimentBadge.querySelector('.sentiment-icon');
+      if (iconEl) {
+        iconEl.textContent = sent === 'bullish' ? '🟢' : (sent === 'bearish' ? '🔴' : '🟡');
+      }
     }
     if (sentimentText) sentimentText.textContent = data.sentiment || 'Neutral';
     if (scoreNum) scoreNum.textContent = `${data.sentiment_score || 50}%`;
@@ -604,6 +627,7 @@ App.News = {
       }
     }
   },
+
 
   initClaudeKeyModal() {
     const card = document.querySelector('#card-claude-key');
