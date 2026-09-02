@@ -315,66 +315,73 @@
     <!-- Section 2: AI NEWS ANALYZER -->
 
     <section id="section-news" class="view-section" style="display: none;">
-      <!-- News Controls Toolbar -->
-      <div class="toolbar news-toolbar">
-        <div class="filter-controls">
-          <!-- Universe Filter to populate ticker select -->
-          <div class="select-wrapper">
-            <select id="news-universe-filter" aria-label="Watchlist Filter">
-              <option value="FNO">📊 F&amp;O Universe (178)</option>
-              <option value="custom:complet study" data-custom="true">⭐ complet study (23)</option>
-              <option value="custom:jitu list" data-custom="true">⭐ jitu list (117)</option>
-              <option value="custom:JAY" data-custom="true">⭐ JAY (26)</option>
-              <option value="Watchlist">⭐ My Watchlist</option>
-              <option value="Nifty50">NIFTY 50</option>
-              <option value="IT">NIFTY IT</option>
-              <option value="Bank">NIFTY BANK</option>
-              <option value="">All Tickers</option>
-            </select>
+      <!-- News Controls Toolbar (Executive Command Bar) -->
+      <div class="news-command-bar">
+        <div class="command-bar-row">
+          <!-- Universe Filter -->
+          <div class="cmd-field-group">
+            <label class="cmd-label">Watchlist / Universe</label>
+            <div class="select-wrapper">
+              <select id="news-universe-filter" aria-label="Watchlist Filter">
+                <option value="FNO">📊 F&amp;O Universe (178)</option>
+                <option value="custom:complet study" data-custom="true">⭐ complet study (23)</option>
+                <option value="custom:jitu list" data-custom="true">⭐ jitu list (117)</option>
+                <option value="custom:JAY" data-custom="true">⭐ JAY (26)</option>
+                <option value="Watchlist">⭐ My Watchlist</option>
+                <option value="Nifty50">NIFTY 50</option>
+                <option value="IT">NIFTY IT</option>
+                <option value="Bank">NIFTY BANK</option>
+                <option value="">All Tickers</option>
+              </select>
+            </div>
           </div>
 
-
           <!-- Stock Dropdown -->
-          <div class="select-wrapper">
-            <select id="news-stock-select" aria-label="Select Stock for AI News Analysis">
-              <option value="TVSMOTOR" selected>TVSMOTOR (TVS Motor Company)</option>
-              <option value="RELIANCE">RELIANCE (Reliance Industries)</option>
-              <option value="TRENT">TRENT (Trent Ltd)</option>
-              <option value="TATAMOTORS">TATAMOTORS (Tata Motors)</option>
-              <option value="HDFCBANK">HDFCBANK (HDFC Bank)</option>
-              <option value="INFY">INFY (Infosys)</option>
-              <option value="IDFCFIRSTB">IDFCFIRSTB (IDFC First Bank)</option>
-              <option value="KEI">KEI (KEI Industries)</option>
-            </select>
+          <div class="cmd-field-group">
+            <label class="cmd-label">Select Stock</label>
+            <div class="select-wrapper">
+              <select id="news-stock-select" aria-label="Select Stock for AI News Analysis">
+                <option value="TVSMOTOR" selected>TVSMOTOR (TVS Motor Company)</option>
+                <option value="RELIANCE">RELIANCE (Reliance Industries)</option>
+                <option value="TRENT">TRENT (Trent Ltd)</option>
+                <option value="TATAMOTORS">TATAMOTORS (Tata Motors)</option>
+                <option value="HDFCBANK">HDFCBANK (HDFC Bank)</option>
+                <option value="INFY">INFY (Infosys)</option>
+                <option value="IDFCFIRSTB">IDFCFIRSTB (IDFC First Bank)</option>
+                <option value="KEI">KEI (KEI Industries)</option>
+              </select>
+            </div>
           </div>
 
           <!-- Direct Stock Ticker Input -->
-          <div class="stock-input-wrapper">
-            <span class="stock-input-icon">🔍</span>
-            <input type="text" id="news-custom-input" list="news-stocks-datalist" placeholder="Or enter ticker (e.g. TVSMOTOR)" autocomplete="off">
+          <div class="cmd-field-group ticker-search-group">
+            <label class="cmd-label">Direct Search</label>
+            <div class="stock-input-wrapper">
+              <span class="stock-input-icon">🔍</span>
+              <input type="text" id="news-custom-input" list="news-stocks-datalist" placeholder="Enter ticker (e.g. TVSMOTOR)" autocomplete="off">
+            </div>
           </div>
 
-
-
-          <!-- Quick Chip Pills for Popular Stocks -->
-          <div class="control-unit">
-            <span class="control-label">⚡ Quick:</span>
-            <div class="pill-group" id="news-quick-chips">
-              <button type="button" class="pill active" data-sym="TVSMOTOR">TVSMOTOR</button>
-              <button type="button" class="pill" data-sym="RELIANCE">RELIANCE</button>
-              <button type="button" class="pill" data-sym="TRENT">TRENT</button>
-              <button type="button" class="pill" data-sym="TATAMOTORS">TATAMOTORS</button>
-              <button type="button" class="pill" data-sym="IDFCFIRSTB">IDFCFIRSTB</button>
-            </div>
+          <!-- Action CTA Button -->
+          <div class="cmd-action-group">
+            <button id="btn-run-news" class="btn-primary cmd-run-btn" title="Analyze live news &amp; market catalysts with Claude AI">
+              <span>✨ Analyze AI Sentiment</span>
+            </button>
           </div>
         </div>
 
-        <div class="toolbar-spacer"></div>
-
-        <!-- AI Analyze Action Button -->
-        <button id="btn-run-news" class="btn-primary" title="Analyze live news &amp; market catalysts with Claude AI">
-          <span>✨ Analyze News with AI</span>
-        </button>
+        <!-- Trending Tickers Row -->
+        <div class="trending-pills-row">
+          <span class="trending-label">🔥 Trending:</span>
+          <div class="pill-group" id="news-quick-chips">
+            <button type="button" class="pill active" data-sym="TVSMOTOR">TVSMOTOR</button>
+            <button type="button" class="pill" data-sym="RELIANCE">RELIANCE</button>
+            <button type="button" class="pill" data-sym="TRENT">TRENT</button>
+            <button type="button" class="pill" data-sym="TATAMOTORS">TATAMOTORS</button>
+            <button type="button" class="pill" data-sym="HDFCBANK">HDFCBANK</button>
+            <button type="button" class="pill" data-sym="IDFCFIRSTB">IDFCFIRSTB</button>
+          </div>
+        </div>
       </div>
 
       <!-- AI News Analysis Dashboard -->
@@ -418,25 +425,27 @@
           <!-- Hero Sentiment Header -->
           <div class="news-hero-banner">
             <div class="hero-left">
-              <div class="hero-ticker-badge">
-                <span id="ai-stock-ticker" class="ticker-name">TVSMOTOR</span>
-                <span id="ai-company-name" class="company-sub">TVS Motor Company (NSE)</span>
-              </div>
-              <div class="hero-actions-row">
-                <a id="btn-open-screener" href="https://www.screener.in/company/TVSMOTOR/consolidated/" target="_blank" rel="noopener noreferrer" class="hero-link-btn screener-btn" title="Open fundamentals on Screener.in">
-                  <span>📊 Open in Screener.in</span>
-                  <span>↗</span>
-                </a>
-                <a id="btn-open-tv" href="https://in.tradingview.com/chart/?symbol=NSE:TVSMOTOR" target="_blank" rel="noopener noreferrer" class="hero-link-btn tv-btn" title="Open interactive chart on TradingView">
-                  <span>📈 TradingView Chart</span>
-                  <span>↗</span>
-                </a>
+              <div class="hero-header-row">
+                <div class="hero-ticker-badge">
+                  <span id="ai-stock-ticker" class="ticker-name">TVSMOTOR</span>
+                  <span id="ai-company-name" class="company-sub">TVS Motor Company (NSE)</span>
+                  <span class="exchange-tag">NSE • EQ</span>
+                </div>
+                <div class="hero-actions-row">
+                  <a id="btn-open-tv" href="https://in.tradingview.com/chart/?symbol=NSE:TVSMOTOR" target="_blank" rel="noopener noreferrer" class="hero-link-btn tv-btn" title="Open interactive chart on TradingView">
+                    <span>📈 TradingView</span>
+                    <span>↗</span>
+                  </a>
+                  <a id="btn-open-screener" href="https://www.screener.in/company/TVSMOTOR/consolidated/" target="_blank" rel="noopener noreferrer" class="hero-link-btn screener-btn" title="Open fundamentals on Screener.in">
+                    <span>📊 Screener.in</span>
+                    <span>↗</span>
+                  </a>
+                </div>
               </div>
               <p id="ai-exec-summary" class="hero-summary-text">
                 Analyzing latest market catalysts and institutional announcements...
               </p>
             </div>
-
 
             <div class="hero-right">
               <div class="sentiment-meter-box">
@@ -448,6 +457,7 @@
                 <div class="sentiment-score-bar-container">
                   <div class="score-label-row">
                     <span>Confidence Score</span>
+
                     <strong id="ai-score-number">80%</strong>
                   </div>
                   <div class="score-track">
@@ -521,9 +531,15 @@
                       <span id="terminal-publisher" class="terminal-pub-badge">Financial Media</span>
                       <span id="terminal-date" class="terminal-date-badge">Recent</span>
                       <span id="terminal-sentiment" class="sentiment-badge-pill bullish">Bullish 75%</span>
-                      <a id="terminal-source-link" href="#" target="_blank" rel="noopener noreferrer" class="terminal-source-link">Read Full Story ↗</a>
+                      <div class="terminal-actions-cluster">
+                        <button type="button" id="btn-copy-terminal" class="terminal-action-btn" onclick="App.News.copyTerminalSummary()" title="Copy Executive Summary to Clipboard">
+                          <span>📋 Copy</span>
+                        </button>
+                        <a id="terminal-source-link" href="#" target="_blank" rel="noopener noreferrer" class="terminal-source-link">Read Full Story ↗</a>
+                      </div>
                     </div>
                     <h3 id="terminal-title" class="terminal-headline">Headline Title</h3>
+
                   </div>
 
                   <!-- Clean 3-Option Segmented Control -->
@@ -887,7 +903,8 @@
   <datalist id="news-stocks-datalist"></datalist>
 
 
-  <script src="/static/app.js?v=13.0"></script>
+  <script src="/static/app.js?v=14.0"></script>
+
 
 
 </body>

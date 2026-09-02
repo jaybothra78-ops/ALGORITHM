@@ -879,9 +879,24 @@ App.News = {
     }
   },
 
-
+  copyTerminalSummary() {
+    const textEl = document.querySelector('#terminal-summary-text');
+    const btn = document.querySelector('#btn-copy-terminal');
+    if (!textEl) return;
+    const text = textEl.textContent || '';
+    navigator.clipboard.writeText(text).then(() => {
+      if (btn) {
+        const orig = btn.innerHTML;
+        btn.innerHTML = '<span>✅ Copied!</span>';
+        setTimeout(() => { btn.innerHTML = orig; }, 2000);
+      }
+    }).catch(err => {
+      console.warn('Copy failed:', err);
+    });
+  },
 
   initClaudeKeyModal() {
+
     const card = document.querySelector('#card-claude-key');
     const btnOpen = document.querySelector('#btn-claude-key-modal');
     const btnClose = document.querySelector('#btn-close-claude-key');

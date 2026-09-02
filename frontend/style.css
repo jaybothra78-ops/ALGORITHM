@@ -2951,5 +2951,153 @@ select:focus, input:focus, textarea:focus {
   background: #4338ca;
 }
 
+/* =========================================================
+   EXECUTIVE COMMAND BAR & POLISHED DESIGN TOKENS
+   ========================================================= */
+.news-command-bar {
+  background: var(--surface-glass);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.command-bar-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.cmd-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 170px;
+}
+
+.cmd-field-group.ticker-search-group {
+  flex: 1.2;
+  min-width: 210px;
+}
+
+.cmd-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.cmd-action-group {
+  display: flex;
+  align-items: flex-end;
+}
+
+.cmd-run-btn {
+  padding: 10px 22px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #4f46e5, #7c3aed);
+  border: 1px solid rgba(167, 139, 250, 0.4);
+  box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
+  white-space: nowrap;
+}
+
+.cmd-run-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(99, 102, 241, 0.5);
+}
+
+.trending-pills-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  flex-wrap: wrap;
+}
+
+.trending-label {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.hero-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.exchange-tag {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.5px;
+}
+
+.terminal-actions-cluster {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.terminal-action-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.terminal-action-btn:hover {
+  background: rgba(99, 102, 241, 0.2);
+  border-color: #818cf8;
+  color: #fff;
+}
+
+/* Custom Sleek Scrollbar */
+.articles-list-stack::-webkit-scrollbar,
+.terminal-chat-thread::-webkit-scrollbar {
+  width: 5px;
+}
+
+.articles-list-stack::-webkit-scrollbar-track,
+.terminal-chat-thread::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.articles-list-stack::-webkit-scrollbar-thumb,
+.terminal-chat-thread::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+}
+
+.articles-list-stack::-webkit-scrollbar-thumb:hover,
+.terminal-chat-thread::-webkit-scrollbar-thumb:hover {
+  background: rgba(99, 102, 241, 0.5);
+}
+
+
 
 
