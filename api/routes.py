@@ -62,9 +62,10 @@ def get_signals_history(
 @router.get("/screener/lookback", response_model=dict[str, Any])
 @router.get("/signals/lookback", response_model=dict[str, Any])
 def get_lookback_screener(
-    lookback_days: int | None = Query(None, description="Historical lookback window in trading days"),
-    days: int | None = Query(None, description="Alias for lookback_days"),
+    lookback_days: int | None = Query(None, ge=1, le=60, description="Historical lookback window in trading days"),
+    days: int | None = Query(None, ge=1, le=60, description="Alias for lookback_days"),
     rsi_length: int = Query(14, ge=2, le=100, description="RSI period length"),
+
     index: str | None = Query(None, description="Index or Watchlist filter"),
     index_name: str | None = Query(None, description="Alias for index"),
     signal_filter: str | None = Query(None, description="Filter: oversold, overbought, buy, sell, signals_only"),

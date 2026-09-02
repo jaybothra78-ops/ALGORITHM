@@ -34,14 +34,27 @@ class BacktesterEngine:
             universe_label = f"{single_sym} (Single Stock)"
             ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
         else:
-            universe = load_universe()
-            if request.index:
-                target_universe = {s: m for s, m in universe.items() if request.index in m}
+            from services.universe import load_custom_watchlists
+            custom_lists = load_custom_watchlists()
+            idx_param = (request.index or "").strip()
+            idx_clean = idx_param.replace("custom:", "").strip()
+
+            if idx_clean and idx_clean in custom_lists:
+                all_symbols = custom_lists[idx_clean]
+                universe_label = f"{idx_clean} (Watchlist)"
+
+            elif idx_param:
+                universe = load_universe()
+                target_universe = {s: m for s, m in universe.items() if idx_param in m or idx_clean in m}
+                all_symbols = list(target_universe.keys())
+                universe_label = idx_clean
             else:
-                target_universe = universe
-            all_symbols = list(target_universe.keys())
-            universe_label = request.index or "All Universes"
+                universe = load_universe()
+                all_symbols = list(universe.keys())
+                universe_label = "All Universes"
+
             ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
+
 
         all_trades: list[BacktestTrade] = []
         strategy_filter = request.strategy.upper()

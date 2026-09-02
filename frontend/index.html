@@ -478,9 +478,43 @@
       color: #f43f5e;
       font-size: 1.2rem;
       line-height: 1;
-      top: 1px;
+    /* Strategy Tester KPI Ribbon Styles */
+    .strategy-hero-banner {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    }
+    .kpi-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: #94a3b8;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+    }
+    .kpi-val {
+      font-size: 1.45rem;
+      font-weight: 800;
+      color: #fff;
+      margin: 4px 0 2px 0;
+      font-feature-settings: "tnum";
+    }
+    .kpi-sub {
+      font-size: 0.72rem;
+      color: #64748b;
     }
   </style>
+
 
 </head>
 
@@ -510,7 +544,12 @@
           <span class="tab-icon">💼</span>
           <span>Paper Trading</span>
         </button>
+        <button id="tab-backtest" class="nav-tab">
+          <span class="tab-icon">🧪</span>
+          <span>Strategy Tester</span>
+        </button>
       </nav>
+
 
 
 
@@ -1363,15 +1402,241 @@
       </div>
     </section>
 
+    <!-- Section 4: Institutional Strategy Tester & Backtest Engine -->
+    <section id="section-backtest" class="view-section" style="display: none;">
+      <!-- Command Center -->
+      <div class="news-command-center" style="margin-bottom: 20px;">
+        <div class="news-cc-header">
+          <div class="news-cc-title-wrap">
+            <span class="news-cc-badge">🧪 Quantitative Strategy Lab</span>
+            <h2 class="news-cc-title">Institutional Strategy Tester &amp; Trade Simulator</h2>
+            <p class="news-cc-desc">
+              Backtest Rob Booker Knoxville Divergence (with confirmation candle), Dual RSI Extremes (&lt;30 / &gt;70), and 200 SMA Touch/Crossover strategies across entire watchlists or individual stocks with custom profit targets and stop losses.
+            </p>
+          </div>
+        </div>
+
+        <!-- Row 1: Watchlist, Stock, Search & Strategy Selectors -->
+        <div class="news-controls-grid" style="grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-top: 14px;">
+          <div class="control-group">
+            <label class="control-label" for="backtest-universe-select">📁 Select Watchlist / Universe</label>
+            <select id="backtest-universe-select" class="form-select custom-select-glow">
+              <option value="">All Universes (Combined)</option>
+              <option value="FNO">FNO (178 Stocks)</option>
+              <option value="Watchlist">Default Watchlist (108 Stocks)</option>
+              <option value="Nifty50">Nifty 50 Index</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="backtest-stock-select">🎯 Select Specific Stock</label>
+            <select id="backtest-stock-select" class="form-select custom-select-glow">
+              <option value="">-- All Stocks in Watchlist --</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="backtest-custom-input">🔍 Or Enter Any Ticker</label>
+            <input type="text" id="backtest-custom-input" class="form-input" placeholder="e.g. TVSMOTOR, 360ONE..." list="backtest-stocks-datalist" style="text-transform: uppercase;">
+          </div>
+        </div>
+
+        <!-- Row 2: Strategy Selector Pills -->
+        <div style="margin-top: 14px;">
+          <label class="control-label" style="margin-bottom: 6px; display: block;">⚡ Strategy Engine</label>
+          <div id="backtest-strategy-group" class="pill-group" style="display: flex; flex-wrap: wrap; gap: 8px;">
+            <button type="button" class="pill active" data-strategy="RB_KnoxDiv">⚡ Knoxville Divergence (Confirmed)</button>
+            <button type="button" class="pill" data-strategy="RSI">🟢 Dual RSI Extremes (&lt;30 / &gt;70)</button>
+            <button type="button" class="pill" data-strategy="SMA_200">📈 200 SMA Touch / Cross</button>
+            <button type="button" class="pill" data-strategy="ALL">🔥 All Combined Strategies</button>
+          </div>
+        </div>
+
+        <!-- Row 3: Trade Rules (Target %, Stop Loss %, Max Holding Days, Direction) + Run Button -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)) 180px; gap: 12px; margin-top: 14px; align-items: flex-end;">
+          <div class="control-group">
+            <label class="control-label" for="backtest-target-pct">🎯 Profit Target (%)</label>
+            <input type="number" id="backtest-target-pct" class="form-input" value="5.0" step="0.5" min="0.5" max="50">
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="backtest-stoploss-pct">🛑 Stop Loss (%)</label>
+            <input type="number" id="backtest-stoploss-pct" class="form-input" value="3.0" step="0.5" min="0.5" max="30">
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="backtest-max-days">⏳ Max Holding (Days)</label>
+            <input type="number" id="backtest-max-days" class="form-input" value="20" step="1" min="1" max="90">
+          </div>
+
+          <div class="control-group">
+            <label class="control-label" for="backtest-direction-select">🧭 Trade Direction</label>
+            <select id="backtest-direction-select" class="form-select">
+              <option value="">Both (Long &amp; Short)</option>
+              <option value="buy">Long Only (Buy)</option>
+              <option value="sell">Short Only (Sell)</option>
+            </select>
+          </div>
+
+          <div>
+            <button type="button" id="btn-run-backtest" class="btn-primary" style="width: 100%; height: 42px; display: flex; align-items: center; justify-content: center; gap: 6px; font-weight: 700;" onclick="App.Backtester.runBacktest()">
+              <span>🚀 Run Backtest</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Hot Tickers Bar -->
+        <div class="news-trending-bar" style="margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255, 255, 255, 0.08); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span class="trending-label" style="font-size: 0.76rem; color: #818cf8; font-weight: 700;">⭐ Quick Picks:</span>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickStock('TVSMOTOR')">TVSMOTOR</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickStock('360ONE')">360ONE</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickStock('RELIANCE')">RELIANCE</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickStock('TRENT')">TRENT</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickStock('TATAMOTORS')">TATAMOTORS</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickStock('HDFCBANK')">HDFCBANK</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickUniverse('custom study')">⭐ custom study (23)</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickUniverse('jitu list')">⭐ jitu list (120)</button>
+          <button type="button" class="trend-pill" onclick="App.Backtester.quickPickUniverse('JAY')">⭐ JAY (27)</button>
+        </div>
+      </div>
+
+      <!-- Strategy Performance Hero Banner / KPI Ribbon -->
+      <div id="backtest-kpi-banner" class="strategy-hero-banner" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <div class="kpi-label">TOTAL TRADES</div>
+          <div class="kpi-val" id="bt-kpi-total-trades">--</div>
+          <div class="kpi-sub" id="bt-kpi-trades-sub">Completed executions</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">WIN RATE</div>
+          <div class="kpi-val" id="bt-kpi-win-rate">--%</div>
+          <div class="kpi-sub" id="bt-kpi-win-sub">Profitable trades</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">PROFIT FACTOR</div>
+          <div class="kpi-val" id="bt-kpi-profit-factor">--</div>
+          <div class="kpi-sub">Gross Win / Gross Loss</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">CUMULATIVE RETURN</div>
+          <div class="kpi-val" id="bt-kpi-net-return">--%</div>
+          <div class="kpi-sub">Net strategy yield</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">MAX DRAWDOWN</div>
+          <div class="kpi-val" id="bt-kpi-max-drawdown">--%</div>
+          <div class="kpi-sub">Peak-to-trough risk</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">AVG HOLDING</div>
+          <div class="kpi-val" id="bt-kpi-avg-days">--</div>
+          <div class="kpi-sub">Trading sessions</div>
+        </div>
+      </div>
+
+      <!-- Split Workspace: Left = Trades Stream, Right = Dedicated Trade & Rule Inspector -->
+      <div class="news-split-workspace">
+        <!-- Left: Trade Ledger / Stream -->
+        <div class="news-headlines-column">
+          <div class="column-header-row">
+            <h4 class="column-title">📋 Trade Ledger (<span id="backtest-trades-count">0 trades</span>)</h4>
+            <span class="column-subtitle" id="bt-universe-badge">No run yet</span>
+          </div>
+          <div id="backtest-trades-list" class="article-list-scrollable">
+            <div class="empty-cell" style="padding: 40px 15px; text-align: center; color: #64748b;">
+              Select a stock or watchlist above and click <strong>🚀 Run Backtest</strong> to simulate executions.
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Inspector Terminal -->
+        <div class="news-terminal-column">
+          <div class="ai-terminal-panel">
+            <div class="terminal-header-bar">
+              <div class="term-left-meta">
+                <span class="term-bot-avatar">🧪</span>
+                <div>
+                  <h4 class="term-ticker-name" id="bt-inspect-title">Strategy Trade Inspector</h4>
+                  <p class="term-sub-status" id="bt-inspect-sub">Select any simulated trade on the left to examine exact entry/exit levels</p>
+                </div>
+              </div>
+              <div class="term-pill-options">
+                <button type="button" class="term-pill active" id="btn-bt-tab-diag" onclick="App.Backtester.switchInspectorTab('diag')">📊 Trade Diagnostic</button>
+                <button type="button" class="term-pill" id="btn-bt-tab-rules" onclick="App.Backtester.switchInspectorTab('rules')">📜 Strategy Rules</button>
+                <button type="button" class="term-pill" id="btn-bt-tab-analytics" onclick="App.Backtester.switchInspectorTab('analytics')">📈 Payoff Analytics</button>
+              </div>
+            </div>
+
+            <!-- Inspector Tab 1: Selected Trade Diagnostic -->
+            <div id="bt-pane-diag" class="term-tab-pane">
+              <div id="bt-selected-trade-view" style="padding: 16px;">
+                <div class="empty-cell" style="padding: 50px 20px; text-align: center; color: #64748b;">
+                  No trade selected. Click any trade in the ledger to view execution details, target/stop levels, and 1-click action buttons.
+                </div>
+              </div>
+            </div>
+
+            <!-- Inspector Tab 2: Strategy Rules & Mechanics -->
+            <div id="bt-pane-rules" class="term-tab-pane" style="display: none; padding: 16px;">
+              <div class="strategy-rules-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; line-height: 1.6;">
+                <h4 style="color: #818cf8; margin-bottom: 8px;">⚡ Rob Booker Knoxville Divergence Rules</h4>
+                <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px;">
+                  Knoxville Divergence detects exhaustion points where price makes a new high/low, but Momentum oscillator diverges.
+                </p>
+                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                  <li><strong>Buy Signal:</strong> Bullish Knoxville divergence line triggers on daily chart.</li>
+                  <li><strong>Buy Confirmation:</strong> The next-day candle must close higher than the signal day closing price (<code style="color: #38bdf8;">Close[t+1] &gt; Close[t]</code>). Entry opens upon confirmation!</li>
+                  <li><strong>Sell Signal:</strong> Bearish Knoxville divergence line triggers on daily chart.</li>
+                  <li><strong>Sell Confirmation:</strong> The next-day candle must close lower than the signal day closing price (<code style="color: #38bdf8;">Close[t+1] &lt; Close[t]</code>). Entry opens upon confirmation!</li>
+                </ul>
+
+                <h4 style="color: #10b981; margin-bottom: 8px;">🟢 Dual RSI Extreme Rules</h4>
+                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                  <li><strong>Buy Signal:</strong> Both 14-period RSI and 14-period RSI-SMA drop below <strong>30.0</strong> (Extreme Oversold).</li>
+                  <li><strong>Sell Signal:</strong> Both 14-period RSI and 14-period RSI-SMA rise above <strong>70.0</strong> (Extreme Overbought).</li>
+                </ul>
+
+                <h4 style="color: #f59e0b; margin-bottom: 8px;">📈 200 SMA Touch / Crossover Rules</h4>
+                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                  <li><strong>Bullish Crossover:</strong> Daily price crosses from below the 200-day Simple Moving Average to close above it.</li>
+                  <li><strong>Bearish Crossover:</strong> Daily price crosses from above the 200-day SMA to close below it.</li>
+                </ul>
+
+                <h4 style="color: #f43f5e; margin-bottom: 8px;">🎯 Exit &amp; Risk Controls</h4>
+                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px;">
+                  <li><strong>Target Exit:</strong> Position automatically closes when price reaches the configured Target % gain.</li>
+                  <li><strong>Stop Loss Exit:</strong> Position automatically closes when price touches the configured Stop Loss % threshold.</li>
+                  <li><strong>Time Exit:</strong> If neither target nor stop loss is hit within the Max Holding Days, the position exits at market price.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Inspector Tab 3: Performance Analytics -->
+            <div id="bt-pane-analytics" class="term-tab-pane" style="display: none; padding: 16px;">
+              <div id="bt-analytics-view">
+                <div class="empty-cell" style="padding: 50px 20px; text-align: center; color: #64748b;">
+                  Run a strategy backtest to view comprehensive win/loss analytics and expectancy breakdown.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
   </main>
 
   <!-- Scoped Auto-Complete Ticker Datalists -->
   <datalist id="lookback-stocks-datalist"></datalist>
   <datalist id="paper-stocks-datalist"></datalist>
   <datalist id="news-stocks-datalist"></datalist>
+  <datalist id="backtest-stocks-datalist"></datalist>
 
 
-  <script src="/static/app.js?v=25.0"></script>
+
+  <script src="/static/app.js?v=30.0"></script>
+
 
 
 

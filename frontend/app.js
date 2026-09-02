@@ -111,6 +111,7 @@ App.Router = {
       'tab-lookback': 'section-lookback',
       'tab-news': 'section-news',
       'tab-paper': 'section-paper',
+      'tab-backtest': 'section-backtest',
     };
 
     Object.entries(tabs).forEach(([tabId, sectionId]) => {
@@ -134,9 +135,12 @@ App.Router = {
 
     if (tabName === 'paper') {
       App.Paper.loadData();
+    } else if (tabName === 'backtest') {
+      if (App.Backtester) App.Backtester.initOnce();
     }
   },
 };
+
 
 
 // =====================================================================
@@ -1944,6 +1948,411 @@ App.Zerodha = {
 };
 
 // =====================================================================
+// 7. Strategy Tester & Quantitative Backtest Engine Module
+// =====================================================================
+App.Backtester = {
+  _initialized: false,
+  _currentTrades: [],
+  _selectedTradeIndex: 0,
+  _activeStrategy: 'RB_KnoxDiv',
+
+  init() {
+    if (this._initialized) return;
+    this._initialized = true;
+
+    // Strategy selector pills
+    document.querySelectorAll('#backtest-strategy-group .pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#backtest-strategy-group .pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this._activeStrategy = btn.dataset.strategy || 'RB_KnoxDiv';
+      });
+    });
+
+    // Universe/Watchlist dropdown change -> populate stock dropdown
+    const univSelect = document.querySelector('#backtest-universe-select');
+    if (univSelect) {
+      univSelect.addEventListener('change', () => {
+        this.populateStockSelect(univSelect.value);
+      });
+    }
+
+    // Enter key on custom stock input -> run backtest
+    const customInput = document.querySelector('#backtest-custom-input');
+    if (customInput) {
+      customInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.runBacktest();
+        }
+      });
+    }
+
+    this.populateUniverseSelect();
+    this.populateStockSelect('');
+  },
+
+  initOnce() {
+    this.init();
+    this.populateUniverseSelect();
+  },
+
+  populateUniverseSelect() {
+    const select = document.querySelector('#backtest-universe-select');
+    if (!select) return;
+
+    let html = `
+      <option value="">All Universes (Combined)</option>
+      <option value="FNO">FNO (178 Stocks)</option>
+      <option value="Watchlist">Default Watchlist (108 Stocks)</option>
+      <option value="Nifty50">Nifty 50 Index</option>
+    `;
+
+    const customLists = App.State.customWatchlists || [];
+    if (customLists.length) {
+      html += `<optgroup label="⭐ Your Custom Watchlists">`;
+      customLists.forEach(cw => {
+        html += `<option value="custom:${cw.name}">⭐ ${cw.name} (${(cw.symbols || []).length} Stocks)</option>`;
+      });
+      html += `</optgroup>`;
+    }
+
+    select.innerHTML = html;
+  },
+
+  async populateStockSelect(universe) {
+    const stockSelect = document.querySelector('#backtest-stock-select');
+    if (!stockSelect) return;
+
+    let symbols = [];
+
+    if (universe && universe.startsWith('custom:')) {
+      const customName = universe.replace('custom:', '').trim();
+      const found = (App.State.customWatchlists || []).find(w => w.name === customName);
+      if (found && found.symbols && found.symbols.length) {
+        symbols = found.symbols;
+      }
+    } else if (universe) {
+      symbols = (App.State.universeSymbols || [])
+        .filter(s => Array.isArray(s.indices) && s.indices.includes(universe))
+        .map(s => s.symbol);
+    }
+
+    if (!symbols.length) {
+      symbols = (App.State.universeSymbols || []).map(s => s.symbol);
+    }
+
+    const uniqueSymbols = Array.from(new Set(symbols)).sort();
+
+    stockSelect.innerHTML = `
+      <option value="">-- All Stocks in Watchlist (${uniqueSymbols.length}) --</option>
+      ${uniqueSymbols.map(s => `<option value="${s}">${s}</option>`).join('')}
+    `;
+  },
+
+  quickPickStock(symbol) {
+    const customInput = document.querySelector('#backtest-custom-input');
+    if (customInput) customInput.value = symbol;
+    this.runBacktest();
+  },
+
+  quickPickUniverse(univName) {
+    const univSelect = document.querySelector('#backtest-universe-select');
+    if (univSelect) {
+      const match = Array.from(univSelect.options).find(o => o.value.includes(univName) || o.text.includes(univName));
+      if (match) {
+        univSelect.value = match.value;
+        this.populateStockSelect(match.value);
+      }
+    }
+    const customInput = document.querySelector('#backtest-custom-input');
+    if (customInput) customInput.value = '';
+    this.runBacktest();
+  },
+
+  async runBacktest() {
+    const univSelect = document.querySelector('#backtest-universe-select');
+    const stockSelect = document.querySelector('#backtest-stock-select');
+    const customInput = document.querySelector('#backtest-custom-input');
+
+    const targetInput = document.querySelector('#backtest-target-pct');
+    const stopLossInput = document.querySelector('#backtest-stoploss-pct');
+    const maxDaysInput = document.querySelector('#backtest-max-days');
+    const directionSelect = document.querySelector('#backtest-direction-select');
+
+    const customTicker = customInput ? customInput.value.trim().toUpperCase() : '';
+    const selectedStock = stockSelect ? stockSelect.value.trim().toUpperCase() : '';
+    const symbolToTest = customTicker || selectedStock || null;
+
+    const universe = (univSelect && !symbolToTest) ? univSelect.value : null;
+    const strategy = this._activeStrategy || 'RB_KnoxDiv';
+
+    const targetPct = targetInput ? parseFloat(targetInput.value) || 5.0 : 5.0;
+    const stopLossPct = stopLossInput ? parseFloat(stopLossInput.value) || 3.0 : 3.0;
+    const maxDays = maxDaysInput ? parseInt(maxDaysInput.value, 10) || 20 : 20;
+    const signalType = directionSelect ? directionSelect.value || null : null;
+
+    const runBtn = document.querySelector('#btn-run-backtest');
+    const tradesList = document.querySelector('#backtest-trades-list');
+    const tradesCount = document.querySelector('#backtest-trades-count');
+    const universeBadge = document.querySelector('#bt-universe-badge');
+
+    if (runBtn) {
+      runBtn.disabled = true;
+      runBtn.innerHTML = `<span>⏳ Simulating Trades...</span>`;
+    }
+
+    if (tradesList) {
+      tradesList.innerHTML = `
+        <div class="empty-cell" style="padding: 40px 15px; text-align: center;">
+          <div class="pulse-dot" style="margin: 0 auto 12px auto;"></div>
+          <p style="color: #a5b4fc;">Simulating strategy across historical OHLC candles...</p>
+        </div>
+      `;
+    }
+
+    try {
+      const payload = {
+        symbol: symbolToTest,
+        index: universe,
+        strategy: strategy,
+        target_pct: targetPct,
+        stop_loss_pct: stopLossPct,
+        max_holding_days: maxDays,
+        signal_type: signalType,
+      };
+
+      const res = await fetch('/backtest/run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+
+      this._currentTrades = data.trades || [];
+      App.State.backtestSummary = data.summary;
+
+      // Update KPI Banner
+      const s = data.summary || {};
+      const elTotal = document.querySelector('#bt-kpi-total-trades');
+      const elWin = document.querySelector('#bt-kpi-win-rate');
+      const elWinSub = document.querySelector('#bt-kpi-win-sub');
+      const elPF = document.querySelector('#bt-kpi-profit-factor');
+      const elNet = document.querySelector('#bt-kpi-net-return');
+      const elDD = document.querySelector('#bt-kpi-max-drawdown');
+      const elDays = document.querySelector('#bt-kpi-avg-days');
+
+      if (elTotal) elTotal.textContent = s.total_trades || 0;
+      if (elWin) {
+        const wr = s.win_rate_pct !== undefined ? s.win_rate_pct : 0;
+        elWin.textContent = `${wr.toFixed(1)}%`;
+        elWin.style.color = wr >= 55 ? '#10b981' : (wr >= 45 ? '#f59e0b' : '#f43f5e');
+      }
+      if (elWinSub) elWinSub.textContent = `${s.winning_trades || 0}W / ${s.losing_trades || 0}L`;
+      if (elPF) {
+        const pf = s.profit_factor !== undefined ? s.profit_factor : 0;
+        elPF.textContent = pf.toFixed(2);
+        elPF.style.color = pf >= 1.5 ? '#10b981' : (pf >= 1.0 ? '#f59e0b' : '#f43f5e');
+      }
+      if (elNet) {
+        const nr = s.net_return_pct !== undefined ? s.net_return_pct : 0;
+        elNet.textContent = `${nr >= 0 ? '+' : ''}${nr.toFixed(1)}%`;
+        elNet.style.color = nr >= 0 ? '#10b981' : '#f43f5e';
+      }
+      if (elDD) elDD.textContent = `${(s.max_drawdown_pct || 0).toFixed(1)}%`;
+      if (elDays) elDays.textContent = `${(s.avg_holding_days || 0).toFixed(1)} days`;
+
+      if (tradesCount) tradesCount.textContent = `${this._currentTrades.length} trades`;
+      if (universeBadge) universeBadge.textContent = `${s.universe || 'Completed'} (${data.execution_time_ms}ms)`;
+
+      // Render Trade Cards
+      if (!this._currentTrades.length) {
+        if (tradesList) {
+          tradesList.innerHTML = `<div class="empty-cell" style="padding: 40px 15px; text-align: center; color: #64748b;">No trades triggered matching the selected strategy and filter parameters.</div>`;
+        }
+        this.renderEmptyDiagnostic();
+      } else {
+        if (tradesList) {
+          tradesList.innerHTML = this._currentTrades.map((t, idx) => {
+            const isWin = t.outcome === 'WIN';
+            const isBuy = t.signal_type.toLowerCase() === 'buy';
+            const pnlFormatted = `${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%`;
+            return `
+              <div class="article-list-item ${idx === 0 ? 'selected' : ''}" id="bt-trade-item-${idx}" onclick="App.Backtester.selectTrade(${idx})">
+                <div class="item-meta">
+                  <span class="item-publisher" style="font-weight: 700; color: #fff;">${t.symbol}</span>
+                  <span class="badge ${isBuy ? 'badge-bullish' : 'badge-bearish'}" style="font-size: 0.68rem; padding: 2px 6px;">${isBuy ? 'BUY' : 'SELL'}</span>
+                  <span class="item-date">${t.entry_date}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
+                  <span style="font-size: 0.78rem; color: #94a3b8;">${t.strategy} • ${t.exit_reason}</span>
+                  <span style="font-size: 0.86rem; font-weight: 700; color: ${isWin ? '#10b981' : '#f43f5e'};">${pnlFormatted}</span>
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+
+        // Auto-select first trade
+        this.selectTrade(0);
+      }
+
+      // Also render Analytics Tab
+      this.renderAnalyticsTab(s);
+
+    } catch (err) {
+      if (tradesList) {
+        tradesList.innerHTML = `<div class="empty-cell" style="padding: 40px 15px; text-align: center; color: #f43f5e;">Backtest failed: ${err.message}</div>`;
+      }
+    } finally {
+      if (runBtn) {
+        runBtn.disabled = false;
+        runBtn.innerHTML = `<span>🚀 Run Backtest</span>`;
+      }
+    }
+  },
+
+  selectTrade(idx) {
+    this._selectedTradeIndex = idx;
+    const trades = this._currentTrades || [];
+    const t = trades[idx];
+    if (!t) return;
+
+    document.querySelectorAll('#backtest-trades-list .article-list-item').forEach(el => el.classList.remove('selected'));
+    const selectedEl = document.querySelector(`#bt-trade-item-${idx}`);
+    if (selectedEl) selectedEl.classList.add('selected');
+
+    const diagView = document.querySelector('#bt-selected-trade-view');
+    const titleEl = document.querySelector('#bt-inspect-title');
+    const subEl = document.querySelector('#bt-inspect-sub');
+
+    if (titleEl) titleEl.textContent = `${t.symbol} • ${t.strategy} (${t.signal_type.toUpperCase()})`;
+    if (subEl) subEl.textContent = `Entry: ${t.entry_date} @ ₹${t.entry_price.toFixed(2)} | Exit: ${t.exit_date} @ ₹${t.exit_price.toFixed(2)}`;
+
+    const isWin = t.outcome === 'WIN';
+
+    if (diagView) {
+      diagView.innerHTML = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">OUTCOME</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.outcome}</div>
+            <div style="font-size: 0.72rem; color: #cbd5e1;">${t.exit_reason}</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">NET RETURN</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
+            <div style="font-size: 0.72rem; color: #cbd5e1;">₹${(t.pnl_amount >= 0 ? '+' : '')}${t.pnl_amount.toFixed(2)} / share</div>
+          </div>
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; text-align: center;">
+            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">HOLDING TIME</div>
+            <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">${t.holding_days} Days</div>
+            <div style="font-size: 0.72rem; color: #cbd5e1;">${t.entry_date} to ${t.exit_date}</div>
+          </div>
+        </div>
+
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
+          <h5 style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 10px; font-weight: 700;">Price Execution Blueprint</h5>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
+            <div><span style="color: #94a3b8;">Entry Price:</span> <strong style="color: #fff;">₹${t.entry_price.toFixed(2)}</strong></div>
+            <div><span style="color: #94a3b8;">Exit Price:</span> <strong style="color: #fff;">₹${t.exit_price.toFixed(2)}</strong></div>
+            <div><span style="color: #94a3b8;">Target Level:</span> <strong style="color: #10b981;">₹${(t.target_price || 0).toFixed(2)}</strong></div>
+            <div><span style="color: #94a3b8;">Stop Loss Level:</span> <strong style="color: #f43f5e;">₹${(t.stop_loss_price || 0).toFixed(2)}</strong></div>
+            <div><span style="color: #94a3b8;">Signal Date:</span> <span style="color: #cbd5e1;">${t.signal_date}</span></div>
+            <div><span style="color: #94a3b8;">Confirmation:</span> <span style="color: #10b981;">✅ Verified Next Day</span></div>
+          </div>
+        </div>
+
+        <!-- 1-Click Bridge Actions -->
+        <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+          <button type="button" class="btn-subtle" onclick="App.Backtester.sendToPaperTrading('${t.symbol}', '${t.signal_type}', ${t.entry_price}, ${t.target_price || 0}, ${t.stop_loss_price || 0})">
+            💼 Place in Paper Trading
+          </button>
+          <button type="button" class="btn-subtle" onclick="App.Backtester.sendToNewsAnalyzer('${t.symbol}')">
+            📰 AI News Sentiment
+          </button>
+          <a href="https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            📈 TradingView ↗
+          </a>
+          <a href="https://www.screener.in/company/${t.symbol}/consolidated/" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            📊 Screener.in ↗
+          </a>
+        </div>
+      `;
+    }
+  },
+
+  switchInspectorTab(tab) {
+    document.querySelectorAll('.terminal-header-bar .term-pill').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.term-tab-pane').forEach(p => (p.style.display = 'none'));
+
+    const btn = document.querySelector(`#btn-bt-tab-${tab}`);
+    const pane = document.querySelector(`#bt-pane-${tab}`);
+    if (btn) btn.classList.add('active');
+    if (pane) pane.style.display = 'block';
+  },
+
+  renderAnalyticsTab(summary) {
+    const pane = document.querySelector('#bt-analytics-view');
+    if (!pane || !summary) return;
+
+    pane.innerHTML = `
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
+          <div style="font-size: 0.68rem; color: #94a3b8;">AVG WIN TRADE</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #10b981; margin-top: 2px;">+${(summary.avg_win_pct || 0).toFixed(2)}%</div>
+        </div>
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
+          <div style="font-size: 0.68rem; color: #94a3b8;">AVG LOSS TRADE</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #f43f5e; margin-top: 2px;">${(summary.avg_loss_pct || 0).toFixed(2)}%</div>
+        </div>
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
+          <div style="font-size: 0.68rem; color: #94a3b8;">PAYOFF RATIO</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">${(Math.abs((summary.avg_win_pct || 1) / (summary.avg_loss_pct || -1))).toFixed(2)}</div>
+        </div>
+        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
+          <div style="font-size: 0.68rem; color: #94a3b8;">WIN/LOSS SPLIT</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #cbd5e1; margin-top: 2px;">${summary.winning_trades || 0} / ${summary.losing_trades || 0}</div>
+        </div>
+      </div>
+      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5;">
+        <strong style="color: #fff;">Quantitative Strategy Summary:</strong><br>
+        Over the backtested historical window, this strategy executed <strong>${summary.total_trades || 0}</strong> simulated trades with a <strong>${(summary.win_rate_pct || 0).toFixed(1)}% win rate</strong> and profit factor of <strong>${(summary.profit_factor || 0).toFixed(2)}</strong>. Cumulative return resulted in <strong>${(summary.net_return_pct || 0).toFixed(1)}%</strong> with maximum peak-to-trough drawdown of <strong>${(summary.max_drawdown_pct || 0).toFixed(1)}%</strong>.
+      </div>
+    `;
+  },
+
+  renderEmptyDiagnostic() {
+    const diagView = document.querySelector('#bt-selected-trade-view');
+    if (diagView) {
+      diagView.innerHTML = `<div class="empty-cell" style="padding: 50px 20px; text-align: center; color: #64748b;">No trades available for inspection.</div>`;
+    }
+  },
+
+  sendToPaperTrading(symbol, direction, price, target, stoploss) {
+    App.Router.switchTab('paper');
+    App.Paper.openModal(symbol, direction.toUpperCase() === 'BUY' ? 'BUY' : 'SELL');
+    setTimeout(() => {
+      const priceInput = document.querySelector('#order-entry-price');
+      const targetInput = document.querySelector('#order-target-pct');
+      const stopInput = document.querySelector('#order-stoploss-pct');
+      if (priceInput && price) priceInput.value = price;
+      if (targetInput && target) targetInput.value = target;
+      if (stopInput && stoploss) stopInput.value = stoploss;
+    }, 200);
+  },
+
+  sendToNewsAnalyzer(symbol) {
+    App.Router.switchTab('news');
+    const customInput = document.querySelector('#news-custom-input');
+    if (customInput) customInput.value = symbol;
+    App.News.analyzeStock();
+  }
+};
+
+// =====================================================================
 // 8. Application Auto-Complete Datalist Manager & Bootstrapping
 // =====================================================================
 App.Init = {
@@ -1953,12 +2362,12 @@ App.Init = {
     App.News.init();
     App.Paper.init();
     App.Zerodha.init();
+    App.Backtester.init();
 
     await App.Screener.loadCustomWatchlists();
     await this.populateDatalists();
     App.Screener.fetchSignals();
   },
-
 
   async populateDatalists() {
     try {
@@ -1973,6 +2382,7 @@ App.Init = {
         '#lookback-stocks-datalist',
         '#paper-stocks-datalist',
         '#news-stocks-datalist',
+        '#backtest-stocks-datalist',
       ];
 
       datalists.forEach(id => {
@@ -1984,12 +2394,13 @@ App.Init = {
 
       // Populate initial news stock select with FNO or All
       App.News.populateStockSelect('FNO');
+      App.Backtester.populateStockSelect('');
     } catch (err) {
       console.debug('Datalists load error:', err);
     }
   },
-
 };
+
 
 // Initialize on DOM Ready
 document.addEventListener('DOMContentLoaded', () => {
