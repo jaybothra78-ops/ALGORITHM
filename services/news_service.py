@@ -368,11 +368,14 @@ Respond ONLY with valid JSON with this exact structure:
         confidence = min(95, max(50, 50 + (b_score - r_score) * 12))
 
         short_analysis = (
-            f"This development for {clean_sym} ('{article_title}') represents notable corporate movement. "
-            f"According to reports, '{article_summary or article_title}'. Overall fundamental sentiment skews {sentiment.lower()} based on financial keyword indicators. "
-            f"From an institutional perspective, consistent execution on this front is critical for maintaining EBITDA margins and commanding premium sector multiples over upcoming quarters. "
-            f"Traders should monitor immediate price reaction around key support and resistance levels to gauge whether market participants have already priced in this announcement."
+            f"This corporate development for {clean_sym} regarding '{article_title}' indicates notable fundamental movement. "
+            f"According to latest media and filing reports, {article_summary or 'operational metrics and order flow trends continue to evolve'}. "
+            f"From an institutional valuation standpoint, prevailing business cues skew {sentiment.lower()} (estimated confidence {confidence}%). "
+            f"Sustained quarterly delivery on these operating metrics will be critical for defending gross EBITDA margins, supporting return on equity, and commanding premium multiples within the peer group. "
+            f"While macroeconomic benchmark volatility and sector-wide input cost fluctuations present near-term monitorables, the headline affirms constructive business direction. "
+            f"Traders should monitor immediate price action around prevailing support and resistance bands to evaluate whether market participants have already priced in this announcement or if fresh accumulation volume will follow."
         )
+
 
         bullets = [
             f"🎯 Core Development: {article_title}.",

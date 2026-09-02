@@ -5,11 +5,32 @@
 'use strict';
 
 const App = window.App = window.App || {};
-window.openArticleAi = function(idx) {
+
+// Global Article Action Handlers
+window.handleArticleAction = function(idx, mode) {
   if (window.App && window.App.News) {
-    window.App.News.openArticleAi(idx);
+    window.App.News.handleArticleAction(idx, mode);
   }
 };
+window.closeArticlePanel = function(idx) {
+  if (window.App && window.App.News) {
+    window.App.News.closeArticlePanel(idx);
+  }
+};
+window.askArticleQuestion = function(idx, q) {
+  if (window.App && window.App.News) {
+    window.App.News.askArticleQuestion(idx, q);
+  }
+};
+window.submitArticleChat = function(idx) {
+  if (window.App && window.App.News) {
+    window.App.News.submitArticleChat(idx);
+  }
+};
+window.openArticleAi = function(idx) {
+  window.handleArticleAction(idx, 'summary');
+};
+
 
 
 // =====================================================================
@@ -442,8 +463,8 @@ App.News = {
     }
 
     this.initClaudeKeyModal();
-    this.initArticleAiDrawer();
   },
+
 
 
   getSelectedSymbol() {
@@ -659,12 +680,13 @@ App.News = {
 
     if (articlesGrid) {
       App.State.currentArticles = data.articles || [];
+      App.News._articleCache = {}; // reset cache for new stock
 
       if (!data.articles || !data.articles.length) {
         articlesGrid.innerHTML = '<div class="empty-cell">No recent news articles found for this ticker.</div>';
       } else {
         articlesGrid.innerHTML = data.articles.map((a, idx) => `
-          <div class="news-article-card">
+          <div class="news-article-card" id="article-card-${idx}">
             <div class="article-meta-row">
               <span class="article-publisher">${a.publisher || 'Financial Media'}</span>
               <span class="article-date">${a.published_at || 'Recent'}</span>
@@ -673,178 +695,194 @@ App.News = {
               <a href="${a.link}" target="_blank" rel="noopener noreferrer">${a.title}</a>
             </h5>
             <p class="article-summary">${a.summary || 'Click link to read full coverage on publisher site.'}</p>
-            <div class="article-action-row">
-              <button type="button" class="btn-ai-deepdive" onclick="window.openArticleAi(${idx})">
-                <span>🤖 AI Deep Dive &amp; Chat</span>
+            
+            <!-- Clean Option Pills Bar -->
+            <div class="article-actions-clean">
+              <button type="button" class="article-opt-pill" id="btn-opt-${idx}-summary" onclick="window.handleArticleAction(${idx}, 'summary')">
+                ⚡ 100-150w Summary
               </button>
-              <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-read-btn">Read Source ↗</a>
+              <button type="button" class="article-opt-pill" id="btn-opt-${idx}-bullets" onclick="window.handleArticleAction(${idx}, 'bullets')">
+                🎯 Key Bullets
+              </button>
+              <button type="button" class="article-opt-pill" id="btn-opt-${idx}-chat" onclick="window.handleArticleAction(${idx}, 'chat')">
+                💬 Ask AI / Chat
+              </button>
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-source-link">Read Source ↗</a>
             </div>
+
+            <!-- Inline Expanded AI Result Container -->
+            <div id="article-ai-result-${idx}" class="article-ai-expanded-box" style="display: none;"></div>
           </div>
         `).join('');
       }
     }
   },
 
-  initArticleAiDrawer() {
-    const drawer = document.querySelector('#drawer-article-ai');
-    const btnClose = document.querySelector('#btn-close-article-drawer');
-    const backdrop = document.querySelector('#btn-close-article-drawer-bg');
-    const btnSend = document.querySelector('#btn-drawer-send-chat');
-    const chatInput = document.querySelector('#drawer-chat-input');
+  _articleCache: {},
 
-    if (btnClose) btnClose.addEventListener('click', () => this.closeArticleAi());
-    if (backdrop) backdrop.addEventListener('click', () => this.closeArticleAi());
-
-    if (btnSend) {
-      btnSend.addEventListener('click', () => {
-        const q = chatInput ? chatInput.value.trim() : '';
-        if (q) this.sendArticleChat(q);
-      });
-    }
-
-    if (chatInput) {
-      chatInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-          const q = chatInput.value.trim();
-          if (q) this.sendArticleChat(q);
-        }
-      });
-    }
-
-    // Quick prompt suggestion chips
-    document.querySelectorAll('.drawer-prompt-chips .prompt-chip').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const q = btn.dataset.q;
-        if (q) this.sendArticleChat(q);
-      });
-    });
-  },
-
-  openArticleAi(articleIndex) {
-    const idx = parseInt(articleIndex, 10);
+  async handleArticleAction(idx, mode) {
     const article = (App.State.currentArticles || [])[idx];
-    if (!article) {
-      console.warn('Article not found at index:', articleIndex, App.State.currentArticles);
+    if (!article) return;
+
+    const resultBox = document.querySelector(`#article-ai-result-${idx}`);
+    const summaryBtn = document.querySelector(`#btn-opt-${idx}-summary`);
+    const bulletsBtn = document.querySelector(`#btn-opt-${idx}-bullets`);
+    const chatBtn = document.querySelector(`#btn-opt-${idx}-chat`);
+    if (!resultBox) return;
+
+    // Toggle close if clicking currently active mode
+    if (resultBox.style.display !== 'none' && resultBox.dataset.activeMode === mode) {
+      this.closeArticlePanel(idx);
       return;
     }
 
-    App.State.activeArticle = article;
-    const drawer = document.querySelector('#drawer-article-ai');
-    const titleEl = document.querySelector('#drawer-article-title');
-    const stockBadge = document.querySelector('#drawer-stock-badge');
-    const analysisText = document.querySelector('#drawer-analysis-text');
-    const bulletsList = document.querySelector('#drawer-bullets-list');
-    const chatMessages = document.querySelector('#drawer-chat-messages');
+    // Set active button pill
+    [summaryBtn, bulletsBtn, chatBtn].forEach(b => b && b.classList.remove('active'));
+    const activeBtn = document.querySelector(`#btn-opt-${idx}-${mode}`);
+    if (activeBtn) activeBtn.classList.add('active');
 
-    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
-    if (stockBadge) stockBadge.textContent = symbol;
-    if (titleEl) titleEl.textContent = article.title;
+    resultBox.style.display = 'block';
+    resultBox.dataset.activeMode = mode;
 
-    if (analysisText) {
-      analysisText.innerHTML = `<em>Synthesizing 100-150 word institutional breakdown for ${symbol}...</em>`;
+    // Check cache
+    let data = this._articleCache[article.title];
+    if (!data) {
+      resultBox.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 8px; color: #a5b4fc; font-size: 0.85rem; padding: 6px 0;">
+          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #818cf8; animation: pulse 1s infinite;"></span>
+          <span>Generating ${mode === 'summary' ? '100-150 word summary' : (mode === 'bullets' ? 'key bullet points' : 'AI analysis')}...</span>
+        </div>
+      `;
+      try {
+        const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
+        const res = await fetch('/news/article-chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            symbol: symbol,
+            article_title: article.title,
+            article_summary: article.summary,
+            article_link: article.link,
+          }),
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        data = await res.json();
+        this._articleCache[article.title] = data;
+      } catch (err) {
+        resultBox.innerHTML = `
+          <div style="color: #f43f5e; font-size: 0.84rem; padding: 4px 0;">
+            ⚠️ Analysis error: ${err.message}. Please retry.
+          </div>
+        `;
+        return;
+      }
     }
-    if (bulletsList) {
-      bulletsList.innerHTML = `<li>Analyzing market impact &amp; key drivers...</li>`;
-    }
 
-    // Reset chat messages to welcome message
-    if (chatMessages) {
-      chatMessages.innerHTML = `
-        <div class="chat-msg ai-msg">
-          <div class="msg-avatar">🤖</div>
-          <div class="msg-bubble">
-            Ask me anything about <strong>${article.title}</strong>, financial growth impacts, or immediate trading setups!
+    this.renderArticlePanelContent(idx, mode, data, article);
+  },
+
+  closeArticlePanel(idx) {
+    const resultBox = document.querySelector(`#article-ai-result-${idx}`);
+    if (resultBox) {
+      resultBox.style.display = 'none';
+      resultBox.dataset.activeMode = '';
+    }
+    ['summary', 'bullets', 'chat'].forEach(m => {
+      const b = document.querySelector(`#btn-opt-${idx}-${m}`);
+      if (b) b.classList.remove('active');
+    });
+  },
+
+  renderArticlePanelContent(idx, mode, data, article) {
+    const resultBox = document.querySelector(`#article-ai-result-${idx}`);
+    if (!resultBox) return;
+
+    if (mode === 'summary') {
+      const words = (data.short_analysis || '').split(/\s+/).filter(Boolean).length;
+      resultBox.innerHTML = `
+        <div class="box-header-row">
+          <div class="box-title-meta">
+            <span>⚡ Institutional Executive Summary (${words} words)</span>
+            <span class="sentiment-badge-pill ${(data.sentiment || 'neutral').toLowerCase()}">${data.sentiment || 'Neutral'} (${data.confidence_score || 80}%)</span>
+          </div>
+          <button type="button" class="box-close-btn" onclick="window.closeArticlePanel(${idx})" title="Close">&times;</button>
+        </div>
+        <p class="box-summary-text">${data.short_analysis}</p>
+      `;
+    } else if (mode === 'bullets') {
+      resultBox.innerHTML = `
+        <div class="box-header-row">
+          <div class="box-title-meta">
+            <span>🎯 Key Takeaways &amp; Catalysts</span>
+            <span class="sentiment-badge-pill ${(data.sentiment || 'neutral').toLowerCase()}">${data.sentiment || 'Neutral'}</span>
+          </div>
+          <button type="button" class="box-close-btn" onclick="window.closeArticlePanel(${idx})" title="Close">&times;</button>
+        </div>
+        <ul class="box-bullets-list">
+          ${(data.bullet_points || []).map(b => `<li>${b}</li>`).join('')}
+        </ul>
+      `;
+    } else if (mode === 'chat') {
+      resultBox.innerHTML = `
+        <div class="box-header-row">
+          <div class="box-title-meta">
+            <span>💬 Interactive Article Q&amp;A</span>
+            <span class="sentiment-badge-pill neutral">${data.engine || 'AI Engine'}</span>
+          </div>
+          <button type="button" class="box-close-btn" onclick="window.closeArticlePanel(${idx})" title="Close">&times;</button>
+        </div>
+        <div class="box-chat-container">
+          <div class="box-prompt-chips">
+            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'What is the revenue and EBITDA margin impact?')">💰 Financial Impact?</button>
+            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'Is this development already priced into the stock?')">📊 Already Priced In?</button>
+            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'What are the main risks and downside headwinds?')">⚠️ Key Risks?</button>
+            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'How will this affect tomorrow market open?')">📈 Market Open?</button>
+          </div>
+          <div id="box-chat-thread-${idx}" class="box-chat-thread">
+            <div class="chat-msg ai-msg">
+              <div class="msg-avatar">🤖</div>
+              <div class="msg-bubble">Ask me anything about this article or its impact on <strong>${data.symbol || 'the stock'}</strong>!</div>
+            </div>
+          </div>
+          <div class="box-chat-input-bar">
+            <input type="text" id="box-chat-input-${idx}" placeholder="Ask a question about this article..." onkeypress="if(event.key==='Enter') window.submitArticleChat(${idx})">
+            <button type="button" onclick="window.submitArticleChat(${idx})">Send</button>
           </div>
         </div>
       `;
     }
-
-    if (drawer) {
-      drawer.style.display = 'flex';
-      drawer.style.zIndex = '99999';
-    }
-
-    // Fetch initial 100-150 word deep dive and key bullets
-    this.fetchArticleAnalysis(article);
   },
 
-  closeArticleAi() {
-    const drawer = document.querySelector('#drawer-article-ai');
-    if (drawer) drawer.style.display = 'none';
+  async askArticleQuestion(idx, question) {
+    const input = document.querySelector(`#box-chat-input-${idx}`);
+    if (input) input.value = question;
+    this.submitArticleChat(idx);
   },
 
-
-  async fetchArticleAnalysis(article) {
-    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
-    try {
-      const res = await fetch('/news/article-chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          symbol: symbol,
-          article_title: article.title,
-          article_summary: article.summary,
-          article_link: article.link,
-        }),
-      });
-
-      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
-      const data = await res.json();
-
-      const analysisText = document.querySelector('#drawer-analysis-text');
-      const bulletsList = document.querySelector('#drawer-bullets-list');
-      const engineBadge = document.querySelector('#drawer-engine-badge');
-      const sentimentPill = document.querySelector('#drawer-sentiment-pill');
-
-      if (analysisText) analysisText.textContent = data.short_analysis;
-      if (engineBadge) engineBadge.textContent = data.engine || 'AI Engine';
-
-      if (sentimentPill) {
-        const sent = (data.sentiment || 'Neutral').toLowerCase();
-        sentimentPill.className = `sentiment-badge-pill ${sent}`;
-        sentimentPill.textContent = `${data.sentiment} (${data.confidence_score || 80}%)`;
-      }
-
-      if (bulletsList) {
-        if (data.bullet_points && data.bullet_points.length) {
-          bulletsList.innerHTML = data.bullet_points.map(b => `<li>${b}</li>`).join('');
-        } else {
-          bulletsList.innerHTML = '<li>Key catalyst and impact assessment loaded.</li>';
-        }
-      }
-    } catch (err) {
-      const analysisText = document.querySelector('#drawer-analysis-text');
-      if (analysisText) {
-        analysisText.innerHTML = `<span style="color: #f43f5e;">Failed to generate breakdown: ${err.message}</span>`;
-      }
-    }
-  },
-
-  async sendArticleChat(question) {
-    const article = App.State.activeArticle;
+  async submitArticleChat(idx) {
+    const article = (App.State.currentArticles || [])[idx];
     if (!article) return;
 
-    const chatMessages = document.querySelector('#drawer-chat-messages');
-    const chatInput = document.querySelector('#drawer-chat-input');
-    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
+    const input = document.querySelector(`#box-chat-input-${idx}`);
+    const thread = document.querySelector(`#box-chat-thread-${idx}`);
+    const q = input ? input.value.trim() : '';
+    if (!q || !thread) return;
 
-    if (chatInput) chatInput.value = '';
+    input.value = '';
 
-    // Append user question bubble
-    if (chatMessages) {
-      chatMessages.innerHTML += `
-        <div class="chat-msg user-msg">
-          <div class="msg-bubble">${question}</div>
-        </div>
-        <div class="chat-msg ai-msg typing-placeholder">
-          <div class="msg-avatar">🤖</div>
-          <div class="msg-bubble"><em>Analyzing institutional implications...</em></div>
-        </div>
-      `;
-      chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
+    thread.innerHTML += `
+      <div class="chat-msg user-msg">
+        <div class="msg-bubble">${q}</div>
+      </div>
+      <div class="chat-msg ai-msg typing-msg">
+        <div class="msg-avatar">🤖</div>
+        <div class="msg-bubble"><em>Analyzing institutional implications...</em></div>
+      </div>
+    `;
+    thread.scrollTop = thread.scrollHeight;
 
     try {
+      const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
       const res = await fetch('/news/article-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -853,41 +891,34 @@ App.News = {
           article_title: article.title,
           article_summary: article.summary,
           article_link: article.link,
-          user_question: question,
+          user_question: q,
         }),
       });
-
-      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      // Remove typing placeholder
-      const placeholder = document.querySelector('.typing-placeholder');
-      if (placeholder) placeholder.remove();
+      const typing = thread.querySelector('.typing-msg');
+      if (typing) typing.remove();
 
-      if (chatMessages) {
-        chatMessages.innerHTML += `
-          <div class="chat-msg ai-msg">
-            <div class="msg-avatar">🤖</div>
-            <div class="msg-bubble">${data.answer || data.short_analysis}</div>
-          </div>
-        `;
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }
+      thread.innerHTML += `
+        <div class="chat-msg ai-msg">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">${data.answer || data.short_analysis}</div>
+        </div>
+      `;
+      thread.scrollTop = thread.scrollHeight;
     } catch (err) {
-      const placeholder = document.querySelector('.typing-placeholder');
-      if (placeholder) placeholder.remove();
-
-      if (chatMessages) {
-        chatMessages.innerHTML += `
-          <div class="chat-msg ai-msg">
-            <div class="msg-avatar">⚠️</div>
-            <div class="msg-bubble" style="color: #f43f5e;">Error processing query: ${err.message}</div>
-          </div>
-        `;
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-      }
+      const typing = thread.querySelector('.typing-msg');
+      if (typing) typing.remove();
+      thread.innerHTML += `
+        <div class="chat-msg ai-msg">
+          <div class="msg-avatar">⚠️</div>
+          <div class="msg-bubble" style="color: #f43f5e;">Error: ${err.message}</div>
+        </div>
+      `;
     }
   },
+
 
   initClaudeKeyModal() {
     const card = document.querySelector('#card-claude-key');
