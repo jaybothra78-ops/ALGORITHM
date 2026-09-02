@@ -2180,17 +2180,17 @@ App.Backtester = {
             const isBuy = t.signal_type.toLowerCase() === 'buy';
             const pnlFormatted = `${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%`;
             return `
-              <div class="trade-card-minimal ${idx === 0 ? 'selected' : ''}" id="bt-trade-item-${idx}" onclick="App.Backtester.selectTrade(${idx})">
-                <div class="tc-header">
-                  <div style="display: flex; align-items: center; gap: 6px;">
-                    <span class="tc-sym">${t.symbol}</span>
-                    <span class="${isBuy ? 'tc-direction-buy' : 'tc-direction-sell'}">${isBuy ? 'LONG' : 'SHORT'}</span>
+              <div class="article-list-item ${idx === 0 ? 'selected' : ''}" id="bt-trade-item-${idx}" onclick="App.Backtester.selectTrade(${idx})">
+                <div class="item-meta">
+                  <div style="display: flex; align-items: center; gap: 8px;">
+                    <strong style="color: #fff; font-size: 0.92rem;">${t.symbol}</strong>
+                    <span class="badge ${isBuy ? 'badge-bullish' : 'badge-bearish'}">${isBuy ? 'BUY' : 'SELL'}</span>
                   </div>
-                  <span class="${isWin ? 'tc-pnl-win' : 'tc-pnl-loss'}">${pnlFormatted}</span>
+                  <span class="badge ${isWin ? 'badge-bullish' : 'badge-bearish'}" style="font-size: 0.82rem; font-weight: 800;">${pnlFormatted}</span>
                 </div>
-                <div class="tc-sub">
+                <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.76rem; color: #94a3b8; margin-top: 4px;">
                   <span>${t.strategy} • ${t.exit_reason}</span>
-                  <span>${t.entry_date}</span>
+                  <span style="color: #64748b;">${t.entry_date}</span>
                 </div>
               </div>
             `;
@@ -2222,9 +2222,10 @@ App.Backtester = {
     const t = trades[idx];
     if (!t) return;
 
-    document.querySelectorAll('#backtest-trades-list .trade-card-minimal').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#backtest-trades-list .article-list-item').forEach(el => el.classList.remove('selected'));
     const selectedEl = document.querySelector(`#bt-trade-item-${idx}`);
     if (selectedEl) selectedEl.classList.add('selected');
+
 
     const diagView = document.querySelector('#bt-selected-trade-view');
     const titleEl = document.querySelector('#bt-inspect-title');
@@ -2301,22 +2302,23 @@ App.Backtester = {
 
         <!-- 1-Click Bridge Actions -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-          <button type="button" class="action-btn-ghost" onclick="App.Backtester.sendToPaperTrading('${t.symbol}', '${t.signal_type}', ${t.entry_price}, ${t.target_price || 0}, ${t.stop_loss_price || 0})">
-            <span>💼</span> <span>Place Paper Trade</span>
+          <button type="button" class="btn-subtle" onclick="App.Backtester.sendToPaperTrading('${t.symbol}', '${t.signal_type}', ${t.entry_price}, ${t.target_price || 0}, ${t.stop_loss_price || 0})">
+            💼 Place Paper Trade
           </button>
-          <button type="button" class="action-btn-ghost" onclick="App.Backtester.sendToNewsAnalyzer('${t.symbol}')">
-            <span>📰</span> <span>AI News Sentiment</span>
+          <button type="button" class="btn-subtle" onclick="App.Backtester.sendToNewsAnalyzer('${t.symbol}')">
+            📰 AI News Sentiment
           </button>
-          <a href="https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}" target="_blank" class="action-btn-ghost">
-            <span>📈</span> <span>TradingView ↗</span>
+          <a href="https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            📈 TradingView ↗
           </a>
-          <a href="https://www.screener.in/company/${t.symbol}/consolidated/" target="_blank" class="action-btn-ghost">
-            <span>📊</span> <span>Screener.in ↗</span>
+          <a href="https://www.screener.in/company/${t.symbol}/consolidated/" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
+            📊 Screener.in ↗
           </a>
         </div>
       `;
     }
   },
+
 
 
   switchInspectorTab(tab) {

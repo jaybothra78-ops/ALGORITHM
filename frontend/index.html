@@ -478,7 +478,9 @@
       color: #f43f5e;
       font-size: 1.2rem;
       line-height: 1;
+    }
     /* Strategy Tester KPI Ribbon Styles */
+
     .strategy-hero-banner {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -1822,152 +1824,147 @@
 
     <!-- Section 4: Institutional Strategy Tester & Backtest Engine -->
     <section id="section-backtest" class="view-section" style="display: none;">
-      <!-- Minimalist Command Studio Card -->
-      <div class="tester-glass-card">
-        <div class="tester-header-row">
-          <div>
-            <div class="tester-badge">🧪 Quantitative Strategy Studio</div>
-            <h2 class="tester-title">Strategy Tester &amp; Simulation Engine</h2>
-            <p class="tester-desc">
-              Backtest Rob Booker Knoxville Divergence (with next-day confirmation candle), Dual RSI Extremes (&lt;30 / &gt;70), and 200 SMA touch/crossover across your custom watchlists or individual stocks with institutional risk parameters.
+      <!-- Command Center matching AI Analyzer -->
+      <div class="news-command-center" style="margin-bottom: 20px;">
+        <div class="news-cc-header">
+          <div class="news-cc-title-wrap">
+            <span class="news-cc-badge">🧪 Quantitative Strategy Studio</span>
+            <h2 class="news-cc-title">Institutional Strategy Tester &amp; Trade Simulator</h2>
+            <p class="news-cc-desc">
+              Backtest Rob Booker Knoxville Divergence (with confirmation candle), Dual RSI Extremes (&lt;30 / &gt;70), and 200 SMA Touch/Crossover strategies across your custom watchlists or individual stocks with custom profit targets and stop losses.
             </p>
           </div>
         </div>
 
-        <!-- Row 1: Target Scope (Watchlist + Stock + Direct Search) -->
-        <div class="tester-controls-bar">
-          <div class="tester-input-box">
-            <label for="backtest-universe-select">Watchlist / Index</label>
-            <select id="backtest-universe-select">
-              <option value="">All Universes (Combined)</option>
-              <option value="FNO">FNO (178 Stocks)</option>
-              <option value="Watchlist">Default Watchlist (108 Stocks)</option>
-              <option value="Nifty50">Nifty 50 Index</option>
-            </select>
-          </div>
-
-          <div class="tester-input-box">
-            <label for="backtest-stock-select">Stock in Watchlist</label>
-            <select id="backtest-stock-select">
-              <option value="">-- All Stocks in Watchlist --</option>
-            </select>
-          </div>
-
-          <div class="tester-input-box">
-            <label for="backtest-custom-input">Direct Ticker Lookup</label>
-            <input type="text" id="backtest-custom-input" placeholder="e.g. TVSMOTOR, 360ONE..." list="backtest-stocks-datalist" style="text-transform: uppercase;">
-          </div>
-        </div>
-
-        <!-- Row 2: Strategy Switcher Strip -->
-        <div class="tester-strategy-strip" id="backtest-strategy-group">
-          <button type="button" class="strat-tab active" data-strategy="RB_KnoxDiv">
-            <span>⚡ Knoxville Divergence</span>
-            <span style="font-size: 0.68rem; opacity: 0.75;">(Confirmed)</span>
-          </button>
-          <button type="button" class="strat-tab" data-strategy="RSI">
-            <span>🟢 Dual RSI Extremes</span>
-            <span style="font-size: 0.68rem; opacity: 0.75;">(&lt;30 / &gt;70)</span>
-          </button>
-          <button type="button" class="strat-tab" data-strategy="SMA_200">
-            <span>📈 200 SMA</span>
-            <span style="font-size: 0.68rem; opacity: 0.75;">(Touch / Cross)</span>
-          </button>
-          <button type="button" class="strat-tab" data-strategy="ALL">
-            <span>🔥 All Strategies</span>
-            <span style="font-size: 0.68rem; opacity: 0.75;">(Portfolio Synergy)</span>
-          </button>
-        </div>
-
-        <!-- Row 3: Parameter Chips & Execute CTA -->
-        <div class="tester-params-strip">
-          <div class="param-card">
-            <label for="backtest-target-pct">Target Profit</label>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <input type="number" id="backtest-target-pct" value="5.0" step="0.5" min="0.5" max="50">
-              <span style="color: #64748b; font-size: 0.85rem; font-weight: 700;">%</span>
+        <!-- Controls Row: Universe, Stock, Direct Search & CTA Button -->
+        <div class="cmd-controls-row">
+          <div class="cmd-field-group">
+            <label class="cmd-label">Select Watchlist / Universe</label>
+            <div class="select-wrapper">
+              <select id="backtest-universe-select" aria-label="Select Watchlist or Universe">
+                <option value="">All Universes (Combined)</option>
+                <option value="FNO">FNO (178 Stocks)</option>
+                <option value="Watchlist">Default Watchlist (108 Stocks)</option>
+                <option value="Nifty50">Nifty 50 Index</option>
+              </select>
             </div>
           </div>
 
-          <div class="param-card">
-            <label for="backtest-stoploss-pct">Stop Loss</label>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <input type="number" id="backtest-stoploss-pct" value="3.0" step="0.5" min="0.5" max="30">
-              <span style="color: #64748b; font-size: 0.85rem; font-weight: 700;">%</span>
+          <div class="cmd-field-group">
+            <label class="cmd-label">Select Stock</label>
+            <div class="select-wrapper">
+              <select id="backtest-stock-select" aria-label="Select Specific Stock">
+                <option value="">-- All Stocks in Watchlist --</option>
+              </select>
             </div>
           </div>
 
-          <div class="param-card">
-            <label for="backtest-max-days">Max Holding</label>
-            <div style="display: flex; align-items: center; gap: 4px;">
-              <input type="number" id="backtest-max-days" value="20" step="1" min="1" max="90">
-              <span style="color: #64748b; font-size: 0.85rem; font-weight: 700;">Days</span>
+          <div class="cmd-field-group ticker-search-group">
+            <label class="cmd-label">Direct Search</label>
+            <div class="stock-input-wrapper">
+              <span class="stock-input-icon">🔍</span>
+              <input type="text" id="backtest-custom-input" list="backtest-stocks-datalist" placeholder="e.g. TVSMOTOR" style="text-transform: uppercase;" autocomplete="off">
             </div>
           </div>
 
-          <div class="param-card">
-            <label for="backtest-direction-select">Direction</label>
-            <select id="backtest-direction-select" style="padding: 2px 0;">
-              <option value="">Both (Long &amp; Short)</option>
-              <option value="buy">Long Only (Buy)</option>
-              <option value="sell">Short Only (Sell)</option>
-            </select>
-          </div>
-
-          <div>
-            <button type="button" id="btn-run-backtest" class="btn-run-quant" onclick="App.Backtester.runBacktest()">
+          <div class="cmd-action-group">
+            <button type="button" id="btn-run-backtest" class="btn-primary cmd-run-btn" onclick="App.Backtester.runBacktest()">
               <span>🚀 Run Backtest</span>
             </button>
           </div>
         </div>
 
-        <!-- Quick Tickers Bar -->
-        <div class="tester-quick-strip">
-          <span class="quick-tag-label">⭐ Quick Watch:</span>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickStock('TVSMOTOR')">TVSMOTOR</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickStock('360ONE')">360ONE</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickStock('RELIANCE')">RELIANCE</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickStock('TRENT')">TRENT</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickStock('TATAMOTORS')">TATAMOTORS</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickUniverse('custom study')">⭐ custom study (23)</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickUniverse('jitu list')">⭐ jitu list (120)</button>
-          <button type="button" class="quick-tag-pill" onclick="App.Backtester.quickPickUniverse('JAY')">⭐ JAY (27)</button>
+        <!-- Secondary Row: Strategy Pills + Inline Numeric Parameters -->
+        <div class="cmd-secondary-row" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em;">Strategy:</span>
+            <div class="pill-group" id="backtest-strategy-group">
+              <button type="button" class="pill active" data-strategy="RB_KnoxDiv">⚡ Knoxville (Confirmed)</button>
+              <button type="button" class="pill" data-strategy="RSI">🟢 Dual RSI (&lt;30 / &gt;70)</button>
+              <button type="button" class="pill" data-strategy="SMA_200">📈 200 SMA</button>
+              <button type="button" class="pill" data-strategy="ALL">🔥 All Combined</button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Target:</span>
+              <input type="number" id="backtest-target-pct" value="5.0" step="0.5" min="0.5" max="50" style="width: 48px; background: transparent; border: none; color: #fff; font-weight: 700; text-align: center; outline: none; font-size: 0.88rem;">
+              <span style="color: #64748b; font-size: 0.76rem;">%</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Stop Loss:</span>
+              <input type="number" id="backtest-stoploss-pct" value="3.0" step="0.5" min="0.5" max="30" style="width: 48px; background: transparent; border: none; color: #fff; font-weight: 700; text-align: center; outline: none; font-size: 0.88rem;">
+              <span style="color: #64748b; font-size: 0.76rem;">%</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Max Hold:</span>
+              <input type="number" id="backtest-max-days" value="20" step="1" min="1" max="90" style="width: 42px; background: transparent; border: none; color: #fff; font-weight: 700; text-align: center; outline: none; font-size: 0.88rem;">
+              <span style="color: #64748b; font-size: 0.76rem;">Days</span>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <select id="backtest-direction-select" style="background: transparent; border: none; color: #fff; font-size: 0.76rem; font-weight: 600; outline: none; cursor: pointer;">
+                <option value="" style="background: #0f172a;">Both ⇅</option>
+                <option value="buy" style="background: #0f172a;">Long Only 🟢</option>
+                <option value="sell" style="background: #0f172a;">Short Only 🔴</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Trending Bar -->
+        <div class="trending-pills-row" style="margin-top: 12px;">
+          <span class="trending-label">⭐ Quick Watch:</span>
+          <div class="pill-group">
+            <button type="button" class="pill" onclick="App.Backtester.quickPickStock('TVSMOTOR')">TVSMOTOR</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickStock('360ONE')">360ONE</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickStock('RELIANCE')">RELIANCE</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickStock('TRENT')">TRENT</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickStock('TATAMOTORS')">TATAMOTORS</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickUniverse('custom study')">⭐ custom study (23)</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickUniverse('jitu list')">⭐ jitu list (120)</button>
+            <button type="button" class="pill" onclick="App.Backtester.quickPickUniverse('JAY')">⭐ JAY (27)</button>
+          </div>
         </div>
       </div>
 
-      <!-- Minimalist KPI Ribbon -->
-      <div id="backtest-kpi-banner" class="kpi-row-minimal">
-        <div class="kpi-tile-minimal">
-          <div class="tile-title">TOTAL TRADES</div>
-          <div class="tile-number" id="bt-kpi-total-trades">--</div>
-          <div class="tile-subtitle" id="bt-kpi-trades-sub">Simulated executions</div>
+      <!-- Strategy Performance KPI Ribbon -->
+      <div id="backtest-kpi-banner" class="strategy-hero-banner" style="margin-bottom: 20px;">
+        <div class="kpi-card">
+          <div class="kpi-label">TOTAL TRADES</div>
+          <div class="kpi-val" id="bt-kpi-total-trades">--</div>
+          <div class="kpi-sub" id="bt-kpi-trades-sub">Simulated executions</div>
         </div>
-        <div class="kpi-tile-minimal">
-          <div class="tile-title">WIN RATE</div>
-          <div class="tile-number" id="bt-kpi-win-rate">--%</div>
-          <div class="tile-subtitle" id="bt-kpi-win-sub">Profitable trades</div>
+        <div class="kpi-card">
+          <div class="kpi-label">WIN RATE</div>
+          <div class="kpi-val" id="bt-kpi-win-rate">--%</div>
+          <div class="kpi-sub" id="bt-kpi-win-sub">Profitable trades</div>
         </div>
-        <div class="kpi-tile-minimal">
-          <div class="tile-title">PROFIT FACTOR</div>
-          <div class="tile-number" id="bt-kpi-profit-factor">--</div>
-          <div class="tile-subtitle">Gross Win / Gross Loss</div>
+        <div class="kpi-card">
+          <div class="kpi-label">PROFIT FACTOR</div>
+          <div class="kpi-val" id="bt-kpi-profit-factor">--</div>
+          <div class="kpi-sub">Gross Win / Gross Loss</div>
         </div>
-        <div class="kpi-tile-minimal">
-          <div class="tile-title">CUMULATIVE RETURN</div>
-          <div class="tile-number" id="bt-kpi-net-return">--%</div>
-          <div class="tile-subtitle">Net strategy yield</div>
+        <div class="kpi-card">
+          <div class="kpi-label">CUMULATIVE RETURN</div>
+          <div class="kpi-val" id="bt-kpi-net-return">--%</div>
+          <div class="kpi-sub">Net strategy yield</div>
         </div>
-        <div class="kpi-tile-minimal">
-          <div class="tile-title">MAX DRAWDOWN</div>
-          <div class="tile-number" id="bt-kpi-max-drawdown">--%</div>
-          <div class="tile-subtitle">Peak-to-trough risk</div>
+        <div class="kpi-card">
+          <div class="kpi-label">MAX DRAWDOWN</div>
+          <div class="kpi-val" id="bt-kpi-max-drawdown">--%</div>
+          <div class="kpi-sub">Peak-to-trough risk</div>
         </div>
-        <div class="kpi-tile-minimal">
-          <div class="tile-title">AVG HOLDING</div>
-          <div class="tile-number" id="bt-kpi-avg-days">--</div>
-          <div class="tile-subtitle">Trading sessions</div>
+        <div class="kpi-card">
+          <div class="kpi-label">AVG HOLDING</div>
+          <div class="kpi-val" id="bt-kpi-avg-days">--</div>
+          <div class="kpi-sub">Trading sessions</div>
         </div>
       </div>
+
 
       <!-- Split Workspace: Left = Trades Stream, Right = Dedicated Trade & Rule Inspector -->
 
@@ -2071,7 +2068,8 @@
 
 
 
-  <script src="/static/app.js?v=31.0"></script>
+  <script src="/static/app.js?v=32.0"></script>
+
 
 
 
