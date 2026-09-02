@@ -59,29 +59,73 @@ def get_signals_history(
     )
 
 
-@router.get("/screener/lookback", response_model=LookbackResponse)
+@router.get("/screener/lookback", response_model=dict[str, Any])
+@router.get("/signals/lookback", response_model=dict[str, Any])
 def get_lookback_screener(
-    lookback_days: int = Query(1, ge=1, le=60, description="Historical lookback window in trading days"),
+    lookback_days: int | None = Query(None, description="Historical lookback window in trading days"),
+    days: int | None = Query(None, description="Alias for lookback_days"),
     rsi_length: int = Query(14, ge=2, le=100, description="RSI period length"),
     index: str | None = Query(None, description="Index or Watchlist filter"),
+    index_name: str | None = Query(None, description="Alias for index"),
     signal_filter: str | None = Query(None, description="Filter: oversold, overbought, buy, sell, signals_only"),
+    filter: str | None = Query(None, description="Alias for signal_filter"),
     symbol: str | None = Query(None, description="Specific ticker search"),
     include_neutral: bool = Query(False, description="Include neutral unflagged stocks"),
     refresh: bool = Query(False, description="Force fresh market data download"),
-) -> LookbackResponse:
+) -> dict[str, Any]:
     """Multi-condition lookback screener for RSI extremes and strategy signals."""
+    effective_days = days or lookback_days or 1
+    effective_index = index or index_name or None
+    effective_filter = filter or signal_filter or None
+
     try:
-        return ScannerEngine.screen_lookback(
-            lookback_days=lookback_days,
+        resp = ScannerEngine.screen_lookback(
+            lookback_days=effective_days,
             rsi_length=rsi_length,
-            index_filter=index,
-            signal_filter=signal_filter,
+            index_filter=effective_index,
+            signal_filter=effective_filter,
             symbol=symbol,
             include_neutral=include_neutral,
             force_refresh=refresh,
         )
+        res_dict = resp.model_dump()
+
+        items = res_dict.get("items", [])
+        oversold = sum(1 for it in items if it.get("primary_type") in ("oversold", "buy") or (it.get("rsi") is not None and it["rsi"] <= 30))
+        overbought = sum(1 for it in items if it.get("primary_type") in ("overbought", "sell") or (it.get("rsi") is not None and it["rsi"] >= 70))
+        knoxville = sum(1 for it in items if any(r.get("category") == "Strategy_Signal" or "knox" in r.get("tag", "").lower() for r in it.get("reasons", [])))
+
+        signals_list = []
+        for it in items:
+            reasons = it.get("reasons", [])
+            is_knox = any(r.get("category") == "Strategy_Signal" or "knox" in r.get("tag", "").lower() for r in reasons)
+            is_ma200 = any(r.get("category") == "MA200" or "200" in r.get("tag", "") for r in reasons)
+            signals_list.append({
+                "symbol": it["symbol"],
+                "universe": it.get("index_membership", ""),
+                "signal_type": it.get("primary_type", "neutral"),
+                "close_price": it.get("current_price", 0.0),
+                "rsi": it.get("rsi"),
+                "rsi_ma": it.get("rsi_ma"),
+                "sma_200": it.get("sma_200"),
+                "is_knox_divergence": is_knox,
+                "is_touching_200sma": is_ma200,
+                "scan_date": it.get("signal_date") or datetime.date.today().isoformat(),
+                "strategy": "Knoxville" if is_knox else ("200SMA" if is_ma200 else "RSI"),
+                "reason_summary": it.get("reason_summary", ""),
+            })
+
+        return {
+            **res_dict,
+            "total_signals": len(signals_list),
+            "oversold_count": oversold,
+            "overbought_count": overbought,
+            "knoxville_count": knoxville,
+            "signals": signals_list,
+        }
     except Exception as exc:
         raise HTTPException(500, f"Lookback screener failed: {exc}") from exc
+
 
 
 @router.get("/universe/symbols", response_model=list[dict[str, Any]])
@@ -97,7 +141,9 @@ def get_universe_symbols_endpoint() -> list[dict[str, Any]]:
 
 
 @router.post("/scan/run", response_model=ScanResponse)
+@router.post("/signals/scan", response_model=ScanResponse)
 def trigger_scan_now(
+
     strategy: str = Query("RSI", description="Strategy to execute (RSI, RB_KnoxDiv, ALL)"),
 ) -> ScanResponse:
     """Manually trigger daily market scan and signal persistence."""

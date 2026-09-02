@@ -228,11 +228,16 @@ App.Screener = {
     }
 
     tbody.innerHTML = signals.map(s => {
+      const price = s.close_price != null ? s.close_price : (s.current_price != null ? s.current_price : 0);
+      const sigType = (s.signal_type || s.primary_type || 'neutral').toLowerCase();
+      const universe = s.universe || s.index_membership || 'NSE';
+      const strat = s.strategy || (s.is_knox_divergence ? 'Knoxville' : 'RSI');
+      const dateVal = s.scan_date || s.signal_date || 'Today';
+
       const rsiVal = s.rsi != null ? Number(s.rsi).toFixed(1) : '—';
-      const rsiCls = s.rsi <= 30 ? 'oversold' : (s.rsi >= 70 ? 'overbought' : '');
+      const rsiCls = s.rsi != null && s.rsi <= 30 ? 'oversold' : (s.rsi != null && s.rsi >= 70 ? 'overbought' : '');
       const knoxTag = s.is_knox_divergence ? '<span class="badge-knox">⚡ KNOXVILLE</span>' : '—';
       const ma200Tag = s.is_touching_200sma ? '<span class="badge-ma200">📈 200 SMA</span>' : '—';
-      const signalCls = s.signal_type.toLowerCase();
 
       return `<tr>
         <td>
@@ -247,16 +252,16 @@ App.Screener = {
             </div>
           </div>
         </td>
-        <td><span class="universe-cell">${s.universe || 'NSE'}</span></td>
-        <td><span class="badge badge-${signalCls}">${s.signal_type.toUpperCase()}</span></td>
-        <td class="price-cell">${App.Utils.money(s.close_price)}</td>
+        <td><span class="universe-cell">${universe}</span></td>
+        <td><span class="badge badge-${sigType}">${sigType.toUpperCase()}</span></td>
+        <td class="price-cell">${App.Utils.money(price)}</td>
         <td><span class="rsi-cell ${rsiCls}">${rsiVal}</span></td>
         <td>${knoxTag}</td>
         <td>${ma200Tag}</td>
-        <td class="date-cell">${s.scan_date}</td>
+        <td class="date-cell">${dateVal}</td>
         <td>
           <div class="row-action-btns">
-            <button class="btn-table-action" onclick="App.Paper.prefillOrder('${s.symbol}', ${s.close_price}, '${s.strategy}')" title="Place Paper Trade">
+            <button class="btn-table-action" onclick="App.Paper.prefillOrder('${s.symbol}', ${price}, '${strat}')" title="Place Paper Trade">
               ⚡ Paper Trade
             </button>
             <button class="btn-table-action subtle" onclick="App.News.analyzeTicker('${s.symbol}')" title="AI News Breakdown">
@@ -267,6 +272,7 @@ App.Screener = {
       </tr>`;
     }).join('');
   },
+
 
   updateMetricsRibbon(data) {
     const totalEl = document.querySelector('#metric-total-signals');
