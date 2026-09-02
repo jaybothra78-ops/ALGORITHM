@@ -108,31 +108,49 @@ def trigger_scan_now(
 
 
 @router.post("/watchlist/import", response_model=dict[str, Any])
+@router.post("/watchlist/import-tradingview", response_model=dict[str, Any])
 def import_watchlist_endpoint(
     payload: dict[str, Any],
 ) -> dict[str, Any]:
     """Import a TradingView public watchlist via URL."""
     url = payload.get("url", "").strip()
-    custom_name = payload.get("custom_name", None)
+    custom_name = payload.get("custom_name") or payload.get("name")
     if not url:
         raise HTTPException(400, "TradingView watchlist URL is required.")
 
     try:
         from services.universe import import_tradingview_watchlist
         res = import_tradingview_watchlist(url=url, custom_name=custom_name)
-        return res
+        return {
+            "status": "success",
+            "watchlist_name": res["name"],
+            "symbols_count": res["count"],
+            "symbols": res["symbols"],
+            "url": res.get("url", url),
+        }
     except Exception as exc:
         raise HTTPException(400, f"Failed to import watchlist: {exc}") from exc
 
 
 @router.get("/watchlist/list", response_model=dict[str, Any])
 def list_watchlists_endpoint() -> dict[str, Any]:
-    """Return all custom imported watchlists."""
+    """Return all custom imported watchlists as dictionary."""
     from services.universe import load_custom_watchlists
     return load_custom_watchlists()
 
 
+@router.get("/watchlist/custom", response_model=dict[str, Any])
+def list_custom_watchlists_endpoint() -> dict[str, Any]:
+    """Return all custom imported watchlists as array."""
+    from services.universe import load_custom_watchlists
+    cw = load_custom_watchlists()
+    return {
+        "watchlists": [{"name": k, "count": len(v), "symbols": v} for k, v in cw.items()]
+    }
+
+
 @router.delete("/watchlist/{name}")
+@router.delete("/watchlist/custom/{name}")
 def delete_watchlist_endpoint(name: str) -> dict[str, str]:
     """Delete an imported custom watchlist."""
     from services.universe import delete_custom_watchlist
@@ -140,6 +158,7 @@ def delete_watchlist_endpoint(name: str) -> dict[str, str]:
     if not success:
         raise HTTPException(404, f"Watchlist '{name}' not found.")
     return {"status": "success", "message": f"Watchlist '{name}' deleted."}
+
 
 
 @router.post("/backtest/run", response_model=BacktestResponse)
