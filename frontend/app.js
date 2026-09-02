@@ -7,29 +7,27 @@
 const App = window.App = window.App || {};
 
 // Global Article Action Handlers
-window.handleArticleAction = function(idx, mode) {
+window.selectArticle = function(idx) {
   if (window.App && window.App.News) {
-    window.App.News.handleArticleAction(idx, mode);
+    window.App.News.selectArticle(idx);
   }
 };
-window.closeArticlePanel = function(idx) {
+window.switchTerminalTab = function(tab) {
   if (window.App && window.App.News) {
-    window.App.News.closeArticlePanel(idx);
+    window.App.News.switchTerminalTab(tab);
   }
 };
-window.askArticleQuestion = function(idx, q) {
+window.askTerminalQuestion = function(q) {
   if (window.App && window.App.News) {
-    window.App.News.askArticleQuestion(idx, q);
+    window.App.News.askTerminalQuestion(q);
   }
 };
-window.submitArticleChat = function(idx) {
+window.submitTerminalChat = function() {
   if (window.App && window.App.News) {
-    window.App.News.submitArticleChat(idx);
+    window.App.News.submitTerminalChat();
   }
 };
-window.openArticleAi = function(idx) {
-  window.handleArticleAction(idx, 'summary');
-};
+
 
 
 
@@ -673,86 +671,93 @@ App.News = {
       tcEl.textContent = data.technical_correlation || 'Technical and fundamental signals remain aligned with prevailing market direction.';
     }
 
-    // Articles Grid
-    const articlesGrid = document.querySelector('#news-articles-grid');
+    // Headlines Master List & Dedicated AI Terminal
+    const articlesList = document.querySelector('#news-articles-list');
     const articlesCount = document.querySelector('#ai-articles-count');
     if (articlesCount) articlesCount.textContent = `${(data.articles || []).length} articles`;
 
-    if (articlesGrid) {
+    if (articlesList) {
       App.State.currentArticles = data.articles || [];
       App.News._articleCache = {}; // reset cache for new stock
 
       if (!data.articles || !data.articles.length) {
-        articlesGrid.innerHTML = '<div class="empty-cell">No recent news articles found for this ticker.</div>';
+        articlesList.innerHTML = '<div class="empty-cell" style="padding: 30px 15px; text-align: center; color: #64748b;">No recent news articles found for this ticker.</div>';
+        const emptyState = document.querySelector('#terminal-empty-state');
+        const termContent = document.querySelector('#terminal-content');
+        if (emptyState) emptyState.style.display = 'flex';
+        if (termContent) termContent.style.display = 'none';
       } else {
-        articlesGrid.innerHTML = data.articles.map((a, idx) => `
-          <div class="news-article-card" id="article-card-${idx}">
-            <div class="article-meta-row">
-              <span class="article-publisher">${a.publisher || 'Financial Media'}</span>
-              <span class="article-date">${a.published_at || 'Recent'}</span>
+        articlesList.innerHTML = data.articles.map((a, idx) => `
+          <div class="article-list-item" id="art-item-${idx}" onclick="App.News.selectArticle(${idx})">
+            <div class="item-meta">
+              <span class="item-publisher">${a.publisher || 'Financial Media'}</span>
+              <span class="item-date">${a.published_at || 'Recent'}</span>
             </div>
-            <h5 class="article-headline">
-              <a href="${a.link}" target="_blank" rel="noopener noreferrer">${a.title}</a>
-            </h5>
-            <p class="article-summary">${a.summary || 'Click link to read full coverage on publisher site.'}</p>
-            
-            <!-- Clean Option Pills Bar -->
-            <div class="article-actions-clean">
-              <button type="button" class="article-opt-pill" id="btn-opt-${idx}-summary" onclick="window.handleArticleAction(${idx}, 'summary')">
-                ⚡ 100-150w Summary
-              </button>
-              <button type="button" class="article-opt-pill" id="btn-opt-${idx}-bullets" onclick="window.handleArticleAction(${idx}, 'bullets')">
-                🎯 Key Bullets
-              </button>
-              <button type="button" class="article-opt-pill" id="btn-opt-${idx}-chat" onclick="window.handleArticleAction(${idx}, 'chat')">
-                💬 Ask AI / Chat
-              </button>
-              <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-source-link">Read Source ↗</a>
+            <h5 class="item-title">${a.title}</h5>
+            <div class="item-click-hint">
+              <span class="item-ai-tag">⚡ Inspect AI Analysis</span>
+              <span>→</span>
             </div>
-
-            <!-- Inline Expanded AI Result Container -->
-            <div id="article-ai-result-${idx}" class="article-ai-expanded-box" style="display: none;"></div>
           </div>
         `).join('');
+
+        // Auto-select the first article so the user immediately gets a sleek, zero-clutter view!
+        this.selectArticle(0);
       }
     }
   },
 
   _articleCache: {},
 
-  async handleArticleAction(idx, mode) {
-    const article = (App.State.currentArticles || [])[idx];
+  async selectArticle(idx) {
+    const articles = App.State.currentArticles || [];
+    const article = articles[idx];
     if (!article) return;
 
-    const resultBox = document.querySelector(`#article-ai-result-${idx}`);
-    const summaryBtn = document.querySelector(`#btn-opt-${idx}-summary`);
-    const bulletsBtn = document.querySelector(`#btn-opt-${idx}-bullets`);
-    const chatBtn = document.querySelector(`#btn-opt-${idx}-chat`);
-    if (!resultBox) return;
+    App.State.selectedArticleIndex = idx;
 
-    // Toggle close if clicking currently active mode
-    if (resultBox.style.display !== 'none' && resultBox.dataset.activeMode === mode) {
-      this.closeArticlePanel(idx);
-      return;
-    }
+    // Highlight selected item in list
+    document.querySelectorAll('.article-list-item').forEach(el => el.classList.remove('selected'));
+    const selectedEl = document.querySelector(`#art-item-${idx}`);
+    if (selectedEl) selectedEl.classList.add('selected');
 
-    // Set active button pill
-    [summaryBtn, bulletsBtn, chatBtn].forEach(b => b && b.classList.remove('active'));
-    const activeBtn = document.querySelector(`#btn-opt-${idx}-${mode}`);
-    if (activeBtn) activeBtn.classList.add('active');
+    // Show terminal content
+    const emptyState = document.querySelector('#terminal-empty-state');
+    const termContent = document.querySelector('#terminal-content');
+    if (emptyState) emptyState.style.display = 'none';
+    if (termContent) termContent.style.display = 'flex';
 
-    resultBox.style.display = 'block';
-    resultBox.dataset.activeMode = mode;
+    // Populate header info
+    const titleEl = document.querySelector('#terminal-title');
+    const pubEl = document.querySelector('#terminal-publisher');
+    const dateEl = document.querySelector('#terminal-date');
+    const linkEl = document.querySelector('#terminal-source-link');
+    const sentEl = document.querySelector('#terminal-sentiment');
 
-    // Check cache
-    let data = this._articleCache[article.title];
-    if (!data) {
-      resultBox.innerHTML = `
-        <div style="display: flex; align-items: center; gap: 8px; color: #a5b4fc; font-size: 0.85rem; padding: 6px 0;">
-          <span style="display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #818cf8; animation: pulse 1s infinite;"></span>
-          <span>Generating ${mode === 'summary' ? '100-150 word summary' : (mode === 'bullets' ? 'key bullet points' : 'AI analysis')}...</span>
+    if (titleEl) titleEl.textContent = article.title;
+    if (pubEl) pubEl.textContent = article.publisher || 'Financial Media';
+    if (dateEl) dateEl.textContent = article.published_at || 'Recent';
+    if (linkEl) linkEl.href = article.link || '#';
+
+    // Reset Chat messages thread with welcome msg
+    const chatMessages = document.querySelector('#terminal-chat-messages');
+    if (chatMessages) {
+      chatMessages.innerHTML = `
+        <div class="chat-msg ai-msg">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">Ask me anything about <strong>${article.title}</strong>, financial growth impacts, or immediate trading setups!</div>
         </div>
       `;
+    }
+
+    // Check cache or fetch
+    let data = this._articleCache[article.title];
+    if (!data) {
+      const summaryText = document.querySelector('#terminal-summary-text');
+      const bulletsList = document.querySelector('#terminal-bullets-list');
+      if (summaryText) summaryText.innerHTML = `<em>⚡ Synthesizing 100-150 word institutional breakdown...</em>`;
+      if (bulletsList) bulletsList.innerHTML = `<li>Loading key catalysts and impact metrics...</li>`;
+
       try {
         const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
         const res = await fetch('/news/article-chat', {
@@ -769,102 +774,56 @@ App.News = {
         data = await res.json();
         this._articleCache[article.title] = data;
       } catch (err) {
-        resultBox.innerHTML = `
-          <div style="color: #f43f5e; font-size: 0.84rem; padding: 4px 0;">
-            ⚠️ Analysis error: ${err.message}. Please retry.
-          </div>
-        `;
+        if (summaryText) summaryText.innerHTML = `<span style="color: #f43f5e;">⚠️ Failed to load analysis: ${err.message}</span>`;
         return;
       }
     }
 
-    this.renderArticlePanelContent(idx, mode, data, article);
+    // Populate loaded data
+    if (sentEl) {
+      const s = (data.sentiment || 'Bullish').toLowerCase();
+      sentEl.className = `sentiment-badge-pill ${s}`;
+      sentEl.textContent = `${data.sentiment || 'Bullish'} (${data.confidence_score || 80}%)`;
+    }
+
+    const summaryText = document.querySelector('#terminal-summary-text');
+    if (summaryText) summaryText.textContent = data.short_analysis;
+
+    const bulletsList = document.querySelector('#terminal-bullets-list');
+    if (bulletsList) {
+      bulletsList.innerHTML = (data.bullet_points || []).map(b => `<li>${b}</li>`).join('');
+    }
+
+    // Ensure currently selected tab view is displayed
+    const currentTab = App.State.terminalActiveTab || 'summary';
+    this.switchTerminalTab(currentTab);
   },
 
-  closeArticlePanel(idx) {
-    const resultBox = document.querySelector(`#article-ai-result-${idx}`);
-    if (resultBox) {
-      resultBox.style.display = 'none';
-      resultBox.dataset.activeMode = '';
-    }
-    ['summary', 'bullets', 'chat'].forEach(m => {
-      const b = document.querySelector(`#btn-opt-${idx}-${m}`);
-      if (b) b.classList.remove('active');
+  switchTerminalTab(tabName) {
+    App.State.terminalActiveTab = tabName;
+
+    // Update nav pills
+    ['summary', 'bullets', 'chat'].forEach(tab => {
+      const pill = document.querySelector(`#term-pill-${tab}`);
+      const view = document.querySelector(`#term-view-${tab}`);
+      if (pill) pill.classList.toggle('active', tab === tabName);
+      if (view) view.style.display = tab === tabName ? 'block' : 'none';
     });
   },
 
-  renderArticlePanelContent(idx, mode, data, article) {
-    const resultBox = document.querySelector(`#article-ai-result-${idx}`);
-    if (!resultBox) return;
-
-    if (mode === 'summary') {
-      const words = (data.short_analysis || '').split(/\s+/).filter(Boolean).length;
-      resultBox.innerHTML = `
-        <div class="box-header-row">
-          <div class="box-title-meta">
-            <span>⚡ Institutional Executive Summary (${words} words)</span>
-            <span class="sentiment-badge-pill ${(data.sentiment || 'neutral').toLowerCase()}">${data.sentiment || 'Neutral'} (${data.confidence_score || 80}%)</span>
-          </div>
-          <button type="button" class="box-close-btn" onclick="window.closeArticlePanel(${idx})" title="Close">&times;</button>
-        </div>
-        <p class="box-summary-text">${data.short_analysis}</p>
-      `;
-    } else if (mode === 'bullets') {
-      resultBox.innerHTML = `
-        <div class="box-header-row">
-          <div class="box-title-meta">
-            <span>🎯 Key Takeaways &amp; Catalysts</span>
-            <span class="sentiment-badge-pill ${(data.sentiment || 'neutral').toLowerCase()}">${data.sentiment || 'Neutral'}</span>
-          </div>
-          <button type="button" class="box-close-btn" onclick="window.closeArticlePanel(${idx})" title="Close">&times;</button>
-        </div>
-        <ul class="box-bullets-list">
-          ${(data.bullet_points || []).map(b => `<li>${b}</li>`).join('')}
-        </ul>
-      `;
-    } else if (mode === 'chat') {
-      resultBox.innerHTML = `
-        <div class="box-header-row">
-          <div class="box-title-meta">
-            <span>💬 Interactive Article Q&amp;A</span>
-            <span class="sentiment-badge-pill neutral">${data.engine || 'AI Engine'}</span>
-          </div>
-          <button type="button" class="box-close-btn" onclick="window.closeArticlePanel(${idx})" title="Close">&times;</button>
-        </div>
-        <div class="box-chat-container">
-          <div class="box-prompt-chips">
-            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'What is the revenue and EBITDA margin impact?')">💰 Financial Impact?</button>
-            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'Is this development already priced into the stock?')">📊 Already Priced In?</button>
-            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'What are the main risks and downside headwinds?')">⚠️ Key Risks?</button>
-            <button type="button" class="box-prompt-chip" onclick="window.askArticleQuestion(${idx}, 'How will this affect tomorrow market open?')">📈 Market Open?</button>
-          </div>
-          <div id="box-chat-thread-${idx}" class="box-chat-thread">
-            <div class="chat-msg ai-msg">
-              <div class="msg-avatar">🤖</div>
-              <div class="msg-bubble">Ask me anything about this article or its impact on <strong>${data.symbol || 'the stock'}</strong>!</div>
-            </div>
-          </div>
-          <div class="box-chat-input-bar">
-            <input type="text" id="box-chat-input-${idx}" placeholder="Ask a question about this article..." onkeypress="if(event.key==='Enter') window.submitArticleChat(${idx})">
-            <button type="button" onclick="window.submitArticleChat(${idx})">Send</button>
-          </div>
-        </div>
-      `;
-    }
-  },
-
-  async askArticleQuestion(idx, question) {
-    const input = document.querySelector(`#box-chat-input-${idx}`);
+  askTerminalQuestion(question) {
+    const input = document.querySelector('#terminal-chat-input');
     if (input) input.value = question;
-    this.submitArticleChat(idx);
+    this.submitTerminalChat();
   },
 
-  async submitArticleChat(idx) {
+  async submitTerminalChat() {
+    const idx = App.State.selectedArticleIndex || 0;
     const article = (App.State.currentArticles || [])[idx];
     if (!article) return;
 
-    const input = document.querySelector(`#box-chat-input-${idx}`);
-    const thread = document.querySelector(`#box-chat-thread-${idx}`);
+    const input = document.querySelector('#terminal-chat-input');
+    const thread = document.querySelector('#terminal-chat-messages');
     const q = input ? input.value.trim() : '';
     if (!q || !thread) return;
 
@@ -874,7 +833,7 @@ App.News = {
       <div class="chat-msg user-msg">
         <div class="msg-bubble">${q}</div>
       </div>
-      <div class="chat-msg ai-msg typing-msg">
+      <div class="chat-msg ai-msg term-typing">
         <div class="msg-avatar">🤖</div>
         <div class="msg-bubble"><em>Analyzing institutional implications...</em></div>
       </div>
@@ -897,7 +856,7 @@ App.News = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
 
-      const typing = thread.querySelector('.typing-msg');
+      const typing = thread.querySelector('.term-typing');
       if (typing) typing.remove();
 
       thread.innerHTML += `
@@ -908,7 +867,7 @@ App.News = {
       `;
       thread.scrollTop = thread.scrollHeight;
     } catch (err) {
-      const typing = thread.querySelector('.typing-msg');
+      const typing = thread.querySelector('.term-typing');
       if (typing) typing.remove();
       thread.innerHTML += `
         <div class="chat-msg ai-msg">
@@ -916,8 +875,10 @@ App.News = {
           <div class="msg-bubble" style="color: #f43f5e;">Error: ${err.message}</div>
         </div>
       `;
+      thread.scrollTop = thread.scrollHeight;
     }
   },
+
 
 
   initClaudeKeyModal() {

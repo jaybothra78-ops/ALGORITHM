@@ -492,19 +492,92 @@
             </p>
           </div>
 
-          <!-- Underlying Live News Feed Grid -->
+          <!-- Professional Split Workspace: Articles Feed + AI Intelligence Terminal -->
           <div class="articles-feed-section">
-            <div class="feed-header-row">
-              <h4 class="feed-title">🗞️ Recent Live News Articles &amp; Corporate Filings</h4>
-              <span id="ai-articles-count" class="feed-count-badge">0 articles</span>
-            </div>
-            <div id="news-articles-grid" class="articles-grid">
-              <!-- Dynamically populated article cards -->
+            <div class="news-split-workspace">
+              <!-- Left Column: Master Headlines Feed -->
+              <div class="articles-master-column">
+                <div class="master-header-row">
+                  <h4 class="feed-title">🗞️ Recent News &amp; Filings</h4>
+                  <span id="ai-articles-count" class="feed-count-badge">0 articles</span>
+                </div>
+                <div id="news-articles-list" class="articles-list-stack">
+                  <!-- Article Items -->
+                </div>
+              </div>
+
+              <!-- Right Column: Dedicated AI Intelligence Terminal -->
+              <div class="article-ai-terminal" id="article-ai-terminal">
+                <div class="terminal-empty" id="terminal-empty-state">
+                  <div class="terminal-empty-icon">👈</div>
+                  <h4>Select any article to inspect</h4>
+                  <p>Click any news headline on the left to view an instant 100-150w institutional summary, bullet points, or chat with AI.</p>
+                </div>
+
+                <div class="terminal-content" id="terminal-content" style="display: none;">
+                  <!-- Article Metadata & Headline -->
+                  <div class="terminal-article-meta">
+                    <div class="meta-tags-row">
+                      <span id="terminal-publisher" class="terminal-pub-badge">Financial Media</span>
+                      <span id="terminal-date" class="terminal-date-badge">Recent</span>
+                      <span id="terminal-sentiment" class="sentiment-badge-pill bullish">Bullish 75%</span>
+                      <a id="terminal-source-link" href="#" target="_blank" rel="noopener noreferrer" class="terminal-source-link">Read Full Story ↗</a>
+                    </div>
+                    <h3 id="terminal-title" class="terminal-headline">Headline Title</h3>
+                  </div>
+
+                  <!-- Clean 3-Option Segmented Control -->
+                  <div class="terminal-nav-pills">
+                    <button type="button" class="term-pill active" id="term-pill-summary" onclick="App.News.switchTerminalTab('summary')">
+                      ⚡ 100-150w Summary
+                    </button>
+                    <button type="button" class="term-pill" id="term-pill-bullets" onclick="App.News.switchTerminalTab('bullets')">
+                      🎯 Key Bullets
+                    </button>
+                    <button type="button" class="term-pill" id="term-pill-chat" onclick="App.News.switchTerminalTab('chat')">
+                      💬 Ask AI / Chat
+                    </button>
+                  </div>
+
+                  <!-- Tab 1: Executive Summary -->
+                  <div id="term-view-summary" class="terminal-view-pane">
+                    <p id="terminal-summary-text" class="terminal-narrative-text">Loading...</p>
+                  </div>
+
+                  <!-- Tab 2: Key Bullets -->
+                  <div id="term-view-bullets" class="terminal-view-pane" style="display: none;">
+                    <ul id="terminal-bullets-list" class="terminal-bullets"></ul>
+                  </div>
+
+                  <!-- Tab 3: Interactive Q&A -->
+                  <div id="term-view-chat" class="terminal-view-pane" style="display: none;">
+                    <div class="term-chat-wrapper">
+                      <div class="term-prompt-chips">
+                        <button type="button" class="term-chip" onclick="App.News.askTerminalQuestion('What is the revenue and EBITDA margin impact?')">💰 Financial Impact?</button>
+                        <button type="button" class="term-chip" onclick="App.News.askTerminalQuestion('Is this development already priced into the stock?')">📊 Already Priced In?</button>
+                        <button type="button" class="term-chip" onclick="App.News.askTerminalQuestion('What are the main risks and downside headwinds?')">⚠️ Key Risks?</button>
+                        <button type="button" class="term-chip" onclick="App.News.askTerminalQuestion('How will this affect tomorrow market open?')">📈 Market Open?</button>
+                      </div>
+                      <div id="terminal-chat-messages" class="terminal-chat-thread">
+                        <div class="chat-msg ai-msg">
+                          <div class="msg-avatar">🤖</div>
+                          <div class="msg-bubble">Ask me anything about this article or its market implications!</div>
+                        </div>
+                      </div>
+                      <div class="terminal-chat-input-bar">
+                        <input type="text" id="terminal-chat-input" placeholder="Ask a question about this article..." onkeypress="if(event.key==='Enter') App.News.submitTerminalChat()">
+                        <button type="button" onclick="App.News.submitTerminalChat()">Send</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </section>
+
 
 
 
@@ -814,7 +887,8 @@
   <datalist id="news-stocks-datalist"></datalist>
 
 
-  <script src="/static/app.js?v=12.0"></script>
+  <script src="/static/app.js?v=13.0"></script>
+
 
 </body>
 
