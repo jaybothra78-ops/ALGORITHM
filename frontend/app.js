@@ -436,7 +436,9 @@ App.News = {
     }
 
     this.initClaudeKeyModal();
+    this.initArticleAiDrawer();
   },
+
 
   getSelectedSymbol() {
     const customInput = document.querySelector('#news-custom-input');
@@ -650,10 +652,12 @@ App.News = {
     if (articlesCount) articlesCount.textContent = `${(data.articles || []).length} articles`;
 
     if (articlesGrid) {
+      App.State.currentArticles = data.articles || [];
+
       if (!data.articles || !data.articles.length) {
         articlesGrid.innerHTML = '<div class="empty-cell">No recent news articles found for this ticker.</div>';
       } else {
-        articlesGrid.innerHTML = data.articles.map(a => `
+        articlesGrid.innerHTML = data.articles.map((a, idx) => `
           <div class="news-article-card">
             <div class="article-meta-row">
               <span class="article-publisher">${a.publisher || 'Financial Media'}</span>
@@ -663,13 +667,213 @@ App.News = {
               <a href="${a.link}" target="_blank" rel="noopener noreferrer">${a.title}</a>
             </h5>
             <p class="article-summary">${a.summary || 'Click link to read full coverage on publisher site.'}</p>
-            <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-read-btn">Read Full Story ↗</a>
+            <div class="article-action-row">
+              <button type="button" class="btn-ai-deepdive" onclick="App.News.openArticleAi(${idx})">
+                <span>🤖 AI Deep Dive &amp; Chat</span>
+              </button>
+              <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-read-btn">Read Source ↗</a>
+            </div>
           </div>
         `).join('');
       }
     }
   },
 
+  initArticleAiDrawer() {
+    const drawer = document.querySelector('#drawer-article-ai');
+    const btnClose = document.querySelector('#btn-close-article-drawer');
+    const backdrop = document.querySelector('#btn-close-article-drawer-bg');
+    const btnSend = document.querySelector('#btn-drawer-send-chat');
+    const chatInput = document.querySelector('#drawer-chat-input');
+
+    if (btnClose) btnClose.addEventListener('click', () => this.closeArticleAi());
+    if (backdrop) backdrop.addEventListener('click', () => this.closeArticleAi());
+
+    if (btnSend) {
+      btnSend.addEventListener('click', () => {
+        const q = chatInput ? chatInput.value.trim() : '';
+        if (q) this.sendArticleChat(q);
+      });
+    }
+
+    if (chatInput) {
+      chatInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+          const q = chatInput.value.trim();
+          if (q) this.sendArticleChat(q);
+        }
+      });
+    }
+
+    // Quick prompt suggestion chips
+    document.querySelectorAll('.drawer-prompt-chips .prompt-chip').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const q = btn.dataset.q;
+        if (q) this.sendArticleChat(q);
+      });
+    });
+  },
+
+  openArticleAi(articleIndex) {
+    const article = (App.State.currentArticles || [])[articleIndex];
+    if (!article) return;
+
+    App.State.activeArticle = article;
+    const drawer = document.querySelector('#drawer-article-ai');
+    const titleEl = document.querySelector('#drawer-article-title');
+    const stockBadge = document.querySelector('#drawer-stock-badge');
+    const analysisText = document.querySelector('#drawer-analysis-text');
+    const bulletsList = document.querySelector('#drawer-bullets-list');
+    const chatMessages = document.querySelector('#drawer-chat-messages');
+
+    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
+    if (stockBadge) stockBadge.textContent = symbol;
+    if (titleEl) titleEl.textContent = article.title;
+
+    if (analysisText) {
+      analysisText.innerHTML = `<em>Synthesizing 100-150 word institutional breakdown for ${symbol}...</em>`;
+    }
+    if (bulletsList) {
+      bulletsList.innerHTML = `<li>Analyzing market impact &amp; key drivers...</li>`;
+    }
+
+    // Reset chat messages to welcome message
+    if (chatMessages) {
+      chatMessages.innerHTML = `
+        <div class="chat-msg ai-msg">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble">
+            Ask me anything about <strong>${article.title}</strong>, financial growth impacts, or immediate trading setups!
+          </div>
+        </div>
+      `;
+    }
+
+    if (drawer) drawer.style.display = 'flex';
+
+    // Fetch initial 100-150 word deep dive and key bullets
+    this.fetchArticleAnalysis(article);
+  },
+
+  closeArticleAi() {
+    const drawer = document.querySelector('#drawer-article-ai');
+    if (drawer) drawer.style.display = 'none';
+  },
+
+  async fetchArticleAnalysis(article) {
+    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
+    try {
+      const res = await fetch('/news/article-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: symbol,
+          article_title: article.title,
+          article_summary: article.summary,
+          article_link: article.link,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+
+      const analysisText = document.querySelector('#drawer-analysis-text');
+      const bulletsList = document.querySelector('#drawer-bullets-list');
+      const engineBadge = document.querySelector('#drawer-engine-badge');
+      const sentimentPill = document.querySelector('#drawer-sentiment-pill');
+
+      if (analysisText) analysisText.textContent = data.short_analysis;
+      if (engineBadge) engineBadge.textContent = data.engine || 'AI Engine';
+
+      if (sentimentPill) {
+        const sent = (data.sentiment || 'Neutral').toLowerCase();
+        sentimentPill.className = `sentiment-badge-pill ${sent}`;
+        sentimentPill.textContent = `${data.sentiment} (${data.confidence_score || 80}%)`;
+      }
+
+      if (bulletsList) {
+        if (data.bullet_points && data.bullet_points.length) {
+          bulletsList.innerHTML = data.bullet_points.map(b => `<li>${b}</li>`).join('');
+        } else {
+          bulletsList.innerHTML = '<li>Key catalyst and impact assessment loaded.</li>';
+        }
+      }
+    } catch (err) {
+      const analysisText = document.querySelector('#drawer-analysis-text');
+      if (analysisText) {
+        analysisText.innerHTML = `<span style="color: #f43f5e;">Failed to generate breakdown: ${err.message}</span>`;
+      }
+    }
+  },
+
+  async sendArticleChat(question) {
+    const article = App.State.activeArticle;
+    if (!article) return;
+
+    const chatMessages = document.querySelector('#drawer-chat-messages');
+    const chatInput = document.querySelector('#drawer-chat-input');
+    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
+
+    if (chatInput) chatInput.value = '';
+
+    // Append user question bubble
+    if (chatMessages) {
+      chatMessages.innerHTML += `
+        <div class="chat-msg user-msg">
+          <div class="msg-bubble">${question}</div>
+        </div>
+        <div class="chat-msg ai-msg typing-placeholder">
+          <div class="msg-avatar">🤖</div>
+          <div class="msg-bubble"><em>Analyzing institutional implications...</em></div>
+        </div>
+      `;
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    try {
+      const res = await fetch('/news/article-chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          symbol: symbol,
+          article_title: article.title,
+          article_summary: article.summary,
+          article_link: article.link,
+          user_question: question,
+        }),
+      });
+
+      if (!res.ok) throw new Error(`HTTP Error ${res.status}`);
+      const data = await res.json();
+
+      // Remove typing placeholder
+      const placeholder = document.querySelector('.typing-placeholder');
+      if (placeholder) placeholder.remove();
+
+      if (chatMessages) {
+        chatMessages.innerHTML += `
+          <div class="chat-msg ai-msg">
+            <div class="msg-avatar">🤖</div>
+            <div class="msg-bubble">${data.answer || data.short_analysis}</div>
+          </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+    } catch (err) {
+      const placeholder = document.querySelector('.typing-placeholder');
+      if (placeholder) placeholder.remove();
+
+      if (chatMessages) {
+        chatMessages.innerHTML += `
+          <div class="chat-msg ai-msg">
+            <div class="msg-avatar">⚠️</div>
+            <div class="msg-bubble" style="color: #f43f5e;">Error processing query: ${err.message}</div>
+          </div>
+        `;
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+      }
+    }
+  },
 
   initClaudeKeyModal() {
     const card = document.querySelector('#card-claude-key');
@@ -741,6 +945,7 @@ App.News = {
     }
   },
 };
+
 
 
 // =====================================================================

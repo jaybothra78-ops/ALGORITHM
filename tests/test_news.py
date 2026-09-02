@@ -63,3 +63,24 @@ def test_news_analyze_api_endpoint():
         assert data_get["symbol"] == "TVSMOTOR"
         assert "sentiment" in data_get
 
+
+def test_article_chat_api_endpoint():
+    with TestClient(app) as c:
+        payload = {
+            "symbol": "TVSMOTOR",
+            "article_title": "TVS Motor posts 15% growth in monthly sales figures",
+            "article_summary": "EV sales jumped with strong festive bookings across dealership networks.",
+            "user_question": "What is the financial impact?",
+        }
+        resp = c.post("/news/article-chat", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["symbol"] == "TVSMOTOR"
+        assert "short_analysis" in data
+        assert len(data["short_analysis"]) > 20
+        assert "bullet_points" in data
+        assert len(data["bullet_points"]) >= 3
+        assert "answer" in data
+        assert data["answer"] is not None
+
+

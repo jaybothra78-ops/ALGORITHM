@@ -199,6 +199,36 @@ def analyze_news_endpoint(
         raise HTTPException(500, f"News analysis failed: {exc}") from exc
 
 
+@router.post("/news/article-chat", response_model=dict[str, Any])
+def analyze_article_chat_endpoint(
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    """Provide a 100-150 word deep dive, key bullet points, and interactive Q&A for an individual news article."""
+    try:
+        from services.news_service import NewsService
+        symbol = payload.get("symbol", "NIFTY")
+        title = payload.get("article_title", "")
+        summary = payload.get("article_summary", "")
+        link = payload.get("article_link", "")
+        question = payload.get("user_question", None)
+        api_key = payload.get("api_key", None)
+
+        if not title:
+            raise HTTPException(400, "Article title is required.")
+
+        return NewsService.analyze_article_chat(
+            symbol=symbol,
+            article_title=title,
+            article_summary=summary,
+            article_link=link,
+            user_question=question,
+            api_key=api_key,
+        )
+    except Exception as exc:
+        raise HTTPException(500, f"Article analysis failed: {exc}") from exc
+
+
+
 
 # -------------------------------------------------------------
 # Paper Trading & Virtual Portfolio Endpoints

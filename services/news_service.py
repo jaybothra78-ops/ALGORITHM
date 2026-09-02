@@ -285,3 +285,126 @@ Respond ONLY in valid JSON with this exact schema:
                 timestamp=time.time(),
             )
 
+    @classmethod
+    def analyze_article_chat(
+        cls,
+        symbol: str,
+        article_title: str,
+        article_summary: str = "",
+        article_link: str = "",
+        user_question: str | None = None,
+        api_key: str | None = None,
+    ) -> dict[str, Any]:
+        """Deep dive breakdown (100-150 words + key bullets) and interactive Q&A for an individual news article."""
+        clean_sym = symbol.strip().upper()
+        anthropic_key = (api_key or os.getenv("ANTHROPIC_API_KEY", "")).strip()
+
+        # Try Claude 3.5 Sonnet if API key is provided
+        if anthropic_key:
+            try:
+                import json
+                prompt = f"""You are a senior institutional equity research analyst covering Indian stock markets ({clean_sym}.NSE).
+Analyze this specific news article and provide a concise, high-value breakdown for an equity trader:
+
+Article Title: {article_title}
+Article Snippet/Summary: {article_summary}
+Article URL: {article_link}
+User Specific Question: {user_question or "None (Provide general 100-150w analysis and key bullets)"}
+
+Respond ONLY with valid JSON with this exact structure:
+{{
+  "short_analysis": "A concise 100 to 150 words institutional analysis of what this development means for {clean_sym}, its business momentum, and trading valuation.",
+  "bullet_points": [
+    "🎯 Core Catalyst: One clear sentence on the main growth/deal driver.",
+    "📊 Financial & Margin Impact: Projected impact on EBITDA, revenue, or market share.",
+    "⚠️ Key Risk to Watch: Potential risk, execution hurdle, or valuation headwind.",
+    "💡 Trader Takeaway: Actionable trading insight on momentum or price levels."
+  ],
+  "sentiment": "Bullish" | "Bearish" | "Neutral",
+  "confidence_score": integer between 50 and 95,
+  "answer": "Direct 1-3 sentence institutional answer to user's question, or null if no question asked."
+}}
+"""
+                req_data = {
+                    "model": "claude-3-5-sonnet-20241022",
+                    "max_tokens": 800,
+                    "temperature": 0.2,
+                    "messages": [{"role": "user", "content": prompt}],
+                }
+                req = urllib.request.Request(
+                    "https://api.anthropic.com/v1/messages",
+                    data=json.dumps(req_data).encode("utf-8"),
+                    headers={
+                        "x-api-key": anthropic_key,
+                        "anthropic-version": "2023-06-01",
+                        "content-type": "application/json",
+                    },
+                )
+                with urllib.request.urlopen(req, timeout=18) as resp:
+                    data = json.loads(resp.read().decode("utf-8"))
+                    content_text = data["content"][0]["text"].strip()
+                    if content_text.startswith("```json"):
+                        content_text = content_text[7:]
+                    if content_text.endswith("```"):
+                        content_text = content_text[:-3]
+                    parsed = json.loads(content_text.strip())
+                    parsed["symbol"] = clean_sym
+                    parsed["article_title"] = article_title
+                    parsed["engine"] = "Claude 3.5 Sonnet (Live AI)"
+                    parsed["user_question"] = user_question
+                    return parsed
+            except Exception as exc:
+                logger.warning(f"Claude article chat analysis failed, using institutional NLP engine: {exc}")
+
+        # Fallback to Built-in Financial Intelligence NLP Kernel
+        text = f"{article_title} {article_summary}".lower()
+        bullish_keywords = ["surge", "jump", "growth", "profit", "gain", "rally", "upgrade", "buy", "target", "record", "order", "contract", "expansion", "dividend", "revenue", "outperform", "bullish", "acquisition", "high", "soar", "deal", "positive", "strong", "beats", "guidance", "boost", "inflows", "ebitda"]
+        bearish_keywords = ["fall", "drop", "loss", "decline", "slump", "downgrade", "sell", "plunge", "cut", "weak", "probe", "penalty", "fine", "lawsuit", "debt", "default", "underperform", "bearish", "crash", "low", "negative", "cautious", "slowdown", "headwind", "margin pressure"]
+
+        b_score = sum(1 for kw in bullish_keywords if kw in text)
+        r_score = sum(1 for kw in bearish_keywords if kw in text)
+
+        sentiment = "Bullish" if b_score > r_score else ("Bearish" if r_score > b_score else "Neutral")
+        confidence = min(95, max(50, 50 + (b_score - r_score) * 12))
+
+        short_analysis = (
+            f"This development for {clean_sym} ('{article_title}') represents notable corporate movement. "
+            f"According to reports, '{article_summary or article_title}'. Overall fundamental sentiment skews {sentiment.lower()} based on financial keyword indicators. "
+            f"From an institutional perspective, consistent execution on this front is critical for maintaining EBITDA margins and commanding premium sector multiples over upcoming quarters. "
+            f"Traders should monitor immediate price reaction around key support and resistance levels to gauge whether market participants have already priced in this announcement."
+        )
+
+        bullets = [
+            f"🎯 Core Development: {article_title}.",
+            f"📊 Financial & Growth Impact: Signals a {sentiment.lower()} trajectory with an estimated confidence of {confidence}%.",
+            f"⚠️ Key Risk to Watch: Market-wide volatility or profit-taking if expectations were already priced into the stock.",
+            f"💡 Trader Takeaway: Monitor 15m/1h candle volume expansion to confirm whether institutional desks are participating in this move."
+        ]
+
+        answer = None
+        if user_question:
+            q_low = user_question.lower()
+            if "revenue" in q_low or "financial" in q_low or "impact" in q_low:
+                answer = f"The financial impact of '{article_title}' carries a {sentiment.lower()} tone. If sustained, this supports positive top-line growth and operating leverage for {clean_sym}."
+            elif "priced in" in q_low:
+                answer = f"Initial news reaction typically triggers fast algorithmic positioning. If {clean_sym} has rallied over the last 3-5 sessions, look for consolidation before fresh upward expansion."
+            elif "risk" in q_low or "downside" in q_low:
+                answer = f"Key risks include overall benchmark index corrections, execution slippage, or rising input costs that could temporarily compress margins."
+            elif "tomorrow" in q_low or "open" in q_low or "target" in q_low:
+                answer = f"Depending on prevailing market open sentiment, '{article_title}' provides a {sentiment.lower()} catalyst. Watch the opening 15-minute range high/low for breakout confirmation."
+            else:
+                answer = f"Regarding '{user_question}': Analysis of this announcement indicates a {sentiment.lower()} baseline. Watch volume confirmation and trendline support on the daily chart."
+
+        return {
+            "symbol": clean_sym,
+            "article_title": article_title,
+            "short_analysis": short_analysis,
+            "bullet_points": bullets,
+            "sentiment": sentiment,
+            "confidence_score": confidence,
+            "user_question": user_question,
+            "answer": answer,
+            "engine": "Financial Intelligence NLP Engine",
+        }
+
+
