@@ -1651,9 +1651,11 @@ App.Init = {
     App.Paper.init();
     App.Zerodha.init();
 
+    await App.Screener.loadCustomWatchlists();
     await this.populateDatalists();
     App.Screener.fetchSignals();
   },
+
 
   async populateDatalists() {
     try {
