@@ -182,18 +182,24 @@ class NewsService:
             else:
                 verdict = "Neutral"
 
-        # Fallback catalyst / risk bullets if empty
+        # Generate dynamic, stock-specific & headline-aware catalysts and risks
+        dyn_catalysts, dyn_risks = cls._generate_intelligent_risks_and_catalysts(
+            symbol=symbol,
+            articles=articles,
+            verdict=verdict,
+            bull_count=bull_count,
+            bear_count=bear_count
+        )
         if not extracted_catalysts:
-            extracted_catalysts = [
-                f"Sustained volume expansion and corporate business momentum in {symbol}.",
-                "Positive institutional analyst coverage and solid quarterly operational trajectory.",
-                "Favorable sector tailwinds and capacity utilization."
-            ]
+            extracted_catalysts = dyn_catalysts
+        else:
+            extracted_catalysts = (extracted_catalysts + dyn_catalysts)[:4]
+
         if not extracted_risks:
-            extracted_risks = [
-                "Macro interest rate sensitivity and potential input cost fluctuations.",
-                "Broader benchmark index consolidation or sector-wide multiple compression."
-            ]
+            extracted_risks = dyn_risks
+        else:
+            extracted_risks = (extracted_risks + dyn_risks)[:3]
+
 
         summary = (
             f"Recent news flow for {symbol} indicates a predominantly {verdict.lower()} bias (Sentiment Score: {score}/100) "
@@ -222,7 +228,122 @@ class NewsService:
         )
 
     @classmethod
+    def _generate_intelligent_risks_and_catalysts(
+        cls, symbol: str, articles: list[NewsArticle], verdict: str, bull_count: int, bear_count: int
+    ) -> tuple[list[str], list[str]]:
+        """Intelligently generate dynamic, stock-specific, sector-aware, and headline-driven catalysts and risks."""
+        all_titles = [a.title for a in articles]
+        combined_text = (" ".join(all_titles) + " " + " ".join([a.summary for a in articles])).lower()
+
+        # 1. Dynamic Headline-Triggered Risks
+        risks: list[str] = []
+        if any(w in combined_text for w in ("f&o", "derivative", "contracts", "expiry")):
+            risks.append(f"Derivative rollover volatility: High open-interest activity in {symbol} F&O contracts introduces heightened speculative beta and rollover volatility around monthly expiry.")
+        if any(w in combined_text for w in ("block deal", "stake", "bulk deal", "picks up", "sbi mf", "promoter")):
+            risks.append(f"Institutional block absorption: Secondary market digestion of fund equity placements or block deal supply in {symbol} may temporarily cap momentum until liquidity balances.")
+        if any(w in combined_text for w in ("lacking", "growth", "optimism", "valuation", "rich", "expensive")):
+            risks.append(f"Valuation scrutiny vs organic growth: Elevated forward multiples in {symbol} leave little room for quarterly topline misses if organic expansion moderates.")
+        if any(w in combined_text for w in ("margin", "ebitda", "input cost", "expenses", "wage")):
+            risks.append(f"Operating margin sensitivity: Escalating operational overhead or input cost inflation testing gross EBITDA margin defense.")
+        if any(w in combined_text for w in ("sebi", "rbi", "regulatory", "probe", "penalty", "scrutiny")):
+            risks.append(f"Regulatory & compliance tracking: Administrative disclosures and regulatory compliance mandates in {symbol} requiring close governance monitoring.")
+        if any(w in combined_text for w in ("all-time high", "record high", "surge", "rally", "52-week")):
+            risks.append(f"Overhead technical resistance: Extended price trajectory near cyclical peaks heightens vulnerability to profit-booking on volume deceleration.")
+        if any(w in combined_text for w in ("slowdown", "weak", "slump", "curb", "tariffs")):
+            risks.append(f"Sector cyclical demand moderation: Macro economic headwinds potentially dampening sequential order intake and channel dispatches.")
+
+        # 2. Sector-Aware Fundamental Risks
+        wealth_tickers = {"360ONE", "HDFCAMC", "NAM-INDIA", "CDSL", "BSE", "ANGELONE", "MOTILALOFS", "NUVAMA", "ANANDRATHI", "MCX", "IEX"}
+        auto_tickers = {"TVSMOTOR", "TATAMOTORS", "M&M", "BAJAJ-AUTO", "HEROMOTOCO", "MARUTI", "EICHERMOT", "BHARATFORG", "SAMVARDHANA", "SONACOMS"}
+        bank_tickers = {"HDFCBANK", "ICICIBANK", "SBIN", "AXISBANK", "KOTAKBANK", "IDFCFIRSTB", "INDUSINDBK", "BANKBARODA", "PNB", "FEDERALBNK", "AUBANK"}
+        nbfc_tickers = {"BAJFINANCE", "BAJAJFINSV", "CHOLAFIN", "MUTHOOTFIN", "SHRIRAMFIN", "PFC", "RECLTD", "L&TFH"}
+        it_tickers = {"INFY", "TCS", "WIPRO", "HCLTECH", "TECHM", "LTIM", "COFORGE", "PERSISTENT", "MPHASIS"}
+        pharma_tickers = {"SUNPHARMA", "CIPLA", "DRREDDY", "DIVISLAB", "LUPIN", "AUROPHARMA", "APOLLOHOSP"}
+        retail_tickers = {"TRENT", "TITAN", "DMART", "HINDUNILVR", "ITC", "NESTLEIND", "BRITANNIA", "DABUR", "VBL"}
+        metal_tickers = {"TATASTEEL", "JSWSTEEL", "HINDALCO", "VEDL", "JINDALSTEL", "NMDC", "SAIL"}
+        energy_tickers = {"RELIANCE", "ONGC", "BPCL", "IOC", "NTPC", "TATAPOWER", "POWERGRID", "GAIL", "ADANIENT"}
+
+        if symbol in wealth_tickers:
+            risks.append(f"AUM mark-to-market sensitivity: Broad equity benchmark corrections directly reduce asset-under-management (AUM) base and high-margin incentive fee earnings for {symbol}.")
+            risks.append("Regulatory fee ceilings: Scrutiny by SEBI regarding distributor commissions and alternative investment fund (AIF) disclosure norms.")
+        elif symbol in auto_tickers:
+            risks.append(f"EV capital expenditure: Accelerated transition to electric vehicle architectures in {symbol} testing gross unit economics and component localization.")
+            risks.append("Export forex headwinds: Currency liquidity volatility in key developing export corridors impacting overseas two-wheeler and commercial vehicle dispatches.")
+        elif symbol in bank_tickers:
+            risks.append(f"Cost of deposits & NIM compression: Persistent competition for low-cost retail CASA deposits keeping funding costs elevated for {symbol}.")
+            risks.append("Unsecured retail credit cycle: Normalization of credit costs across personal loans and credit card portfolios during tight liquidity.")
+        elif symbol in nbfc_tickers:
+            risks.append(f"Asset-liability mismatch & borrowing costs: Tight money market liquidity elevating marginal cost of funds for {symbol}.")
+            risks.append("Regulatory risk weights: Stricter capital adequacy norms on consumer finance dampening loan book expansion.")
+        elif symbol in it_tickers:
+            risks.append(f"Discretionary IT budget reprioritization: US and European banking / retail clients delaying discretionary digital transformation projects with {symbol}.")
+            risks.append("Traditional contract pricing pressure: Legacy maintenance contracts facing productivity deflation from generative AI tools.")
+        elif symbol in pharma_tickers:
+            risks.append(f"US FDA inspection outcomes: Regulatory compliance observations or Form 483 citations across formulation manufacturing facilities of {symbol}.")
+            risks.append("US generic price erosion: Competitive pricing pressures on oral solid dosage portfolios in international markets.")
+        elif symbol in retail_tickers:
+            risks.append(f"Same-store-sales growth (SSSG) moderation: High base effects and discretionary spending moderation in urban retail stores of {symbol}.")
+            risks.append("New store gestation drag: Accelerated retail footprint expansion temporarily diluting store-level return on capital employed (ROCE).")
+        elif symbol in metal_tickers:
+            risks.append(f"Global commodity price volatility: Chinese steel export flows and international demand swings pressuring domestic realizations for {symbol}.")
+            risks.append("Coking coal cost spikes: Volatility in imported metallurgical coal impacting per-ton operating EBITDA.")
+        elif symbol in energy_tickers:
+            risks.append(f"Crack spread & refining margin volatility: Fluctuations in international crude benchmarks and petrochemical demand impacting {symbol} O2C earnings.")
+            risks.append("Capital-intensive green transition: Substantial long-gestation investments in renewable hydrogen and new energy ecosystems.")
+        else:
+            risks.append(f"Sectoral valuation ceiling: {symbol} requires sustained quarterly delivery to defend premium multiples against sectoral peers.")
+            risks.append(f"Technical support monitorable: Breakdown below key moving average clusters would prompt systematic trailing stop execution in {symbol}.")
+
+        # Deduplicate while preserving order
+        seen_r = set()
+        clean_risks = []
+        for r in risks:
+            if r not in seen_r:
+                seen_r.add(r)
+                clean_risks.append(r)
+
+        # 3. Dynamic Catalysts
+        catalysts: list[str] = []
+        for art in articles:
+            t = art.title.strip()
+            if any(w in t.lower() for w in ("record", "rise", "soar", "profit", "gain", "buy", "target", "expansion", "growth", "jump", "order", "stake")):
+                if t not in catalysts:
+                    catalysts.append(t)
+
+        if symbol in wealth_tickers:
+            catalysts.append(f"Financialization of Indian household savings driving structural AUM expansion for {symbol}.")
+            catalysts.append("Expanding high-net-worth (HNW) client franchise with robust alternative asset inflows.")
+        elif symbol in auto_tickers:
+            catalysts.append(f"Premiumization trend and rising consumer preference for higher-margin premium variants in {symbol}.")
+            catalysts.append("Aggressive ramp-up in electric vehicle deliveries and export channel re-stocking.")
+        elif symbol in bank_tickers:
+            catalysts.append(f"Robust asset quality metrics and multi-year low Gross NPA trajectory supporting credit growth in {symbol}.")
+            catalysts.append("Strong digital banking adoption driving operating leverage and branch productivity.")
+        elif symbol in it_tickers:
+            catalysts.append(f"Expanding deal pipeline in cloud modernization, enterprise AI, and cost-takeout programs for {symbol}.")
+            catalysts.append("High cash conversion and steady shareholder return through dividend payouts.")
+        elif symbol in retail_tickers:
+            catalysts.append(f"Rapid retail store network rollout capturing market share from unorganized players for {symbol}.")
+            catalysts.append("Strong brand loyalty and superior inventory turnover accelerating unit economics.")
+        elif symbol in energy_tickers:
+            catalysts.append(f"Integration advantages across telecom, retail, and digital platforms unlocking sustained shareholder value in {symbol}.")
+            catalysts.append("Favorable long-term domestic energy transition demand.")
+        else:
+            catalysts.append(f"Sustained institutional investor accumulation and market share defense in {symbol}.")
+            catalysts.append(f"Favorable industry positioning with potential for positive surprise in quarterly operational updates.")
+
+        seen_c = set()
+        clean_catalysts = []
+        for c in catalysts:
+            if c not in seen_c:
+                seen_c.add(c)
+                clean_catalysts.append(c)
+
+        return clean_catalysts[:4], clean_risks[:3]
+
+    @classmethod
     def _analyze_with_claude(cls, symbol: str, articles: list[NewsArticle], api_key: str) -> NewsAnalysisResponse:
+
         """Call Anthropic Claude API for deep reasoning and institutional synthesis."""
         import json
         articles_text = "\n".join([f"- Title: {a.title}\n  Publisher: {a.publisher}\n  Date: {a.published_at}\n  Summary: {a.summary}" for a in articles[:8]])

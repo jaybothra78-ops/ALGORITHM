@@ -364,7 +364,36 @@
       font-weight: 600;
       cursor: pointer;
     }
+    .catalysts-card {
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(15, 23, 42, 0.75) 100%) !important;
+      border: 1px solid rgba(16, 185, 129, 0.28) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    .risks-card {
+      background: linear-gradient(135deg, rgba(244, 63, 94, 0.06) 0%, rgba(15, 23, 42, 0.75) 100%) !important;
+      border: 1px solid rgba(244, 63, 94, 0.28) !important;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+    }
+    .catalysts-list li::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      color: #10b981;
+      font-size: 1.2rem;
+      line-height: 1;
+      top: 1px;
+    }
+    .risks-list li::before {
+      content: "•";
+      position: absolute;
+      left: 2px;
+      color: #f43f5e;
+      font-size: 1.2rem;
+      line-height: 1;
+      top: 1px;
+    }
   </style>
+
 </head>
 
 <body>
@@ -1254,7 +1283,8 @@
   <datalist id="news-stocks-datalist"></datalist>
 
 
-  <script src="/static/app.js?v=20.0"></script>
+  <script src="/static/app.js?v=21.0"></script>
+
 
 
 
