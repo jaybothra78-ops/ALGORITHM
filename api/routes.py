@@ -220,6 +220,35 @@ def run_backtest_endpoint(
         raise HTTPException(500, f"Backtest simulation failed: {exc}") from exc
 
 
+@router.get("/market/ohlc/{symbol}", response_model=list[dict[str, Any]])
+def get_symbol_ohlc(symbol: str) -> list[dict[str, Any]]:
+    """Return historical daily OHLC candles for candlestick chart rendering."""
+    s_clean = symbol.strip().upper()
+    try:
+        from services.market_data import MarketDataProvider
+        ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean])
+        if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
+            raise HTTPException(404, f"No OHLC history available for {s_clean}")
+
+        df = ohlc_dict[s_clean]
+        candles = []
+        for idx, row in df.iterrows():
+            date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
+            candles.append({
+                "time": date_str,
+                "open": round(float(row["Open"]), 2),
+                "high": round(float(row["High"]), 2),
+                "low": round(float(row["Low"]), 2),
+                "close": round(float(row["Close"]), 2),
+            })
+        return candles
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to fetch OHLC for {s_clean}: {exc}") from exc
+
+
+
 @router.get("/news/analyze", response_model=NewsAnalysisResponse)
 def analyze_news_get_endpoint(
     symbol: str = Query(..., description="Stock ticker symbol (e.g. TVSMOTOR, RELIANCE)"),

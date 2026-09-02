@@ -2302,26 +2302,33 @@ App.Backtester = {
 
         <!-- 1-Click Bridge Actions -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
+          <button type="button" class="btn-subtle" style="background: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: #a5b4fc; font-weight: 700;" onclick="App.Backtester.switchInspectorTab('chart')">
+            🕯️ View Exact Candle Chart
+          </button>
+          <button type="button" class="btn-subtle" onclick="App.Backtester.openTradingViewWithDate()">
+            📈 Open on TradingView (Alt+G Date Copied) ↗
+          </button>
           <button type="button" class="btn-subtle" onclick="App.Backtester.sendToPaperTrading('${t.symbol}', '${t.signal_type}', ${t.entry_price}, ${t.target_price || 0}, ${t.stop_loss_price || 0})">
             💼 Place Paper Trade
           </button>
           <button type="button" class="btn-subtle" onclick="App.Backtester.sendToNewsAnalyzer('${t.symbol}')">
             📰 AI News Sentiment
           </button>
-          <a href="https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-            📈 TradingView ↗
-          </a>
           <a href="https://www.screener.in/company/${t.symbol}/consolidated/" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
             📊 Screener.in ↗
           </a>
         </div>
       `;
     }
+
+    // If currently on chart tab, refresh chart to this trade
+    if (this._activeInspectorTab === 'chart') {
+      this.renderCandleChart();
+    }
   },
 
-
-
   switchInspectorTab(tab) {
+    this._activeInspectorTab = tab;
     document.querySelectorAll('.terminal-header-bar .term-pill').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.term-tab-pane').forEach(p => (p.style.display = 'none'));
 
@@ -2329,6 +2336,284 @@ App.Backtester = {
     const pane = document.querySelector(`#bt-pane-${tab}`);
     if (btn) btn.classList.add('active');
     if (pane) pane.style.display = 'block';
+
+    if (tab === 'chart') {
+      this.renderCandleChart();
+    }
+  },
+
+  async renderCandleChart() {
+    const trades = this._currentTrades || [];
+    const t = trades[this._selectedTradeIndex];
+    if (!t) return;
+
+    const titleEl = document.querySelector('#bt-chart-trade-title');
+    const badgeEl = document.querySelector('#bt-chart-trade-badge');
+    const loadingEl = document.querySelector('#bt-chart-loading');
+    const container = document.querySelector('#bt-trade-chart-container');
+
+    const isBuy = t.signal_type.toLowerCase() === 'buy';
+
+    if (titleEl) {
+      titleEl.innerHTML = `<strong>${t.symbol}</strong> • ${t.strategy} <span style="color: #94a3b8; font-weight: normal; font-size: 0.8rem;">(Entry: ${t.entry_date} @ ₹${t.entry_price.toFixed(2)})</span>`;
+    }
+    if (badgeEl) {
+      badgeEl.className = `badge ${isBuy ? 'badge-bullish' : 'badge-bearish'}`;
+      badgeEl.textContent = isBuy ? 'BUY' : 'SELL';
+    }
+
+    if (loadingEl) loadingEl.style.display = 'flex';
+
+    try {
+      if (!this._ohlcCache) this._ohlcCache = {};
+
+      let candles = this._ohlcCache[t.symbol];
+      if (!candles) {
+        const res = await fetch(`/market/ohlc/${t.symbol}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        candles = await res.json();
+        this._ohlcCache[t.symbol] = candles;
+      }
+
+      this._currentCandles = candles;
+
+      if (!container || typeof LightweightCharts === 'undefined') {
+        if (loadingEl) {
+          loadingEl.innerHTML = `<span style="color: #f43f5e;">Chart library loading... please try again.</span>`;
+        }
+        return;
+      }
+
+      // Dispose previous chart instance
+      if (this._chartInstance) {
+        try {
+          this._chartInstance.remove();
+        } catch (e) {
+          console.debug('Chart remove error:', e);
+        }
+        this._chartInstance = null;
+        this._candlestickSeries = null;
+      }
+
+      // Initialize Lightweight Chart
+      const chart = LightweightCharts.createChart(container, {
+        width: container.clientWidth || 700,
+        height: 420,
+        layout: {
+          background: { color: '#070a13' },
+          textColor: '#94a3b8',
+          fontSize: 11,
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+        },
+        grid: {
+          vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
+          horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
+        },
+        crosshair: {
+          mode: LightweightCharts.CrosshairMode.Normal,
+        },
+        rightPriceScale: {
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+        },
+        timeScale: {
+          borderColor: 'rgba(255, 255, 255, 0.08)',
+          timeVisible: true,
+          secondsVisible: false,
+        },
+      });
+
+      this._chartInstance = chart;
+
+      // Add Candlestick Series
+      const candleSeries = chart.addCandlestickSeries({
+        upColor: '#10b981',
+        downColor: '#f43f5e',
+        borderVisible: false,
+        wickUpColor: '#10b981',
+        wickDownColor: '#f43f5e',
+      });
+      this._candlestickSeries = candleSeries;
+
+      candleSeries.setData(candles);
+
+      // Add Markers on Exact Trade Candles
+      const markers = [];
+
+      // Signal Candle Marker
+      if (t.signal_date) {
+        markers.push({
+          time: t.signal_date,
+          position: isBuy ? 'belowBar' : 'aboveBar',
+          color: '#818cf8',
+          shape: isBuy ? 'arrowUp' : 'arrowDown',
+          text: `SIGNAL (${t.strategy})`,
+        });
+      }
+
+      // Entry Candle Marker
+      if (t.entry_date) {
+        markers.push({
+          time: t.entry_date,
+          position: isBuy ? 'belowBar' : 'aboveBar',
+          color: '#10b981',
+          shape: isBuy ? 'arrowUp' : 'arrowDown',
+          text: `ENTRY ₹${t.entry_price.toFixed(2)}`,
+        });
+      }
+
+      // Exit Candle Marker
+      if (t.exit_date) {
+        const isWin = t.outcome === 'WIN';
+        markers.push({
+          time: t.exit_date,
+          position: isBuy ? 'aboveBar' : 'belowBar',
+          color: isWin ? '#10b981' : '#f43f5e',
+          shape: isBuy ? 'arrowDown' : 'arrowUp',
+          text: `EXIT ₹${t.exit_price.toFixed(2)} (${t.exit_reason})`,
+        });
+      }
+
+      // Sort markers chronologically (required by Lightweight Charts)
+      markers.sort((a, b) => (a.time > b.time ? 1 : -1));
+      candleSeries.setMarkers(markers);
+
+      // Add Target Level Price Line
+      if (t.target_price) {
+        candleSeries.createPriceLine({
+          price: t.target_price,
+          color: '#10b981',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: `TARGET Level (₹${t.target_price.toFixed(2)})`,
+        });
+      }
+
+      // Add Stop Loss Price Line
+      if (t.stop_loss_price) {
+        candleSeries.createPriceLine({
+          price: t.stop_loss_price,
+          color: '#f43f5e',
+          lineWidth: 2,
+          lineStyle: LightweightCharts.LineStyle.Dashed,
+          axisLabelVisible: true,
+          title: `STOP LOSS (₹${t.stop_loss_price.toFixed(2)})`,
+        });
+      }
+
+      // Add Entry Price Line
+      if (t.entry_price) {
+        candleSeries.createPriceLine({
+          price: t.entry_price,
+          color: '#38bdf8',
+          lineWidth: 1,
+          lineStyle: LightweightCharts.LineStyle.Dotted,
+          axisLabelVisible: true,
+          title: `ENTRY LEVEL (₹${t.entry_price.toFixed(2)})`,
+        });
+      }
+
+      // Auto-focus around the trade candle
+      this.centerChartOnTrade();
+
+      // Window resize listener
+      window.addEventListener('resize', () => {
+        if (this._chartInstance && container) {
+          this._chartInstance.applyOptions({ width: container.clientWidth });
+        }
+      });
+
+      if (loadingEl) loadingEl.style.display = 'none';
+
+    } catch (err) {
+      if (loadingEl) {
+        loadingEl.innerHTML = `<span style="color: #f43f5e;">Failed to load candle chart: ${err.message}</span>`;
+      }
+    }
+  },
+
+  centerChartOnTrade() {
+    const trades = this._currentTrades || [];
+    const t = trades[this._selectedTradeIndex];
+    if (!t || !this._chartInstance || !this._currentCandles || !this._currentCandles.length) return;
+
+    const candles = this._currentCandles;
+    const entryIdx = candles.findIndex(c => c.time === t.entry_date);
+    const exitIdx = candles.findIndex(c => c.time === t.exit_date);
+
+    const refIdx = entryIdx >= 0 ? entryIdx : (exitIdx >= 0 ? exitIdx : candles.length - 1);
+    const fromIdx = Math.max(0, refIdx - 20);
+    const toIdx = Math.min(candles.length - 1, (exitIdx >= 0 ? exitIdx : refIdx) + 20);
+
+    if (fromIdx < toIdx) {
+      this._chartInstance.timeScale().setVisibleRange({
+        from: candles[fromIdx].time,
+        to: candles[toIdx].time,
+      });
+    }
+  },
+
+  fitChart() {
+    if (this._chartInstance) {
+      this._chartInstance.timeScale().fitContent();
+    }
+  },
+
+  openTradingViewWithDate() {
+    const trades = this._currentTrades || [];
+    const t = trades[this._selectedTradeIndex];
+    if (!t) return;
+
+    // Copy exact entry date to clipboard
+    if (navigator.clipboard && t.entry_date) {
+      navigator.clipboard.writeText(t.entry_date).catch(() => {});
+    }
+
+    // Create a toast notification
+    this.showToast(`📋 Trade Date (${t.entry_date}) copied! In TradingView, press Alt + G and Enter to jump directly to this exact candle.`);
+
+    // Open TradingView chart
+    const tvUrl = `https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}&interval=D`;
+    window.open(tvUrl, '_blank', 'noopener,noreferrer');
+  },
+
+  showToast(message) {
+    let toast = document.querySelector('#bt-toast-notification');
+    if (!toast) {
+      toast = document.createElement('div');
+      toast.id = 'bt-toast-notification';
+      toast.style.cssText = `
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        background: linear-gradient(135deg, #1e1b4b 0%, #0f172a 100%);
+        border: 1px solid #6366f1;
+        color: #f8fafc;
+        padding: 14px 20px;
+        border-radius: 10px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(99, 102, 241, 0.4);
+        z-index: 99999;
+        max-width: 420px;
+        line-height: 1.5;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      `;
+      document.body.appendChild(toast);
+    }
+    toast.innerHTML = `<span>⚡</span> <span>${message}</span>`;
+    toast.style.opacity = '1';
+    toast.style.transform = 'translateY(0)';
+
+    setTimeout(() => {
+      if (toast) {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(10px)';
+      }
+    }, 6000);
   },
 
   renderAnalyticsTab(summary) {
@@ -2367,6 +2652,7 @@ App.Backtester = {
       diagView.innerHTML = `<div class="empty-cell" style="padding: 50px 20px; text-align: center; color: #64748b;">No trades available for inspection.</div>`;
     }
   },
+
 
   sendToPaperTrading(symbol, direction, price, target, stoploss) {
     App.Router.switchTab('paper');
