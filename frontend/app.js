@@ -466,8 +466,20 @@ App.News = {
       });
     }
 
+    // Enter key support for Terminal Chat
+    const chatInput = document.querySelector('#terminal-chat-input');
+    if (chatInput) {
+      chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          this.submitTerminalChat();
+        }
+      });
+    }
+
     this.initClaudeKeyModal();
   },
+
 
 
 
@@ -824,9 +836,14 @@ App.News = {
   },
 
   async submitTerminalChat() {
+    const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
     const idx = App.State.selectedArticleIndex || 0;
-    const article = (App.State.currentArticles || [])[idx];
-    if (!article) return;
+    const articles = App.State.currentArticles || [];
+    const article = articles[idx] || {
+      title: `${symbol} Corporate News & Momentum`,
+      summary: `Recent market filings and sentiment developments for ${symbol}.`,
+      link: ''
+    };
 
     const input = document.querySelector('#terminal-chat-input');
     const thread = document.querySelector('#terminal-chat-messages');
@@ -837,17 +854,22 @@ App.News = {
 
     thread.innerHTML += `
       <div class="chat-msg user-msg">
-        <div class="msg-bubble">${q}</div>
+        <div class="msg-bubble">${this.escapeHtml(q)}</div>
       </div>
       <div class="chat-msg ai-msg term-typing">
         <div class="msg-avatar">🤖</div>
-        <div class="msg-bubble"><em>Analyzing institutional implications...</em></div>
+        <div class="msg-bubble thinking-bubble">
+          <div class="thinking-header">
+            <span class="pulse-dot"></span>
+            <strong>Analyzing &amp; thinking...</strong>
+          </div>
+          <div class="thinking-subtext">Evaluating news facts, valuation multiples, and risk-reward profile for ${symbol}</div>
+        </div>
       </div>
     `;
     thread.scrollTop = thread.scrollHeight;
 
     try {
-      const symbol = App.State.activeNewsTicker || 'TVSMOTOR';
       const res = await fetch('/news/article-chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -857,6 +879,7 @@ App.News = {
           article_summary: article.summary,
           article_link: article.link,
           user_question: q,
+          api_key: localStorage.getItem('claude_api_key') || '',
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -865,10 +888,33 @@ App.News = {
       const typing = thread.querySelector('.term-typing');
       if (typing) typing.remove();
 
+      // Render Thought Process if available
+      let thoughtHtml = '';
+      const thoughts = Array.isArray(data.thinking) ? data.thinking : [];
+      if (thoughts.length) {
+        thoughtHtml = `
+          <details class="thought-box" open>
+            <summary class="thought-summary">
+              <span class="thought-icon">💭</span>
+              <span>Thought Process (${thoughts.length} steps)</span>
+            </summary>
+            <ul class="thought-list">
+              ${thoughts.map(t => `<li>${this.escapeHtml(t)}</li>`).join('')}
+            </ul>
+          </details>
+        `;
+      }
+
+      const answerText = data.answer || data.short_analysis || 'Analysis complete.';
+      const formattedAnswer = this.formatMarkdown(answerText);
+
       thread.innerHTML += `
         <div class="chat-msg ai-msg">
           <div class="msg-avatar">🤖</div>
-          <div class="msg-bubble">${data.answer || data.short_analysis}</div>
+          <div class="msg-bubble">
+            ${thoughtHtml}
+            <div class="ai-answer-body">${formattedAnswer}</div>
+          </div>
         </div>
       `;
       thread.scrollTop = thread.scrollHeight;
@@ -878,12 +924,34 @@ App.News = {
       thread.innerHTML += `
         <div class="chat-msg ai-msg">
           <div class="msg-avatar">⚠️</div>
-          <div class="msg-bubble" style="color: #f43f5e;">Error: ${err.message}</div>
+          <div class="msg-bubble" style="color: #f43f5e;">Error: ${this.escapeHtml(err.message)}</div>
         </div>
       `;
       thread.scrollTop = thread.scrollHeight;
     }
   },
+
+  escapeHtml(text) {
+    if (!text) return '';
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  },
+
+  formatMarkdown(md) {
+    if (!md) return '';
+    let html = md
+      .replace(/^### (.*$)/gim, '<h5 class="ai-ans-h5">$1</h5>')
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\*(.*?)\*/g, '<em>$1</em>')
+      .replace(/^[•\-] (.*$)/gim, '<div class="ai-ans-bullet"><span class="bullet-dot">•</span><span>$1</span></div>')
+      .replace(/\n\n/g, '<div class="ai-ans-gap"></div>');
+    return html;
+  },
+
 
   copyTerminalSummary() {
     const textEl = document.querySelector('#terminal-summary-text');
@@ -937,6 +1005,7 @@ App.News = {
           });
 
           if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          localStorage.setItem('claude_api_key', key);
           App.Utils.showStatus('#claude-key-status', '✅ Claude API Key saved successfully!', 'success');
           this.checkKeyStatus();
           setTimeout(() => { if (card) card.style.display = 'none'; }, 1500);
@@ -949,11 +1018,13 @@ App.News = {
     if (btnClear) {
       btnClear.addEventListener('click', async () => {
         await fetch('/news/key', { method: 'DELETE' });
+        localStorage.removeItem('claude_api_key');
         if (inputKey) inputKey.value = '';
         App.Utils.showStatus('#claude-key-status', 'Claude API Key cleared', 'success');
         this.checkKeyStatus();
       });
     }
+
 
     this.checkKeyStatus();
   },

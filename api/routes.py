@@ -268,10 +268,41 @@ def analyze_article_chat_endpoint(
             article_summary=summary,
             article_link=link,
             user_question=question,
-            api_key=api_key,
+            api_key=api_key or NewsService.get_api_key(),
         )
     except Exception as exc:
         raise HTTPException(500, f"Article analysis failed: {exc}") from exc
+
+
+@router.get("/news/key", response_model=dict[str, Any])
+def get_news_key_status() -> dict[str, Any]:
+    """Check whether a Claude API key has been registered."""
+    from services.news_service import NewsService
+    key = NewsService.get_api_key()
+    return {
+        "has_key": bool(key),
+        "key_masked": f"{key[:7]}...{key[-4:]}" if key and len(key) > 12 else None,
+    }
+
+
+@router.post("/news/key", response_model=dict[str, Any])
+def save_news_key_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
+    """Register or update Anthropic Claude API key for live deep-dive synthesis."""
+    from services.news_service import NewsService
+    key = (payload.get("api_key") or "").strip()
+    if not key:
+        raise HTTPException(400, "API key cannot be empty.")
+    NewsService.set_api_key(key)
+    return {"status": "success", "message": "Claude API key registered successfully."}
+
+
+@router.delete("/news/key", response_model=dict[str, Any])
+def clear_news_key_endpoint() -> dict[str, Any]:
+    """Clear registered Anthropic Claude API key."""
+    from services.news_service import NewsService
+    NewsService.set_api_key("")
+    return {"status": "success", "message": "Claude API key cleared."}
+
 
 
 
