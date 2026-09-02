@@ -2180,15 +2180,17 @@ App.Backtester = {
             const isBuy = t.signal_type.toLowerCase() === 'buy';
             const pnlFormatted = `${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%`;
             return `
-              <div class="article-list-item ${idx === 0 ? 'selected' : ''}" id="bt-trade-item-${idx}" onclick="App.Backtester.selectTrade(${idx})">
-                <div class="item-meta">
-                  <span class="item-publisher" style="font-weight: 700; color: #fff;">${t.symbol}</span>
-                  <span class="badge ${isBuy ? 'badge-bullish' : 'badge-bearish'}" style="font-size: 0.68rem; padding: 2px 6px;">${isBuy ? 'BUY' : 'SELL'}</span>
-                  <span class="item-date">${t.entry_date}</span>
+              <div class="trade-card-minimal ${idx === 0 ? 'selected' : ''}" id="bt-trade-item-${idx}" onclick="App.Backtester.selectTrade(${idx})">
+                <div class="tc-header">
+                  <div style="display: flex; align-items: center; gap: 6px;">
+                    <span class="tc-sym">${t.symbol}</span>
+                    <span class="${isBuy ? 'tc-direction-buy' : 'tc-direction-sell'}">${isBuy ? 'LONG' : 'SHORT'}</span>
+                  </div>
+                  <span class="${isWin ? 'tc-pnl-win' : 'tc-pnl-loss'}">${pnlFormatted}</span>
                 </div>
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 4px;">
-                  <span style="font-size: 0.78rem; color: #94a3b8;">${t.strategy} • ${t.exit_reason}</span>
-                  <span style="font-size: 0.86rem; font-weight: 700; color: ${isWin ? '#10b981' : '#f43f5e'};">${pnlFormatted}</span>
+                <div class="tc-sub">
+                  <span>${t.strategy} • ${t.exit_reason}</span>
+                  <span>${t.entry_date}</span>
                 </div>
               </div>
             `;
@@ -2220,7 +2222,7 @@ App.Backtester = {
     const t = trades[idx];
     if (!t) return;
 
-    document.querySelectorAll('#backtest-trades-list .article-list-item').forEach(el => el.classList.remove('selected'));
+    document.querySelectorAll('#backtest-trades-list .trade-card-minimal').forEach(el => el.classList.remove('selected'));
     const selectedEl = document.querySelector(`#bt-trade-item-${idx}`);
     if (selectedEl) selectedEl.classList.add('selected');
 
@@ -2229,32 +2231,64 @@ App.Backtester = {
     const subEl = document.querySelector('#bt-inspect-sub');
 
     if (titleEl) titleEl.textContent = `${t.symbol} • ${t.strategy} (${t.signal_type.toUpperCase()})`;
-    if (subEl) subEl.textContent = `Entry: ${t.entry_date} @ ₹${t.entry_price.toFixed(2)} | Exit: ${t.exit_date} @ ₹${t.exit_price.toFixed(2)}`;
+    if (subEl) subEl.textContent = `Entry: ${t.entry_date} @ ₹${t.entry_price.toFixed(2)} → Exit: ${t.exit_date} @ ₹${t.exit_price.toFixed(2)}`;
 
     const isWin = t.outcome === 'WIN';
+    const isBuy = t.signal_type.toLowerCase() === 'buy';
 
     if (diagView) {
       diagView.innerHTML = `
+        <!-- Minimalist Visual Timeline -->
+        <div class="inspect-timeline">
+          <div class="timeline-step">
+            <div class="step-circle done">✓</div>
+            <div class="step-name">Signal</div>
+            <div style="font-size: 0.65rem; color: #64748b;">${t.signal_date}</div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step">
+            <div class="step-circle done">✓</div>
+            <div class="step-name">Confirmed</div>
+            <div style="font-size: 0.65rem; color: #64748b;">Next Day</div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step">
+            <div class="step-circle done">₹</div>
+            <div class="step-name">Open</div>
+            <div style="font-size: 0.65rem; color: #64748b;">${t.entry_date}</div>
+          </div>
+          <div class="timeline-connector"></div>
+          <div class="timeline-step">
+            <div class="step-circle" style="border-color: ${isWin ? '#10b981' : '#f43f5e'}; color: ${isWin ? '#10b981' : '#f43f5e'};">
+              ${isWin ? '🎯' : '🛑'}
+            </div>
+            <div class="step-name" style="color: ${isWin ? '#10b981' : '#f43f5e'};">${t.exit_reason}</div>
+            <div style="font-size: 0.65rem; color: #64748b;">${t.exit_date}</div>
+          </div>
+        </div>
+
+        <!-- 3 Performance Metric Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center;">
             <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">OUTCOME</div>
-            <div style="font-size: 1.1rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.outcome}</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.outcome}</div>
             <div style="font-size: 0.72rem; color: #cbd5e1;">${t.exit_reason}</div>
           </div>
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center;">
             <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">NET RETURN</div>
-            <div style="font-size: 1.1rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
             <div style="font-size: 0.72rem; color: #cbd5e1;">₹${(t.pnl_amount >= 0 ? '+' : '')}${t.pnl_amount.toFixed(2)} / share</div>
           </div>
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px; text-align: center;">
+          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center;">
             <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">HOLDING TIME</div>
-            <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">${t.holding_days} Days</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">${t.holding_days} Days</div>
             <div style="font-size: 0.72rem; color: #cbd5e1;">${t.entry_date} to ${t.exit_date}</div>
           </div>
         </div>
 
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; margin-bottom: 16px;">
-          <h5 style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 10px; font-weight: 700;">Price Execution Blueprint</h5>
+        <!-- Execution Levels Table -->
+        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <h5 style="color: #cbd5e1; font-size: 0.82rem; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Price Execution Levels</h5>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
             <div><span style="color: #94a3b8;">Entry Price:</span> <strong style="color: #fff;">₹${t.entry_price.toFixed(2)}</strong></div>
             <div><span style="color: #94a3b8;">Exit Price:</span> <strong style="color: #fff;">₹${t.exit_price.toFixed(2)}</strong></div>
@@ -2267,22 +2301,23 @@ App.Backtester = {
 
         <!-- 1-Click Bridge Actions -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-          <button type="button" class="btn-subtle" onclick="App.Backtester.sendToPaperTrading('${t.symbol}', '${t.signal_type}', ${t.entry_price}, ${t.target_price || 0}, ${t.stop_loss_price || 0})">
-            💼 Place in Paper Trading
+          <button type="button" class="action-btn-ghost" onclick="App.Backtester.sendToPaperTrading('${t.symbol}', '${t.signal_type}', ${t.entry_price}, ${t.target_price || 0}, ${t.stop_loss_price || 0})">
+            <span>💼</span> <span>Place Paper Trade</span>
           </button>
-          <button type="button" class="btn-subtle" onclick="App.Backtester.sendToNewsAnalyzer('${t.symbol}')">
-            📰 AI News Sentiment
+          <button type="button" class="action-btn-ghost" onclick="App.Backtester.sendToNewsAnalyzer('${t.symbol}')">
+            <span>📰</span> <span>AI News Sentiment</span>
           </button>
-          <a href="https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-            📈 TradingView ↗
+          <a href="https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}" target="_blank" class="action-btn-ghost">
+            <span>📈</span> <span>TradingView ↗</span>
           </a>
-          <a href="https://www.screener.in/company/${t.symbol}/consolidated/" target="_blank" class="btn-subtle" style="text-decoration: none; display: inline-flex; align-items: center; gap: 4px;">
-            📊 Screener.in ↗
+          <a href="https://www.screener.in/company/${t.symbol}/consolidated/" target="_blank" class="action-btn-ghost">
+            <span>📊</span> <span>Screener.in ↗</span>
           </a>
         </div>
       `;
     }
   },
+
 
   switchInspectorTab(tab) {
     document.querySelectorAll('.terminal-header-bar .term-pill').forEach(b => b.classList.remove('active'));
