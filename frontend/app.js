@@ -319,8 +319,10 @@ App.Screener = {
       const res = await fetch('/watchlist/custom');
       if (!res.ok) return;
       const data = await res.json();
+      App.State.customWatchlists = data.watchlists || [];
       const tagsContainer = document.querySelector('#custom-lists-tags');
-      const select = document.querySelector('#lookback-index');
+      const lookbackSelect = document.querySelector('#lookback-index');
+      const newsUniverseSelect = document.querySelector('#news-universe-filter');
 
       if (tagsContainer && data.watchlists) {
         if (!data.watchlists.length) {
@@ -335,7 +337,9 @@ App.Screener = {
         }
       }
 
-      if (select && data.watchlists) {
+      // Populate both Screener dropdown and News Analyzer universe dropdown
+      [lookbackSelect, newsUniverseSelect].forEach(select => {
+        if (!select || !data.watchlists) return;
         // Remove old custom options
         Array.from(select.options).forEach(opt => {
           if (opt.dataset.custom === 'true') opt.remove();
@@ -348,11 +352,12 @@ App.Screener = {
           opt.dataset.custom = 'true';
           select.appendChild(opt);
         });
-      }
+      });
     } catch (err) {
       console.debug('Custom watchlists load error:', err);
     }
   },
+
 
   async deleteWatchlist(name) {
     if (!confirm(`Delete custom watchlist "${name}"?`)) return;
@@ -443,22 +448,59 @@ App.News = {
 
   async populateStockSelect(universe) {
     try {
-      const res = await fetch(`/signals/lookback?days=1&index_name=${encodeURIComponent(universe || '')}`);
-      if (!res.ok) return;
-      const data = await res.json();
       const stockSelect = document.querySelector('#news-stock-select');
+      const customInput = document.querySelector('#news-custom-input');
       if (!stockSelect) return;
 
-      const symbols = Array.from(new Set((data.signals || []).map(s => s.symbol).filter(Boolean)));
-      if (symbols.length) {
-        stockSelect.innerHTML = symbols.map(s => `<option value="${s}">${s}</option>`).join('');
-        const customInput = document.querySelector('#news-custom-input');
-        if (customInput && !customInput.value) customInput.value = symbols[0];
+      let symbols = [];
+
+      // 1. Check if custom watchlist selected
+      if (universe && universe.startsWith('custom:')) {
+        const customName = universe.replace('custom:', '').trim();
+        const found = (App.State.customWatchlists || []).find(w => w.name === customName);
+        if (found && found.symbols && found.symbols.length) {
+          symbols = found.symbols;
+        }
       }
+
+      // 2. Otherwise use universe symbols list or fetch from API
+      if (!symbols.length) {
+        if (App.State.universeSymbols && App.State.universeSymbols.length) {
+          if (!universe) {
+            symbols = App.State.universeSymbols.map(u => u.symbol);
+          } else {
+            symbols = App.State.universeSymbols
+              .filter(u => (u.membership || []).includes(universe))
+              .map(u => u.symbol);
+          }
+        } else {
+          const res = await fetch('/universe/symbols');
+          if (res.ok) {
+            const allSymbols = await res.json();
+            App.State.universeSymbols = allSymbols;
+            if (!universe) {
+              symbols = allSymbols.map(u => u.symbol);
+            } else {
+              symbols = allSymbols
+                .filter(u => (u.membership || []).includes(universe))
+                .map(u => u.symbol);
+            }
+          }
+        }
+      }
+
+      // 3. Fallback to common F&O if still empty
+      if (!symbols.length) {
+        symbols = ['TVSMOTOR', 'RELIANCE', 'TRENT', 'TATAMOTORS', 'HDFCBANK', 'INFY', 'IDFCFIRSTB'];
+      }
+
+      stockSelect.innerHTML = symbols.map(s => `<option value="${s}">${s}</option>`).join('');
+      if (customInput) customInput.value = symbols[0];
     } catch (err) {
-      console.debug('Failed to filter news stocks:', err);
+      console.debug('Failed to populate news stocks:', err);
     }
   },
+
 
   clearLoadingSteps() {
     this._stepTimers.forEach(t => clearTimeout(t));
@@ -1615,10 +1657,11 @@ App.Init = {
 
   async populateDatalists() {
     try {
-      const res = await fetch('/signals/today');
+      const res = await fetch('/universe/symbols');
       if (!res.ok) return;
-      const data = await res.json();
-      const symbols = (data.signals || []).map(s => s.symbol).filter(Boolean);
+      const allData = await res.json();
+      App.State.universeSymbols = allData;
+      const symbols = allData.map(s => s.symbol).filter(Boolean);
       const uniqueSymbols = Array.from(new Set(symbols));
 
       const datalists = [
@@ -1633,10 +1676,14 @@ App.Init = {
           el.innerHTML = uniqueSymbols.map(sym => `<option value="${sym}"></option>`).join('');
         }
       });
+
+      // Populate initial news stock select with FNO or All
+      App.News.populateStockSelect('FNO');
     } catch (err) {
       console.debug('Datalists load error:', err);
     }
   },
+
 };
 
 // Initialize on DOM Ready
