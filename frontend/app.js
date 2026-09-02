@@ -4,7 +4,13 @@
  */
 'use strict';
 
-window.App = window.App || {};
+const App = window.App = window.App || {};
+window.openArticleAi = function(idx) {
+  if (window.App && window.App.News) {
+    window.App.News.openArticleAi(idx);
+  }
+};
+
 
 // =====================================================================
 // 1. Central Reactive State Store
@@ -668,7 +674,7 @@ App.News = {
             </h5>
             <p class="article-summary">${a.summary || 'Click link to read full coverage on publisher site.'}</p>
             <div class="article-action-row">
-              <button type="button" class="btn-ai-deepdive" onclick="App.News.openArticleAi(${idx})">
+              <button type="button" class="btn-ai-deepdive" onclick="window.openArticleAi(${idx})">
                 <span>🤖 AI Deep Dive &amp; Chat</span>
               </button>
               <a href="${a.link}" target="_blank" rel="noopener noreferrer" class="article-read-btn">Read Source ↗</a>
@@ -715,8 +721,12 @@ App.News = {
   },
 
   openArticleAi(articleIndex) {
-    const article = (App.State.currentArticles || [])[articleIndex];
-    if (!article) return;
+    const idx = parseInt(articleIndex, 10);
+    const article = (App.State.currentArticles || [])[idx];
+    if (!article) {
+      console.warn('Article not found at index:', articleIndex, App.State.currentArticles);
+      return;
+    }
 
     App.State.activeArticle = article;
     const drawer = document.querySelector('#drawer-article-ai');
@@ -749,7 +759,10 @@ App.News = {
       `;
     }
 
-    if (drawer) drawer.style.display = 'flex';
+    if (drawer) {
+      drawer.style.display = 'flex';
+      drawer.style.zIndex = '99999';
+    }
 
     // Fetch initial 100-150 word deep dive and key bullets
     this.fetchArticleAnalysis(article);
@@ -759,6 +772,7 @@ App.News = {
     const drawer = document.querySelector('#drawer-article-ai');
     if (drawer) drawer.style.display = 'none';
   },
+
 
   async fetchArticleAnalysis(article) {
     const symbol = App.State.activeNewsTicker || 'TVSMOTOR';

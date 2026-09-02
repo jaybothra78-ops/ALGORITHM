@@ -2303,10 +2303,11 @@ select:focus, input:focus, textarea:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  z-index: 1050;
+  z-index: 99999;
   display: flex;
   justify-content: flex-end;
 }
+
 
 .drawer-backdrop {
   position: absolute;

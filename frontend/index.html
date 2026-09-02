@@ -504,83 +504,8 @@
           </div>
         </div>
       </div>
-
-      <!-- Article AI Deep Dive & Micro-Chatbot Drawer -->
-      <div id="drawer-article-ai" class="article-ai-drawer" style="display: none;">
-        <div class="drawer-backdrop" id="btn-close-article-drawer-bg"></div>
-        <div class="drawer-panel">
-          <div class="drawer-header">
-            <div class="drawer-title-group">
-              <span class="drawer-icon">🤖</span>
-              <div>
-                <div class="drawer-tag-row">
-                  <span id="drawer-stock-badge" class="drawer-stock-badge">TVSMOTOR</span>
-                  <span id="drawer-engine-badge" class="drawer-engine-badge">AI Intelligence Engine</span>
-                </div>
-                <h3 id="drawer-article-title" class="drawer-title">Article Title</h3>
-              </div>
-            </div>
-            <button type="button" id="btn-close-article-drawer" class="btn-icon-close" title="Close Drawer">&times;</button>
-          </div>
-
-          <div class="drawer-body">
-            <!-- 100-150 Word Executive Analysis Card -->
-            <div class="drawer-section">
-              <div class="drawer-section-title">
-                <span>⚡ Executive Analysis (~100-150 words)</span>
-                <span id="drawer-sentiment-pill" class="sentiment-badge-pill bullish">Bullish</span>
-              </div>
-              <p id="drawer-analysis-text" class="drawer-analysis-text">
-                Generating institutional breakdown...
-              </p>
-            </div>
-
-            <!-- Key Bullet Points Card -->
-            <div class="drawer-section">
-              <div class="drawer-section-title">
-                <span>🎯 Key Takeaways &amp; Bullet Points</span>
-              </div>
-              <ul id="drawer-bullets-list" class="drawer-bullets-list">
-                <!-- 4 Key Bullets -->
-              </ul>
-            </div>
-
-            <!-- Interactive Article Micro Chatbot -->
-            <div class="drawer-chat-section">
-              <div class="drawer-section-title">
-                <span>💬 Ask AI About This Article</span>
-              </div>
-              
-              <!-- Quick Prompt Suggestion Chips -->
-              <div class="drawer-prompt-chips">
-                <button type="button" class="prompt-chip" data-q="What is the expected revenue and EBITDA margin impact?">💰 Financial / Margin Impact?</button>
-                <button type="button" class="prompt-chip" data-q="Is this development already priced into the stock?">📊 Already Priced In?</button>
-                <button type="button" class="prompt-chip" data-q="What are the main risks and downside headwinds?">⚠️ Key Risks to Watch?</button>
-                <button type="button" class="prompt-chip" data-q="How could this affect tomorrow's market open?">📈 Market Open Impact?</button>
-              </div>
-
-              <!-- Conversation Thread -->
-              <div id="drawer-chat-messages" class="drawer-chat-messages">
-                <div class="chat-msg ai-msg">
-                  <div class="msg-avatar">🤖</div>
-                  <div class="msg-bubble">
-                    Ask me anything about this announcement, financial implications, or trading setups for this stock!
-                  </div>
-                </div>
-              </div>
-
-              <!-- Chat Input Row -->
-              <div class="drawer-chat-input-row">
-                <input type="text" id="drawer-chat-input" placeholder="Ask a question about this article..." autocomplete="off">
-                <button type="button" id="btn-drawer-send-chat" class="btn-primary">
-                  <span>Send</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
     </section>
+
 
 
     <!-- Section 3: Paper Trading / Virtual Portfolio -->
@@ -883,16 +808,93 @@
 
   </main>
 
+  <!-- Article AI Deep Dive & Micro-Chatbot Drawer (Direct Body Child for Viewport Anchoring) -->
+  <div id="drawer-article-ai" class="article-ai-drawer" style="display: none;">
+    <div class="drawer-backdrop" id="btn-close-article-drawer-bg"></div>
+    <div class="drawer-panel">
+      <div class="drawer-header">
+        <div class="drawer-title-group">
+          <span class="drawer-icon">🤖</span>
+          <div>
+            <div class="drawer-tag-row">
+              <span id="drawer-stock-badge" class="drawer-stock-badge">TVSMOTOR</span>
+              <span id="drawer-engine-badge" class="drawer-engine-badge">AI Intelligence Engine</span>
+            </div>
+            <h3 id="drawer-article-title" class="drawer-title">Article Title</h3>
+          </div>
+        </div>
+        <button type="button" id="btn-close-article-drawer" class="btn-icon-close" title="Close Drawer">&times;</button>
+      </div>
+
+      <div class="drawer-body">
+        <!-- 100-150 Word Executive Analysis Card -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">
+            <span>⚡ Executive Analysis (~100-150 words)</span>
+            <span id="drawer-sentiment-pill" class="sentiment-badge-pill bullish">Bullish</span>
+          </div>
+          <p id="drawer-analysis-text" class="drawer-analysis-text">
+            Generating institutional breakdown...
+          </p>
+        </div>
+
+        <!-- Key Bullet Points Card -->
+        <div class="drawer-section">
+          <div class="drawer-section-title">
+            <span>🎯 Key Takeaways &amp; Bullet Points</span>
+          </div>
+          <ul id="drawer-bullets-list" class="drawer-bullets-list">
+            <!-- 4 Key Bullets -->
+          </ul>
+        </div>
+
+        <!-- Interactive Article Micro Chatbot -->
+        <div class="drawer-chat-section">
+          <div class="drawer-section-title">
+            <span>💬 Ask AI About This Article</span>
+          </div>
+          
+          <!-- Quick Prompt Suggestion Chips -->
+          <div class="drawer-prompt-chips">
+            <button type="button" class="prompt-chip" data-q="What is the expected revenue and EBITDA margin impact?">💰 Financial / Margin Impact?</button>
+            <button type="button" class="prompt-chip" data-q="Is this development already priced into the stock?">📊 Already Priced In?</button>
+            <button type="button" class="prompt-chip" data-q="What are the main risks and downside headwinds?">⚠️ Key Risks to Watch?</button>
+            <button type="button" class="prompt-chip" data-q="How could this affect tomorrow's market open?">📈 Market Open Impact?</button>
+          </div>
+
+          <!-- Conversation Thread -->
+          <div id="drawer-chat-messages" class="drawer-chat-messages">
+            <div class="chat-msg ai-msg">
+              <div class="msg-avatar">🤖</div>
+              <div class="msg-bubble">
+                Ask me anything about this announcement, financial implications, or trading setups for this stock!
+              </div>
+            </div>
+          </div>
+
+          <!-- Chat Input Row -->
+          <div class="drawer-chat-input-row">
+            <input type="text" id="drawer-chat-input" placeholder="Ask a question about this article..." autocomplete="off">
+            <button type="button" id="btn-drawer-send-chat" class="btn-primary">
+              <span>Send</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Scoped Auto-Complete Ticker Datalists -->
   <datalist id="lookback-stocks-datalist"></datalist>
   <datalist id="paper-stocks-datalist"></datalist>
   <datalist id="news-stocks-datalist"></datalist>
 
 
-  <script src="/static/app.js?v=9.0"></script>
+  <script src="/static/app.js?v=11.0"></script>
 
 </body>
 </html>
+
 
 
 
