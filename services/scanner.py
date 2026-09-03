@@ -247,22 +247,22 @@ class ScannerEngine:
 
                 c_day2 = float(df["Close"].iloc[i + 1])
                 h_day2 = float(df["High"].iloc[i + 1])
-                l_day2 = float(df["Low"].iloc[i + 1])
-
                 o_day3 = float(df["Open"].iloc[i + 2])
                 c_day3 = float(df["Close"].iloc[i + 2])
+                h_day3 = float(df["High"].iloc[i + 2])
+                l_day3 = float(df["Low"].iloc[i + 2])
 
                 entry_dt_str = df.index[i + 2].date().isoformat()
 
-                # Bullish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at High) -> Day 3 (Opens higher with Green candle)
+                # Bullish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at High) -> Day 3 (Green candle holding above Day 2 SL)
                 day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-                day3_opens_higher_green = (o_day3 >= c_day2) and (c_day3 > o_day3)
+                day3_valid_green = (l_day3 > l_day2) and (c_day3 > o_day3)
 
-                # Bearish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at Low) -> Day 3 (Opens lower with Red candle)
+                # Bearish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at Low) -> Day 3 (Red candle holding below Day 2 SL)
                 day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-                day3_opens_lower_red = (o_day3 <= c_day2) and (c_day3 < o_day3)
+                day3_valid_red = (h_day3 < h_day2) and (c_day3 < o_day3)
 
-                if bool(sig_row.get("buy_signal", False)) and day2_breaks_high and day3_opens_higher_green:
+                if bool(sig_row.get("buy_signal", False)) and day2_breaks_high and day3_valid_green:
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "buy"
@@ -276,7 +276,7 @@ class ScannerEngine:
                         entry_price=c_day3,
                     ))
 
-                elif bool(sig_row.get("sell_signal", False)) and day2_breaks_low and day3_opens_lower_red:
+                elif bool(sig_row.get("sell_signal", False)) and day2_breaks_low and day3_valid_red:
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "sell"
@@ -289,6 +289,7 @@ class ScannerEngine:
                         date=entry_dt_str,
                         entry_price=c_day3,
                     ))
+
 
 
 

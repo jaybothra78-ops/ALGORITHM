@@ -208,15 +208,17 @@ class BacktesterEngine:
 
             o_day3 = float(df["Open"].iloc[i + 2])
             c_day3 = float(df["Close"].iloc[i + 2])
+            h_day3 = float(df["High"].iloc[i + 2])
+            l_day3 = float(df["Low"].iloc[i + 2])
 
             # BUY SEQUENCE:
             # Day 1: Bullish Knoxville
             # Day 2: Breaks and closes at/above high of Day 1 -> Low of Day 2 is Stop Loss
-            # Day 3: Opens at a higher price with a Green candle
+            # Day 3: Green candle (Close > Open) holding above Day 2 Low (Stop Loss)
             day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-            day3_opens_higher_green = (o_day3 >= c_day2) and (c_day3 > o_day3)
+            day3_valid_green = (l_day3 > l_day2) and (c_day3 > o_day3)
 
-            if bool(row_sig["buy_signal"]) and day2_breaks_high and day3_opens_higher_green:
+            if bool(row_sig["buy_signal"]) and day2_breaks_high and day3_valid_green:
                 day2_low_stop = l_day2
                 trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
@@ -237,11 +239,11 @@ class BacktesterEngine:
             # SELL SEQUENCE:
             # Day 1: Bearish Knoxville
             # Day 2: Breaks and closes at/below low of Day 1 -> High of Day 2 is Stop Loss
-            # Day 3: Opens at a lower price with a Red candle
+            # Day 3: Red candle (Close < Open) holding below Day 2 High (Stop Loss)
             day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-            day3_opens_lower_red = (o_day3 <= c_day2) and (c_day3 < o_day3)
+            day3_valid_red = (h_day3 < h_day2) and (c_day3 < o_day3)
 
-            if bool(row_sig["sell_signal"]) and day2_breaks_low and day3_opens_lower_red:
+            if bool(row_sig["sell_signal"]) and day2_breaks_low and day3_valid_red:
                 day2_high_stop = h_day2
                 trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
@@ -258,6 +260,7 @@ class BacktesterEngine:
                     trades.append(trade)
                     i = max(i + 1, exit_idx + 1)
                     continue
+
 
             i += 1
 

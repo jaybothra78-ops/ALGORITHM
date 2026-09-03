@@ -77,15 +77,18 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
         # Day 1: Bullish Knoxville
         # Day 2: Breaks and closes at/above high of Day 1
         # Day 3: Opens higher than Day 2 with Green Candle
-        # Bullish 3-Day Sequence:
+        h_day3 = float(row_day3["High"])
+        l_day3 = float(row_day3["Low"])
+
+        # Bullish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks High) -> Day 3 (Green candle holding above Day 2 SL)
         day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-        day3_opens_higher_green = (o_day3 >= c_day2) and (c_day3 > o_day3)
+        day3_valid_green = (l_day3 > l_day2) and (c_day3 > o_day3)
 
-        # Bearish 3-Day Sequence:
+        # Bearish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks Low) -> Day 3 (Red candle holding below Day 2 SL)
         day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-        day3_opens_lower_red = (o_day3 <= c_day2) and (c_day3 < o_day3)
+        day3_valid_red = (h_day3 < h_day2) and (c_day3 < o_day3)
 
-        if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high and day3_opens_higher_green:
+        if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high and day3_valid_green:
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "buy",
@@ -96,7 +99,8 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                 "stop_loss": round(l_day2, 2),
                 "rsi_value": rsi_val,
             })
-        elif bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low and day3_opens_lower_red:
+        elif bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low and day3_valid_red:
+
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "sell",
