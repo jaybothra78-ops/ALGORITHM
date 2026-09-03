@@ -64,8 +64,10 @@ class MarketDataProvider:
 
     INVALID_SYMBOLS: set[str] = {
         "NIFTY", "BANKNIFTY", "SENSEX", "INDIAVIX", "CNX500", "CNXMIDCAP", 
-        "CNXSMALLCAP", "RUDRAECO", "RAJESH"
+        "CNXSMALLCAP", "RUDRAECO", "RAJESH", "TATAMOTORS", "KUBERJI", "ASMTEC", 
+        "GUJGASLTD", "ANTHEM", "ACUTAAS"
     }
+
 
     @classmethod
     def load_disk_cache(cls) -> bool:
