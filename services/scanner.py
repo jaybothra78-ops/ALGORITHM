@@ -238,45 +238,59 @@ class ScannerEngine:
                 if conf_dt_str not in window_dates and sig_dt_str not in window_dates:
                     continue
 
+                if i >= len(df) - 2:
+                    continue
+
                 sig_row = knox_sigs.iloc[i]
-                price_sig = float(df["Close"].iloc[i])
-                high_sig = float(df["High"].iloc[i])
-                low_sig = float(df["Low"].iloc[i])
+                h_day1 = float(df["High"].iloc[i])
+                l_day1 = float(df["Low"].iloc[i])
 
-                price_conf = float(df["Close"].iloc[i + 1])
-                open_conf = float(df["Open"].iloc[i + 1])
-                high_conf = float(df["High"].iloc[i + 1])
-                low_conf = float(df["Low"].iloc[i + 1])
+                c_day2 = float(df["Close"].iloc[i + 1])
+                h_day2 = float(df["High"].iloc[i + 1])
+                l_day2 = float(df["Low"].iloc[i + 1])
 
-                # Bullish Confirmed: Buy signal on Day T AND Green Candle (Close > Open) AND Surpasses Day T High (High > High[T] or Close > High[T])
-                if bool(sig_row.get("buy_signal", False)) and price_conf > open_conf and (high_conf > high_sig or price_conf > high_sig):
+                o_day3 = float(df["Open"].iloc[i + 2])
+                c_day3 = float(df["Close"].iloc[i + 2])
+
+                entry_dt_str = df.index[i + 2].date().isoformat()
+
+                # Bullish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at High) -> Day 3 (Opens higher with Green candle)
+                day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
+                day3_opens_higher_green = (o_day3 >= c_day2) and (c_day3 > o_day3)
+
+                # Bearish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at Low) -> Day 3 (Opens lower with Red candle)
+                day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
+                day3_opens_lower_red = (o_day3 <= c_day2) and (c_day3 < o_day3)
+
+                if bool(sig_row.get("buy_signal", False)) and day2_breaks_high and day3_opens_higher_green:
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "buy"
-                    most_recent_signal_date = conf_dt_str
+                    most_recent_signal_date = entry_dt_str
                     reasons.append(ReasonTag(
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="buy",
-                        text=f"Knoxville Bullish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Green Candle > Day High] on {conf_dt_str})",
-                        date=conf_dt_str,
-                        entry_price=price_conf,
+                        text=f"Knoxville 3-Day Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{l_day1:.2f})",
+                        date=entry_dt_str,
+                        entry_price=c_day3,
                     ))
 
-                # Bearish Confirmed: Sell signal on Day T AND Red Candle (Close < Open) AND Breaks Day T Low (Low < Low[T] or Close < Low[T])
-                elif bool(sig_row.get("sell_signal", False)) and price_conf < open_conf and (low_conf < low_sig or price_conf < low_sig):
+                elif bool(sig_row.get("sell_signal", False)) and day2_breaks_low and day3_opens_lower_red:
+
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "sell"
-                    most_recent_signal_date = conf_dt_str
+                    most_recent_signal_date = entry_dt_str
                     reasons.append(ReasonTag(
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="sell",
-                        text=f"Knoxville Bearish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Red Candle < Day Low] on {conf_dt_str})",
-                        date=conf_dt_str,
-                        entry_price=price_conf,
+                        text=f"Knoxville 3-Day Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{h_day1:.2f})",
+                        date=entry_dt_str,
+                        entry_price=c_day3,
                     ))
+
 
 
         except Exception:

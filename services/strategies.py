@@ -46,44 +46,69 @@ def rsi_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: int | No
 
 
 def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: int | None = None) -> list[dict]:
-    """Next-candle trade confirmation for Knoxville Divergence."""
+    """3-Day Sequential trade confirmation for Knoxville Divergence."""
     if not ohlc.index.equals(signals.index):
         raise ValueError("OHLC and signal indexes must match")
     n = len(ohlc)
-    start_pos = max(0, n - 1 - max_lookback) if max_lookback is not None else 0
+    start_pos = max(0, n - 2 - max_lookback) if max_lookback is not None else 0
     rows: list[dict] = []
-    for position in range(start_pos, n - 1):
-        signal_row = ohlc.iloc[position]
-        confirmation_row = ohlc.iloc[position + 1]
+    for position in range(start_pos, n - 2):
+        row_day1 = ohlc.iloc[position]
+        row_day2 = ohlc.iloc[position + 1]
+        row_day3 = ohlc.iloc[position + 2]
+
         signal_date = ohlc.index[position].date().isoformat()
-        confirmation_date = ohlc.index[position + 1].date().isoformat()
+        break_date = ohlc.index[position + 1].date().isoformat()
+        entry_date = ohlc.index[position + 2].date().isoformat()
+
         rsi_val = round(float(signals.iloc[position]["rsi"]), 2) if "rsi" in signals.columns and pd.notna(signals.iloc[position]["rsi"]) else None
 
-        # Buy Confirmation: Day T+1 Green Candle (Close > Open) AND Surpasses Day T High (High > High[T] or Close > High[T])
-        if bool(signals.iloc[position]["buy_signal"]) and confirmation_row["Close"] > confirmation_row["Open"] and (confirmation_row["High"] > signal_row["High"] or confirmation_row["Close"] > signal_row["High"]):
+        h_day1 = float(row_day1["High"])
+        l_day1 = float(row_day1["Low"])
+
+        c_day2 = float(row_day2["Close"])
+        h_day2 = float(row_day2["High"])
+        l_day2 = float(row_day2["Low"])
+
+        o_day3 = float(row_day3["Open"])
+        c_day3 = float(row_day3["Close"])
+
+        # Bullish 3-Day Sequence:
+        # Day 1: Bullish Knoxville
+        # Day 2: Breaks and closes at/above high of Day 1
+        # Day 3: Opens higher than Day 2 with Green Candle
+        # Bullish 3-Day Sequence:
+        day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
+        day3_opens_higher_green = (o_day3 >= c_day2) and (c_day3 > o_day3)
+
+        # Bearish 3-Day Sequence:
+        day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
+        day3_opens_lower_red = (o_day3 <= c_day2) and (c_day3 < o_day3)
+
+        if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high and day3_opens_higher_green:
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "buy",
                 "signal_date": signal_date,
-                "signal_candle_low": float(signal_row["Low"]),
-                "confirmation_date": confirmation_date,
-                "entry_price": float(confirmation_row["Close"]),
-                "stop_loss": round(float(signal_row["Low"]), 2),
+                "signal_candle_low": l_day1,
+                "confirmation_date": entry_date,
+                "entry_price": c_day3,
+                "stop_loss": round(l_day1, 2),
                 "rsi_value": rsi_val,
             })
-
-        # Sell Confirmation: Day T+1 Red Candle (Close < Open) AND Breaks Day T Low (Low < Low[T] or Close < Low[T])
-        elif bool(signals.iloc[position]["sell_signal"]) and confirmation_row["Close"] < confirmation_row["Open"] and (confirmation_row["Low"] < signal_row["Low"] or confirmation_row["Close"] < signal_row["Low"]):
+        elif bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low and day3_opens_lower_red:
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "sell",
                 "signal_date": signal_date,
-                "signal_candle_low": float(signal_row["High"]),
-                "confirmation_date": confirmation_date,
-                "entry_price": float(confirmation_row["Close"]),
-                "stop_loss": round(float(signal_row["High"]), 2),
+                "signal_candle_low": h_day1,
+                "confirmation_date": entry_date,
+                "entry_price": c_day3,
+                "stop_loss": round(h_day1, 2),
                 "rsi_value": rsi_val,
             })
+
+
     return rows
 
 
