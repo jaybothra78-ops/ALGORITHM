@@ -124,7 +124,6 @@ class BacktesterEngine:
                     entry_idx=i,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    max_holding_days=req.max_holding_days,
                 )
                 if trade:
                     trades.append(trade)
@@ -140,7 +139,6 @@ class BacktesterEngine:
                     entry_idx=i,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    max_holding_days=req.max_holding_days,
                 )
                 if trade:
                     trades.append(trade)
@@ -175,7 +173,6 @@ class BacktesterEngine:
                     entry_idx=i + 1,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    max_holding_days=req.max_holding_days,
                     override_stop_price=signal_candle_low,
                 )
                 if trade:
@@ -194,7 +191,6 @@ class BacktesterEngine:
                     entry_idx=i + 1,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    max_holding_days=req.max_holding_days,
                     override_stop_price=signal_candle_high,
                 )
                 if trade:
@@ -224,7 +220,6 @@ class BacktesterEngine:
                     entry_idx=i,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    max_holding_days=req.max_holding_days,
                 )
                 if trade:
                     trades.append(trade)
@@ -239,7 +234,6 @@ class BacktesterEngine:
                     entry_idx=i,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    max_holding_days=req.max_holding_days,
                 )
                 if trade:
                     trades.append(trade)
@@ -256,10 +250,10 @@ class BacktesterEngine:
         entry_idx: int,
         target_pct: float | None,
         stop_loss_pct: float | None,
-        max_holding_days: int,
+        max_holding_days: int | None = None,
         override_stop_price: float | None = None,
     ) -> BacktestTrade | None:
-        """Simulate the forward price action of an opened position."""
+        """Simulate the forward price action until Target Hit or Stop Loss Hit."""
         n = len(df)
         if entry_idx >= n:
             return None
@@ -284,15 +278,14 @@ class BacktesterEngine:
         elif stop_loss_pct is not None and stop_loss_pct > 0:
             stop_price = entry_price * (1.0 - stop_loss_pct / 100.0) if is_buy else entry_price * (1.0 + stop_loss_pct / 100.0)
 
-
         # Track forward sessions
         exit_idx = entry_idx
         exit_price = entry_price
-        exit_reason = ExitReason.TIME_EXIT
-        max_idx = min(entry_idx + max_holding_days, n - 1)
+        exit_reason = ExitReason.OPEN_POSITION
+        max_idx = min(entry_idx + max_holding_days, n - 1) if max_holding_days else (n - 1)
 
-        # Forward scan day-by-day
-        for step, cur_idx in enumerate(range(entry_idx + 1, max_idx + 1), start=1):
+        # Forward scan day-by-day until Target Hit or Stop Loss Hit
+        for cur_idx in range(entry_idx + 1, max_idx + 1):
             cur_high = float(df["High"].iloc[cur_idx])
             cur_low = float(df["Low"].iloc[cur_idx])
             cur_close = float(df["Close"].iloc[cur_idx])
@@ -327,11 +320,12 @@ class BacktesterEngine:
                     exit_reason = ExitReason.TARGET_HIT
                     break
 
-            # If reached max holding days, exit at close
+            # If reached end of dataset without hitting target or stop loss
             if cur_idx == max_idx:
                 exit_idx = cur_idx
                 exit_price = cur_close
-                exit_reason = ExitReason.TIME_EXIT
+                exit_reason = ExitReason.OPEN_POSITION
+
 
         # If trade could not step forward (e.g. at latest candle)
         if exit_idx == entry_idx:

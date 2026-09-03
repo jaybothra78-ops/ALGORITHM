@@ -10,6 +10,7 @@ class ExitReason(str, Enum):
     """Reason a simulated trade was closed."""
     TARGET_HIT = "Target Hit"
     STOP_LOSS_HIT = "Stop Loss Hit"
+    OPEN_POSITION = "Open / Current Close"
     TIME_EXIT = "Time Exit"
     OPPOSITE_SIGNAL = "Opposite Signal"
 
@@ -23,11 +24,12 @@ class BacktestRequest(BaseModel):
     index: str | None = Field(default=None, description="Universe / Watchlist filter (FNO, Watchlist, custom, etc.)")
     target_pct: float | None = Field(default=5.0, ge=0.1, le=100.0, description="Take profit target percentage")
     stop_loss_pct: float | None = Field(default=2.0, ge=0.1, le=50.0, description="Stop loss percentage")
-    max_holding_days: int = Field(default=10, ge=1, le=60, description="Maximum days to hold position before market exit")
+    max_holding_days: int | None = Field(default=None, description="Optional max days to hold position before market exit")
     signal_type: str | None = Field(default=None, description="Filter: buy, sell, or all")
     start_date: str | None = Field(default=None, description="Earliest entry date (YYYY-MM-DD)")
     end_date: str | None = Field(default=None, description="Latest entry date (YYYY-MM-DD)")
     period: str | None = Field(default="1y", description="Historical period window (e.g. 3mo, 6mo, 1y, 2y, 3y, 5y, max)")
+
 
 
 
@@ -59,7 +61,8 @@ class BacktestSummary(BaseModel):
     universe: str = Field(default="All Universes", description="Universe evaluated")
     target_pct: float | None = Field(default=None, description="Configured target percentage")
     stop_loss_pct: float | None = Field(default=None, description="Configured stop loss percentage")
-    max_holding_days: int = Field(..., description="Configured max holding window")
+    max_holding_days: int | None = Field(default=None, description="Configured max holding window")
+
     total_trades: int = Field(..., description="Total trades simulated")
     winning_trades: int = Field(..., description="Count of profitable trades")
     losing_trades: int = Field(..., description="Count of unprofitable trades")

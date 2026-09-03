@@ -2134,7 +2134,6 @@ App.Backtester = {
 
     const targetInput = document.querySelector('#backtest-target-pct');
     const stopLossInput = document.querySelector('#backtest-stoploss-pct');
-    const maxDaysInput = document.querySelector('#backtest-max-days');
     const directionSelect = document.querySelector('#backtest-direction-select');
 
     const customTicker = customInput ? customInput.value.trim().toUpperCase() : '';
@@ -2146,7 +2145,6 @@ App.Backtester = {
 
     const targetPct = targetInput ? parseFloat(targetInput.value) || 5.0 : 5.0;
     const stopLossPct = stopLossInput ? parseFloat(stopLossInput.value) || 3.0 : 3.0;
-    const maxDays = maxDaysInput ? parseInt(maxDaysInput.value, 10) || 20 : 20;
     const signalType = directionSelect ? directionSelect.value || null : null;
 
     const runBtn = document.querySelector('#btn-run-backtest');
@@ -2181,12 +2179,12 @@ App.Backtester = {
         strategy: strategy,
         target_pct: targetPct,
         stop_loss_pct: stopLossPct,
-        max_holding_days: maxDays,
         signal_type: signalType,
         period: period,
         start_date: startDate,
         end_date: endDate,
       };
+
 
       const res = await fetch('/backtest/run', {
         method: 'POST',
