@@ -178,7 +178,7 @@ class BacktesterEngine:
     def _backtest_knoxville(
         cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
     ) -> list[BacktestTrade]:
-        """Simulate RB Knoxville Divergence with Next-Candle Confirmation and Signal Candle Stop Loss."""
+        """Simulate RB Knoxville Divergence with Next-Candle Confirmation (Green surpassing Day T High for Buy, Red breaking Day T Low for Sell) and Signal Candle Stop Loss."""
         trades: list[BacktestTrade] = []
         sigs = rb_knox_divergence(df)
         n = len(df)
@@ -186,14 +186,21 @@ class BacktesterEngine:
 
         while i < n - 2:
             row_sig = sigs.iloc[i]
-            c_sig = float(df["Close"].iloc[i])
+            h_sig = float(df["High"].iloc[i])
+            l_sig = float(df["Low"].iloc[i])
+
             c_next = float(df["Close"].iloc[i + 1])
             o_next = float(df["Open"].iloc[i + 1])
+            h_next = float(df["High"].iloc[i + 1])
+            l_next = float(df["Low"].iloc[i + 1])
 
-            # Buy Breakout Confirmation: Next close > signal close AND Green candle (Next close > Next open)
-            if bool(row_sig["buy_signal"]) and c_next > c_sig and c_next > o_next:
-                # Predetermined Stop Loss: Lowest price of the day when Knoxville was made
-                signal_candle_low = float(df["Low"].iloc[i])
+            # Buy Confirmation:
+            # 1. Bullish Knoxville on Day T
+            # 2. Next Day (T+1) is a Green Candle (Close > Open)
+            # 3. Next Day surpasses Previous Day High (High[T+1] > High[T] or Close[T+1] > High[T])
+            # 4. Stop Loss locked at Signal Day Low (Low[T])
+            if bool(row_sig["buy_signal"]) and c_next > o_next and (h_next > h_sig or c_next > h_sig):
+                signal_candle_low = l_sig
                 trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
@@ -210,10 +217,13 @@ class BacktesterEngine:
                     i = max(i + 1, exit_idx + 1)
                     continue
 
-            # Sell Breakout Confirmation: Next close < signal close AND Red candle (Next close < Next open)
-            elif bool(row_sig["sell_signal"]) and c_next < c_sig and c_next < o_next:
-                # Predetermined Stop Loss: Highest price of the day when Knoxville was made
-                signal_candle_high = float(df["High"].iloc[i])
+            # Sell Confirmation:
+            # 1. Bearish Knoxville on Day T
+            # 2. Next Day (T+1) is a Red Candle (Close < Open)
+            # 3. Next Day breaks below Previous Day Low (Low[T+1] < Low[T] or Close[T+1] < Low[T])
+            # 4. Stop Loss locked at Signal Day High (High[T])
+            elif bool(row_sig["sell_signal"]) and c_next < o_next and (l_next < l_sig or c_next < l_sig):
+                signal_candle_high = h_sig
                 trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
@@ -232,6 +242,7 @@ class BacktesterEngine:
             i += 1
 
         return trades
+
 
 
     @classmethod

@@ -240,11 +240,16 @@ class ScannerEngine:
 
                 sig_row = knox_sigs.iloc[i]
                 price_sig = float(df["Close"].iloc[i])
+                high_sig = float(df["High"].iloc[i])
+                low_sig = float(df["Low"].iloc[i])
+
                 price_conf = float(df["Close"].iloc[i + 1])
                 open_conf = float(df["Open"].iloc[i + 1])
+                high_conf = float(df["High"].iloc[i + 1])
+                low_conf = float(df["Low"].iloc[i + 1])
 
-                # Bullish Confirmed: Buy signal on Day T AND Day T+1 Close > Day T Close AND Green Candle (Close > Open)
-                if bool(sig_row.get("buy_signal", False)) and price_conf > price_sig and price_conf > open_conf:
+                # Bullish Confirmed: Buy signal on Day T AND Green Candle (Close > Open) AND Surpasses Day T High (High > High[T] or Close > High[T])
+                if bool(sig_row.get("buy_signal", False)) and price_conf > open_conf and (high_conf > high_sig or price_conf > high_sig):
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "buy"
@@ -253,13 +258,13 @@ class ScannerEngine:
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="buy",
-                        text=f"Knoxville Bullish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Green Candle] on {conf_dt_str})",
+                        text=f"Knoxville Bullish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Green Candle > Day High] on {conf_dt_str})",
                         date=conf_dt_str,
                         entry_price=price_conf,
                     ))
 
-                # Bearish Confirmed: Sell signal on Day T AND Day T+1 Close < Day T Close AND Red Candle (Close < Open)
-                elif bool(sig_row.get("sell_signal", False)) and price_conf < price_sig and price_conf < open_conf:
+                # Bearish Confirmed: Sell signal on Day T AND Red Candle (Close < Open) AND Breaks Day T Low (Low < Low[T] or Close < Low[T])
+                elif bool(sig_row.get("sell_signal", False)) and price_conf < open_conf and (low_conf < low_sig or price_conf < low_sig):
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "sell"
@@ -268,10 +273,11 @@ class ScannerEngine:
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="sell",
-                        text=f"Knoxville Bearish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Red Candle] on {conf_dt_str})",
+                        text=f"Knoxville Bearish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Red Candle < Day Low] on {conf_dt_str})",
                         date=conf_dt_str,
                         entry_price=price_conf,
                     ))
+
 
         except Exception:
             pass

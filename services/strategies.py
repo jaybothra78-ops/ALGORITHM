@@ -59,8 +59,8 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
         confirmation_date = ohlc.index[position + 1].date().isoformat()
         rsi_val = round(float(signals.iloc[position]["rsi"]), 2) if "rsi" in signals.columns and pd.notna(signals.iloc[position]["rsi"]) else None
 
-        # Buy Confirmation: Day T+1 Close > Day T Close AND Green Candle (Close > Open)
-        if bool(signals.iloc[position]["buy_signal"]) and confirmation_row["Close"] > signal_row["Close"] and confirmation_row["Close"] > confirmation_row["Open"]:
+        # Buy Confirmation: Day T+1 Green Candle (Close > Open) AND Surpasses Day T High (High > High[T] or Close > High[T])
+        if bool(signals.iloc[position]["buy_signal"]) and confirmation_row["Close"] > confirmation_row["Open"] and (confirmation_row["High"] > signal_row["High"] or confirmation_row["Close"] > signal_row["High"]):
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "buy",
@@ -68,23 +68,25 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                 "signal_candle_low": float(signal_row["Low"]),
                 "confirmation_date": confirmation_date,
                 "entry_price": float(confirmation_row["Close"]),
-                "stop_loss": round(float(signal_row["Low"] * 0.99), 2),
+                "stop_loss": round(float(signal_row["Low"]), 2),
                 "rsi_value": rsi_val,
             })
 
-        # Sell Confirmation: Day T+1 Close < Day T Close AND Red Candle (Close < Open)
-        elif bool(signals.iloc[position]["sell_signal"]) and confirmation_row["Close"] < signal_row["Close"] and confirmation_row["Close"] < confirmation_row["Open"]:
+        # Sell Confirmation: Day T+1 Red Candle (Close < Open) AND Breaks Day T Low (Low < Low[T] or Close < Low[T])
+        elif bool(signals.iloc[position]["sell_signal"]) and confirmation_row["Close"] < confirmation_row["Open"] and (confirmation_row["Low"] < signal_row["Low"] or confirmation_row["Close"] < signal_row["Low"]):
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "sell",
                 "signal_date": signal_date,
-                "signal_candle_low": float(signal_row["Low"]),
+                "signal_candle_low": float(signal_row["High"]),
                 "confirmation_date": confirmation_date,
                 "entry_price": float(confirmation_row["Close"]),
-                "stop_loss": None,
+                "stop_loss": round(float(signal_row["High"]), 2),
                 "rsi_value": rsi_val,
             })
     return rows
+
+
 
 
 def ma200_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: int | None = None) -> list[dict]:
