@@ -178,18 +178,18 @@ class BacktesterEngine:
     def _backtest_knoxville(
         cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
     ) -> list[BacktestTrade]:
-        """Simulate RB Knoxville Divergence with 3-Day Sequential Confirmation & Entry:
+        """Simulate RB Knoxville Divergence with Sequential Breakout & Multi-Day Entry Window (Days 3-7):
         
         Buy Sequence:
         - Day 1 (Signal): Bullish Knoxville Divergence formed.
-        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/above Day 1 high (High[Day 2] > High[Day 1] & Close[Day 2] >= High[Day 1] * 0.995). Lowest price of Day 2 is locked as Stop Loss.
-        - Day 3 (Entry): Stock opens higher than previous day (Open[Day 3] >= Close[Day 2]) with a Green Candle (Close[Day 3] > Open[Day 3]).
+        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/above Day 1 high. Stop Loss is locked at Low[Day 2].
+        - Days 3-7 (Entry Window): If on Day 3, 4, 5, 6, or 7 the stock opens at or above Day 2's close with a Green Candle (Close > Open) and has held above Day 2's Low, BUY the stock on that day.
         - Stop Loss: Low of Day 2 (Trading signal confirmation day).
         
         Sell Sequence:
         - Day 1 (Signal): Bearish Knoxville Divergence formed.
-        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/below Day 1 low (Low[Day 2] < Low[Day 1] & Close[Day 2] <= Low[Day 1] * 1.005). Highest price of Day 2 is locked as Stop Loss.
-        - Day 3 (Entry): Stock opens lower than previous day (Open[Day 3] <= Close[Day 2]) with a Red Candle (Close[Day 3] < Open[Day 3]).
+        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/below Day 1 low. Stop Loss is locked at High[Day 2].
+        - Days 3-7 (Entry Window): If on Day 3, 4, 5, 6, or 7 the stock opens at or below Day 2's close with a Red Candle (Close < Open) and has held below Day 2's High, SELL the stock on that day.
         - Stop Loss: High of Day 2 (Trading signal confirmation day).
         """
         trades: list[BacktestTrade] = []
@@ -206,65 +206,86 @@ class BacktesterEngine:
             h_day2 = float(df["High"].iloc[i + 1])
             l_day2 = float(df["Low"].iloc[i + 1])
 
-            o_day3 = float(df["Open"].iloc[i + 2])
-            c_day3 = float(df["Close"].iloc[i + 2])
-            h_day3 = float(df["High"].iloc[i + 2])
-            l_day3 = float(df["Low"].iloc[i + 2])
-
             # BUY SEQUENCE:
-            # Day 1: Bullish Knoxville
-            # Day 2: Breaks and closes at/above high of Day 1 -> Low of Day 2 is Stop Loss
-            # Day 3: Green candle (Close > Open) holding above Day 2 Low (Stop Loss)
             day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-            day3_valid_green = (l_day3 > l_day2) and (c_day3 > o_day3)
-
-            if bool(row_sig["buy_signal"]) and day2_breaks_high and day3_valid_green:
+            if bool(row_sig["buy_signal"]) and day2_breaks_high:
                 day2_low_stop = l_day2
-                trade, exit_idx = cls._simulate_trade(
-                    symbol=symbol,
-                    strategy="RB_KnoxDiv",
-                    signal_type="buy",
-                    df=df,
-                    signal_idx=i,
-                    entry_idx=i + 2,
-                    target_pct=req.target_pct,
-                    stop_loss_pct=req.stop_loss_pct,
-                    override_stop_price=day2_low_stop,
-                )
-                if trade:
-                    trades.append(trade)
-                    i = max(i + 1, exit_idx + 1)
+                entry_found = False
+                # Scan Days 3, 4, 5, 6, 7 (offset 2 to 6)
+                for offset in range(2, min(7, n - i)):
+                    idx_entry = i + offset
+                    o_entry = float(df["Open"].iloc[idx_entry])
+                    c_entry = float(df["Close"].iloc[idx_entry])
+                    l_entry = float(df["Low"].iloc[idx_entry])
+
+                    # Invalidate setup if price drops below Day 2 Stop Loss before entry
+                    if l_entry <= day2_low_stop:
+                        break
+
+                    # Check if opens above Day 2 candle and forms a Green candle
+                    if o_entry >= c_day2 and c_entry > o_entry:
+                        trade, exit_idx = cls._simulate_trade(
+                            symbol=symbol,
+                            strategy="RB_KnoxDiv",
+                            signal_type="buy",
+                            df=df,
+                            signal_idx=i,
+                            entry_idx=idx_entry,
+                            target_pct=req.target_pct,
+                            stop_loss_pct=req.stop_loss_pct,
+                            override_stop_price=day2_low_stop,
+                        )
+                        if trade:
+                            trades.append(trade)
+                            i = max(i + 1, exit_idx + 1)
+                            entry_found = True
+                            break
+
+                if entry_found:
                     continue
 
             # SELL SEQUENCE:
-            # Day 1: Bearish Knoxville
-            # Day 2: Breaks and closes at/below low of Day 1 -> High of Day 2 is Stop Loss
-            # Day 3: Red candle (Close < Open) holding below Day 2 High (Stop Loss)
             day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-            day3_valid_red = (h_day3 < h_day2) and (c_day3 < o_day3)
-
-            if bool(row_sig["sell_signal"]) and day2_breaks_low and day3_valid_red:
+            if bool(row_sig["sell_signal"]) and day2_breaks_low:
                 day2_high_stop = h_day2
-                trade, exit_idx = cls._simulate_trade(
-                    symbol=symbol,
-                    strategy="RB_KnoxDiv",
-                    signal_type="sell",
-                    df=df,
-                    signal_idx=i,
-                    entry_idx=i + 2,
-                    target_pct=req.target_pct,
-                    stop_loss_pct=req.stop_loss_pct,
-                    override_stop_price=day2_high_stop,
-                )
-                if trade:
-                    trades.append(trade)
-                    i = max(i + 1, exit_idx + 1)
-                    continue
+                entry_found = False
+                # Scan Days 3, 4, 5, 6, 7 (offset 2 to 6)
+                for offset in range(2, min(7, n - i)):
+                    idx_entry = i + offset
+                    o_entry = float(df["Open"].iloc[idx_entry])
+                    c_entry = float(df["Close"].iloc[idx_entry])
+                    h_entry = float(df["High"].iloc[idx_entry])
 
+                    # Invalidate setup if price rises above Day 2 Stop Loss before entry
+                    if h_entry >= day2_high_stop:
+                        break
+
+                    # Check if opens below Day 2 candle and forms a Red candle
+                    if o_entry <= c_day2 and c_entry < o_entry:
+                        trade, exit_idx = cls._simulate_trade(
+                            symbol=symbol,
+                            strategy="RB_KnoxDiv",
+                            signal_type="sell",
+                            df=df,
+                            signal_idx=i,
+                            entry_idx=idx_entry,
+                            target_pct=req.target_pct,
+                            stop_loss_pct=req.stop_loss_pct,
+                            override_stop_price=day2_high_stop,
+                        )
+                        if trade:
+                            trades.append(trade)
+                            i = max(i + 1, exit_idx + 1)
+                            entry_found = True
+                            break
+
+                if entry_found:
+                    continue
 
             i += 1
 
         return trades
+
 
 
 

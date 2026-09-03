@@ -55,11 +55,9 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
     for position in range(start_pos, n - 2):
         row_day1 = ohlc.iloc[position]
         row_day2 = ohlc.iloc[position + 1]
-        row_day3 = ohlc.iloc[position + 2]
 
         signal_date = ohlc.index[position].date().isoformat()
         break_date = ohlc.index[position + 1].date().isoformat()
-        entry_date = ohlc.index[position + 2].date().isoformat()
 
         rsi_val = round(float(signals.iloc[position]["rsi"]), 2) if "rsi" in signals.columns and pd.notna(signals.iloc[position]["rsi"]) else None
 
@@ -70,51 +68,58 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
         h_day2 = float(row_day2["High"])
         l_day2 = float(row_day2["Low"])
 
-        o_day3 = float(row_day3["Open"])
-        c_day3 = float(row_day3["Close"])
-
-        # Bullish 3-Day Sequence:
-        # Day 1: Bullish Knoxville
-        # Day 2: Breaks and closes at/above high of Day 1
-        # Day 3: Opens higher than Day 2 with Green Candle
-        h_day3 = float(row_day3["High"])
-        l_day3 = float(row_day3["Low"])
-
-        # Bullish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks High) -> Day 3 (Green candle holding above Day 2 SL)
+        # Bullish Sequence: Day 1 (Knox) -> Day 2 (Breaks High) -> Days 3-7 (Green candle opening >= Day 2 close)
         day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-        day3_valid_green = (l_day3 > l_day2) and (c_day3 > o_day3)
+        if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high:
+            day2_low_stop = l_day2
+            for offset in range(2, min(7, n - position)):
+                idx_entry = position + offset
+                o_e = float(ohlc["Open"].iloc[idx_entry])
+                c_e = float(ohlc["Close"].iloc[idx_entry])
+                l_e = float(ohlc["Low"].iloc[idx_entry])
+                if l_e <= day2_low_stop:
+                    break
+                if o_e >= c_day2 and c_e > o_e:
+                    entry_date = ohlc.index[idx_entry].date().isoformat()
+                    rows.append({
+                        "strategy": "RB_KnoxDiv",
+                        "signal_type": "buy",
+                        "signal_date": signal_date,
+                        "signal_candle_low": day2_low_stop,
+                        "confirmation_date": entry_date,
+                        "entry_price": c_e,
+                        "stop_loss": round(day2_low_stop, 2),
+                        "rsi_value": rsi_val,
+                    })
+                    break
 
-        # Bearish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks Low) -> Day 3 (Red candle holding below Day 2 SL)
+        # Bearish Sequence: Day 1 (Knox) -> Day 2 (Breaks Low) -> Days 3-7 (Red candle opening <= Day 2 close)
         day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-        day3_valid_red = (h_day3 < h_day2) and (c_day3 < o_day3)
-
-        if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high and day3_valid_green:
-            rows.append({
-                "strategy": "RB_KnoxDiv",
-                "signal_type": "buy",
-                "signal_date": signal_date,
-                "signal_candle_low": l_day2,
-                "confirmation_date": entry_date,
-                "entry_price": c_day3,
-                "stop_loss": round(l_day2, 2),
-                "rsi_value": rsi_val,
-            })
-        elif bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low and day3_valid_red:
-
-            rows.append({
-                "strategy": "RB_KnoxDiv",
-                "signal_type": "sell",
-                "signal_date": signal_date,
-                "signal_candle_low": h_day2,
-                "confirmation_date": entry_date,
-                "entry_price": c_day3,
-                "stop_loss": round(h_day2, 2),
-                "rsi_value": rsi_val,
-            })
-
-
+        if bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low:
+            day2_high_stop = h_day2
+            for offset in range(2, min(7, n - position)):
+                idx_entry = position + offset
+                o_e = float(ohlc["Open"].iloc[idx_entry])
+                c_e = float(ohlc["Close"].iloc[idx_entry])
+                h_e = float(ohlc["High"].iloc[idx_entry])
+                if h_e >= day2_high_stop:
+                    break
+                if o_e <= c_day2 and c_e < o_e:
+                    entry_date = ohlc.index[idx_entry].date().isoformat()
+                    rows.append({
+                        "strategy": "RB_KnoxDiv",
+                        "signal_type": "sell",
+                        "signal_date": signal_date,
+                        "signal_candle_low": day2_high_stop,
+                        "confirmation_date": entry_date,
+                        "entry_price": c_e,
+                        "stop_loss": round(day2_high_stop, 2),
+                        "rsi_value": rsi_val,
+                    })
+                    break
 
     return rows
+
 
 
 

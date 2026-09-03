@@ -238,57 +238,68 @@ class ScannerEngine:
                 if conf_dt_str not in window_dates and sig_dt_str not in window_dates:
                     continue
 
-                if i >= len(df) - 2:
-                    continue
-
                 sig_row = knox_sigs.iloc[i]
                 h_day1 = float(df["High"].iloc[i])
                 l_day1 = float(df["Low"].iloc[i])
 
                 c_day2 = float(df["Close"].iloc[i + 1])
                 h_day2 = float(df["High"].iloc[i + 1])
-                o_day3 = float(df["Open"].iloc[i + 2])
-                c_day3 = float(df["Close"].iloc[i + 2])
-                h_day3 = float(df["High"].iloc[i + 2])
-                l_day3 = float(df["Low"].iloc[i + 2])
+                l_day2 = float(df["Low"].iloc[i + 1])
 
-                entry_dt_str = df.index[i + 2].date().isoformat()
-
-                # Bullish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at High) -> Day 3 (Green candle holding above Day 2 SL)
+                # BUY SEQUENCE:
                 day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-                day3_valid_green = (l_day3 > l_day2) and (c_day3 > o_day3)
+                if bool(sig_row.get("buy_signal", False)) and day2_breaks_high:
+                    day2_low_stop = l_day2
+                    for offset in range(2, min(7, len(df) - i)):
+                        idx_entry = i + offset
+                        o_e = float(df["Open"].iloc[idx_entry])
+                        c_e = float(df["Close"].iloc[idx_entry])
+                        l_e = float(df["Low"].iloc[idx_entry])
+                        if l_e <= day2_low_stop:
+                            break
+                        if o_e >= c_day2 and c_e > o_e:
+                            entry_dt_str = df.index[idx_entry].date().isoformat()
+                            is_flagged = True
+                            if primary_type == "neutral":
+                                primary_type = "buy"
+                            most_recent_signal_date = entry_dt_str
+                            reasons.append(ReasonTag(
+                                category="Strategy_Signal",
+                                strategy="RB_KnoxDiv",
+                                type="buy",
+                                text=f"Knoxville Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry [Day {offset+1}]: ₹{c_e:.2f} on {entry_dt_str} | SL: ₹{day2_low_stop:.2f})",
+                                date=entry_dt_str,
+                                entry_price=c_e,
+                            ))
+                            break
 
-                # Bearish 3-Day Sequence: Day 1 (Knox) -> Day 2 (Breaks/Closes at Low) -> Day 3 (Red candle holding below Day 2 SL)
+                # SELL SEQUENCE:
                 day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-                day3_valid_red = (h_day3 < h_day2) and (c_day3 < o_day3)
+                if bool(sig_row.get("sell_signal", False)) and day2_breaks_low:
+                    day2_high_stop = h_day2
+                    for offset in range(2, min(7, len(df) - i)):
+                        idx_entry = i + offset
+                        o_e = float(df["Open"].iloc[idx_entry])
+                        c_e = float(df["Close"].iloc[idx_entry])
+                        h_e = float(df["High"].iloc[idx_entry])
+                        if h_e >= day2_high_stop:
+                            break
+                        if o_e <= c_day2 and c_e < o_e:
+                            entry_dt_str = df.index[idx_entry].date().isoformat()
+                            is_flagged = True
+                            if primary_type == "neutral":
+                                primary_type = "sell"
+                            most_recent_signal_date = entry_dt_str
+                            reasons.append(ReasonTag(
+                                category="Strategy_Signal",
+                                strategy="RB_KnoxDiv",
+                                type="sell",
+                                text=f"Knoxville Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry [Day {offset+1}]: ₹{c_e:.2f} on {entry_dt_str} | SL: ₹{day2_high_stop:.2f})",
+                                date=entry_dt_str,
+                                entry_price=c_e,
+                            ))
+                            break
 
-                if bool(sig_row.get("buy_signal", False)) and day2_breaks_high and day3_valid_green:
-                    is_flagged = True
-                    if primary_type == "neutral":
-                        primary_type = "buy"
-                    most_recent_signal_date = entry_dt_str
-                    reasons.append(ReasonTag(
-                        category="Strategy_Signal",
-                        strategy="RB_KnoxDiv",
-                        type="buy",
-                        text=f"Knoxville 3-Day Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{l_day2:.2f})",
-                        date=entry_dt_str,
-                        entry_price=c_day3,
-                    ))
-
-                elif bool(sig_row.get("sell_signal", False)) and day2_breaks_low and day3_valid_red:
-                    is_flagged = True
-                    if primary_type == "neutral":
-                        primary_type = "sell"
-                    most_recent_signal_date = entry_dt_str
-                    reasons.append(ReasonTag(
-                        category="Strategy_Signal",
-                        strategy="RB_KnoxDiv",
-                        type="sell",
-                        text=f"Knoxville 3-Day Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{h_day2:.2f})",
-                        date=entry_dt_str,
-                        entry_price=c_day3,
-                    ))
 
 
 
