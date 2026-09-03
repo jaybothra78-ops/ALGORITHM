@@ -271,13 +271,12 @@ class ScannerEngine:
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="buy",
-                        text=f"Knoxville 3-Day Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{l_day1:.2f})",
+                        text=f"Knoxville 3-Day Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{l_day2:.2f})",
                         date=entry_dt_str,
                         entry_price=c_day3,
                     ))
 
                 elif bool(sig_row.get("sell_signal", False)) and day2_breaks_low and day3_opens_lower_red:
-
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "sell"
@@ -286,10 +285,11 @@ class ScannerEngine:
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="sell",
-                        text=f"Knoxville 3-Day Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{h_day1:.2f})",
+                        text=f"Knoxville 3-Day Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry: ₹{c_day3:.2f} on {entry_dt_str} | SL: ₹{h_day2:.2f})",
                         date=entry_dt_str,
                         entry_price=c_day3,
                     ))
+
 
 
 

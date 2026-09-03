@@ -90,10 +90,10 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "buy",
                 "signal_date": signal_date,
-                "signal_candle_low": l_day1,
+                "signal_candle_low": l_day2,
                 "confirmation_date": entry_date,
                 "entry_price": c_day3,
-                "stop_loss": round(l_day1, 2),
+                "stop_loss": round(l_day2, 2),
                 "rsi_value": rsi_val,
             })
         elif bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low and day3_opens_lower_red:
@@ -101,12 +101,13 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "sell",
                 "signal_date": signal_date,
-                "signal_candle_low": h_day1,
+                "signal_candle_low": h_day2,
                 "confirmation_date": entry_date,
                 "entry_price": c_day3,
-                "stop_loss": round(h_day1, 2),
+                "stop_loss": round(h_day2, 2),
                 "rsi_value": rsi_val,
             })
+
 
 
     return rows

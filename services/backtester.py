@@ -181,16 +181,16 @@ class BacktesterEngine:
         """Simulate RB Knoxville Divergence with 3-Day Sequential Confirmation & Entry:
         
         Buy Sequence:
-        - Day 1 (Signal): Bullish Knoxville Divergence formed (Low[Day 1] locked as Stop Loss).
-        - Day 2 (Trading Signal): Candle breaks and closes at/above previous day high (High[Day 2] > High[Day 1] & Close[Day 2] >= High[Day 1] * 0.995).
+        - Day 1 (Signal): Bullish Knoxville Divergence formed.
+        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/above Day 1 high (High[Day 2] > High[Day 1] & Close[Day 2] >= High[Day 1] * 0.995). Lowest price of Day 2 is locked as Stop Loss.
         - Day 3 (Entry): Stock opens higher than previous day (Open[Day 3] >= Close[Day 2]) with a Green Candle (Close[Day 3] > Open[Day 3]).
-        - Stop Loss: Low of Day 1 (when Knoxville was made).
+        - Stop Loss: Low of Day 2 (Trading signal confirmation day).
         
         Sell Sequence:
-        - Day 1 (Signal): Bearish Knoxville Divergence formed (High[Day 1] locked as Stop Loss).
-        - Day 2 (Trading Signal): Candle breaks and closes at/below previous day low (Low[Day 2] < Low[Day 1] & Close[Day 2] <= Low[Day 1] * 1.005).
+        - Day 1 (Signal): Bearish Knoxville Divergence formed.
+        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/below Day 1 low (Low[Day 2] < Low[Day 1] & Close[Day 2] <= Low[Day 1] * 1.005). Highest price of Day 2 is locked as Stop Loss.
         - Day 3 (Entry): Stock opens lower than previous day (Open[Day 3] <= Close[Day 2]) with a Red Candle (Close[Day 3] < Open[Day 3]).
-        - Stop Loss: High of Day 1 (when Knoxville was made).
+        - Stop Loss: High of Day 2 (Trading signal confirmation day).
         """
         trades: list[BacktestTrade] = []
         sigs = rb_knox_divergence(df)
@@ -211,13 +211,13 @@ class BacktesterEngine:
 
             # BUY SEQUENCE:
             # Day 1: Bullish Knoxville
-            # Day 2: Breaks and closes at/above high of Day 1
+            # Day 2: Breaks and closes at/above high of Day 1 -> Low of Day 2 is Stop Loss
             # Day 3: Opens at a higher price with a Green candle
             day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
             day3_opens_higher_green = (o_day3 >= c_day2) and (c_day3 > o_day3)
 
             if bool(row_sig["buy_signal"]) and day2_breaks_high and day3_opens_higher_green:
-                signal_candle_low = l_day1
+                day2_low_stop = l_day2
                 trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
@@ -227,7 +227,7 @@ class BacktesterEngine:
                     entry_idx=i + 2,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    override_stop_price=signal_candle_low,
+                    override_stop_price=day2_low_stop,
                 )
                 if trade:
                     trades.append(trade)
@@ -236,13 +236,13 @@ class BacktesterEngine:
 
             # SELL SEQUENCE:
             # Day 1: Bearish Knoxville
-            # Day 2: Breaks and closes at/below low of Day 1
+            # Day 2: Breaks and closes at/below low of Day 1 -> High of Day 2 is Stop Loss
             # Day 3: Opens at a lower price with a Red candle
             day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
             day3_opens_lower_red = (o_day3 <= c_day2) and (c_day3 < o_day3)
 
             if bool(row_sig["sell_signal"]) and day2_breaks_low and day3_opens_lower_red:
-                signal_candle_high = h_day1
+                day2_high_stop = h_day2
                 trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
@@ -252,7 +252,7 @@ class BacktesterEngine:
                     entry_idx=i + 2,
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
-                    override_stop_price=signal_candle_high,
+                    override_stop_price=day2_high_stop,
                 )
                 if trade:
                     trades.append(trade)
@@ -262,6 +262,7 @@ class BacktesterEngine:
             i += 1
 
         return trades
+
 
 
 
