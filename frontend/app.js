@@ -1977,15 +1977,32 @@ App.Backtester = {
         document.querySelectorAll('#backtest-period-group .pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this._activePeriod = btn.dataset.period || '1y';
+
+        // Clear custom date inputs so preset period is cleanly used
+        const sInput = document.querySelector('#backtest-start-date');
+        const eInput = document.querySelector('#backtest-end-date');
+        if (sInput) sInput.value = '';
+        if (eInput) eInput.value = '';
+
         this.runBacktest();
       });
     });
 
-    // Custom Date Range inputs -> auto re-run
+    // Custom Date Range inputs -> de-activate period pills & auto re-run
     const startDateInput = document.querySelector('#backtest-start-date');
     const endDateInput = document.querySelector('#backtest-end-date');
-    if (startDateInput) startDateInput.addEventListener('change', () => this.runBacktest());
-    if (endDateInput) endDateInput.addEventListener('change', () => this.runBacktest());
+    if (startDateInput) {
+      startDateInput.addEventListener('change', () => {
+        document.querySelectorAll('#backtest-period-group .pill').forEach(b => b.classList.remove('active'));
+        this.runBacktest();
+      });
+    }
+    if (endDateInput) {
+      endDateInput.addEventListener('change', () => {
+        document.querySelectorAll('#backtest-period-group .pill').forEach(b => b.classList.remove('active'));
+        this.runBacktest();
+      });
+    }
 
     // Universe/Watchlist dropdown change -> populate stock dropdown & reset specific stock
     const univSelect = document.querySelector('#backtest-universe-select');
@@ -2039,8 +2056,14 @@ App.Backtester = {
     const endDateInput = document.querySelector('#backtest-end-date');
     if (startDateInput) startDateInput.value = '';
     if (endDateInput) endDateInput.value = '';
+
+    this._activePeriod = '1y';
+    document.querySelectorAll('#backtest-period-group .pill').forEach(b => {
+      b.classList.toggle('active', b.dataset.period === '1y');
+    });
     this.runBacktest();
   },
+
 
 
   initOnce() {

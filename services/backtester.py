@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import time
+from datetime import datetime, timedelta
 from typing import Any
 import numpy as np
 import pandas as pd
+
 
 from core.logging import logger
 from models.backtest import (
@@ -78,11 +80,32 @@ class BacktesterEngine:
             if strategy_filter in ("SMA_200", "200MA", "ALL"):
                 all_trades.extend(cls._backtest_ma200(symbol, df, request))
 
-        # Filter by date range if specified
-        if request.start_date:
-            all_trades = [t for t in all_trades if t.entry_date >= request.start_date]
+        # Determine effective start date from requested time horizon or explicit start_date
+        period_days_map = {
+            "1mo": 30,
+            "3mo": 90,
+            "6mo": 180,
+            "1y": 365,
+            "2y": 730,
+            "3y": 1095,
+            "5y": 1825,
+            "10y": 3650,
+            "max": None,
+        }
+
+        effective_start = request.start_date
+        if not effective_start and request.period:
+            p_clean = request.period.lower().strip()
+            days = period_days_map.get(p_clean)
+            if days:
+                effective_start = (datetime.now().date() - timedelta(days=days)).isoformat()
+
+        # Filter by effective date range
+        if effective_start:
+            all_trades = [t for t in all_trades if t.signal_date >= effective_start or t.entry_date >= effective_start]
         if request.end_date:
             all_trades = [t for t in all_trades if t.entry_date <= request.end_date]
+
 
         # Filter by signal_type if requested (buy vs sell)
         if request.signal_type:
