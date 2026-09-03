@@ -241,9 +241,10 @@ class ScannerEngine:
                 sig_row = knox_sigs.iloc[i]
                 price_sig = float(df["Close"].iloc[i])
                 price_conf = float(df["Close"].iloc[i + 1])
+                open_conf = float(df["Open"].iloc[i + 1])
 
-                # Bullish Confirmed: Buy signal on Day T AND Day T+1 Close > Day T Close
-                if bool(sig_row.get("buy_signal", False)) and price_conf > price_sig:
+                # Bullish Confirmed: Buy signal on Day T AND Day T+1 Close > Day T Close AND Green Candle (Close > Open)
+                if bool(sig_row.get("buy_signal", False)) and price_conf > price_sig and price_conf > open_conf:
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "buy"
@@ -252,13 +253,13 @@ class ScannerEngine:
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="buy",
-                        text=f"Knoxville Bullish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} on {conf_dt_str})",
+                        text=f"Knoxville Bullish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Green Candle] on {conf_dt_str})",
                         date=conf_dt_str,
                         entry_price=price_conf,
                     ))
 
-                # Bearish Confirmed: Sell signal on Day T AND Day T+1 Close < Day T Close
-                elif bool(sig_row.get("sell_signal", False)) and price_conf < price_sig:
+                # Bearish Confirmed: Sell signal on Day T AND Day T+1 Close < Day T Close AND Red Candle (Close < Open)
+                elif bool(sig_row.get("sell_signal", False)) and price_conf < price_sig and price_conf < open_conf:
                     is_flagged = True
                     if primary_type == "neutral":
                         primary_type = "sell"
@@ -267,10 +268,11 @@ class ScannerEngine:
                         category="Strategy_Signal",
                         strategy="RB_KnoxDiv",
                         type="sell",
-                        text=f"Knoxville Bearish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} on {conf_dt_str})",
+                        text=f"Knoxville Bearish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} [Red Candle] on {conf_dt_str})",
                         date=conf_dt_str,
                         entry_price=price_conf,
                     ))
+
         except Exception:
             pass
 

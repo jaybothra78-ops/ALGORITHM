@@ -59,8 +59,8 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
         confirmation_date = ohlc.index[position + 1].date().isoformat()
         rsi_val = round(float(signals.iloc[position]["rsi"]), 2) if "rsi" in signals.columns and pd.notna(signals.iloc[position]["rsi"]) else None
 
-        # Buy Confirmation: Day T+1 Close > Day T Close
-        if bool(signals.iloc[position]["buy_signal"]) and confirmation_row["Close"] > signal_row["Close"]:
+        # Buy Confirmation: Day T+1 Close > Day T Close AND Green Candle (Close > Open)
+        if bool(signals.iloc[position]["buy_signal"]) and confirmation_row["Close"] > signal_row["Close"] and confirmation_row["Close"] > confirmation_row["Open"]:
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "buy",
@@ -72,8 +72,8 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                 "rsi_value": rsi_val,
             })
 
-        # Sell Confirmation: Day T+1 Close < Day T Close
-        if bool(signals.iloc[position]["sell_signal"]) and confirmation_row["Close"] < signal_row["Close"]:
+        # Sell Confirmation: Day T+1 Close < Day T Close AND Red Candle (Close < Open)
+        elif bool(signals.iloc[position]["sell_signal"]) and confirmation_row["Close"] < signal_row["Close"] and confirmation_row["Close"] < confirmation_row["Open"]:
             rows.append({
                 "strategy": "RB_KnoxDiv",
                 "signal_type": "sell",

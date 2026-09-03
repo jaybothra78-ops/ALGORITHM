@@ -157,8 +157,12 @@ class BacktesterEngine:
 
         for i in range(1, n - 2):
             row_sig = sigs.iloc[i]
-            # Buy Breakout Confirmation: Next close > signal close
-            if bool(row_sig["buy_signal"]) and df["Close"].iloc[i + 1] > df["Close"].iloc[i]:
+            c_sig = float(df["Close"].iloc[i])
+            c_next = float(df["Close"].iloc[i + 1])
+            o_next = float(df["Open"].iloc[i + 1])
+
+            # Buy Breakout Confirmation: Next close > signal close AND Green candle (Next close > Next open)
+            if bool(row_sig["buy_signal"]) and c_next > c_sig and c_next > o_next:
                 # Predetermined Stop Loss: Lowest price of the day when Knoxville was made
                 signal_candle_low = float(df["Low"].iloc[i])
                 trade = cls._simulate_trade(
@@ -176,8 +180,8 @@ class BacktesterEngine:
                 if trade:
                     trades.append(trade)
 
-            # Sell Breakout Confirmation: Next close < signal close
-            elif bool(row_sig["sell_signal"]) and df["Close"].iloc[i + 1] < df["Close"].iloc[i]:
+            # Sell Breakout Confirmation: Next close < signal close AND Red candle (Next close < Next open)
+            elif bool(row_sig["sell_signal"]) and c_next < c_sig and c_next < o_next:
                 # Predetermined Stop Loss: Highest price of the day when Knoxville was made
                 signal_candle_high = float(df["High"].iloc[i])
                 trade = cls._simulate_trade(
@@ -196,6 +200,7 @@ class BacktesterEngine:
                     trades.append(trade)
 
         return trades
+
 
     @classmethod
     def _backtest_ma200(
