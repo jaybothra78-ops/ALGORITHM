@@ -32,7 +32,7 @@ class BacktesterEngine:
         if single_sym:
             all_symbols = [single_sym]
             universe_label = f"{single_sym} (Single Stock)"
-            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
+            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols, period=request.period or "1y")
         else:
             from services.universe import load_custom_watchlists
             custom_lists = load_custom_watchlists()
@@ -53,7 +53,8 @@ class BacktesterEngine:
                 all_symbols = list(universe.keys())
                 universe_label = "All Universes"
 
-            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols)
+            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols, period=request.period or "1y")
+
 
 
         all_trades: list[BacktestTrade] = []

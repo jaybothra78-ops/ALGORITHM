@@ -108,12 +108,26 @@ class MarketDataProvider:
             logger.warning(f"Could not save disk cache: {exc}")
 
 
+    PERIOD_MIN_BARS: dict[str, int] = {
+        "1mo": 20,
+        "3mo": 60,
+        "6mo": 120,
+        "1y": 240,
+        "2y": 480,
+        "3y": 720,
+        "5y": 1200,
+        "10y": 2400,
+        "max": 2400,
+    }
+
     @classmethod
     def get_universe_ohlc(
-        cls, symbols: list[str], force_refresh: bool = False
+        cls, symbols: list[str], period: str = "1y", force_refresh: bool = False
     ) -> dict[str, pd.DataFrame]:
-        """Fetch or return cached OHLC history for the requested universe."""
+        """Fetch or return cached OHLC history for the requested universe and time period."""
         now = time.time()
+        p_clean = period.lower().strip() or "1y"
+        min_required_bars = cls.PERIOD_MIN_BARS.get(p_clean, 240)
 
         # Ensure disk cache is loaded if in-memory is empty
         if not cls._CACHE.get("ohlc_data"):
@@ -121,16 +135,16 @@ class MarketDataProvider:
 
         cached: dict[str, pd.DataFrame] = cls._CACHE.get("ohlc_data", {})
 
-        # Check which requested symbols are missing from cache
+        # Check which requested symbols are missing from cache or need longer history
         if force_refresh:
             missing_symbols = [s for s in symbols if s.upper() not in cls.INVALID_SYMBOLS]
         else:
             missing_symbols = [
                 s for s in symbols
-                if s.upper() not in cls.INVALID_SYMBOLS and (s not in cached or cached[s].empty)
+                if s.upper() not in cls.INVALID_SYMBOLS and (s not in cached or cached[s].empty or len(cached[s]) < min_required_bars)
             ]
 
-        # If all requested symbols are already cached and fresh, return them
+        # If all requested symbols are already cached with sufficient bars, return them
         if not missing_symbols and cached:
             if symbols:
                 return {s: cached[s] for s in symbols if s in cached}
@@ -146,11 +160,11 @@ class MarketDataProvider:
         ticker_map = {cls.normalize_ticker(s): s for s in valid_symbols}
         tickers_list = list(ticker_map.keys())
 
-        logger.info(f"Fetching market data for {len(tickers_list)} tickers from Yahoo Finance...")
+        logger.info(f"Fetching market data for {len(tickers_list)} tickers ({p_clean} period) from Yahoo Finance...")
         try:
             raw_data = yf.download(
                 tickers_list,
-                period=settings.DATA_PERIOD,
+                period=p_clean if p_clean in cls.PERIOD_MIN_BARS else settings.DATA_PERIOD,
                 interval=settings.DATA_INTERVAL,
                 auto_adjust=False,
                 group_by="ticker",
@@ -180,6 +194,7 @@ class MarketDataProvider:
                         new_results[valid_symbols[0]] = cls.normalize_ohlc(raw_data)
                     except Exception as exc:
                         logger.debug(f"Failed to normalize single symbol {valid_symbols[0]}: {exc}")
+
 
             if "ohlc_data" not in cls._CACHE:
                 cls._CACHE["ohlc_data"] = {}

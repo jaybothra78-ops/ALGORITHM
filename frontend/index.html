@@ -1915,6 +1915,36 @@
           </div>
         </div>
 
+        <!-- Time Period & Date Range Selection Row -->
+        <div class="cmd-period-row" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(255, 255, 255, 0.06); flex-wrap: wrap;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em;">Time Horizon:</span>
+            <div class="pill-group" id="backtest-period-group">
+              <button type="button" class="pill" data-period="3mo">3M</button>
+              <button type="button" class="pill" data-period="6mo">6M</button>
+              <button type="button" class="pill active" data-period="1y">1Y</button>
+              <button type="button" class="pill" data-period="2y">2Y</button>
+              <button type="button" class="pill" data-period="3y">3Y</button>
+              <button type="button" class="pill" data-period="5y">5Y</button>
+              <button type="button" class="pill" data-period="max">Max</button>
+            </div>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Custom Date Range:</span>
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 0.70rem; color: #64748b;">From</span>
+              <input type="date" id="backtest-start-date" style="background: transparent; border: none; color: #fff; font-size: 0.76rem; outline: none; cursor: pointer; color-scheme: dark;">
+            </div>
+            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <span style="font-size: 0.70rem; color: #64748b;">To</span>
+              <input type="date" id="backtest-end-date" style="background: transparent; border: none; color: #fff; font-size: 0.76rem; outline: none; cursor: pointer; color-scheme: dark;">
+            </div>
+            <button type="button" class="btn-subtle" style="padding: 4px 8px; font-size: 0.72rem;" onclick="App.Backtester.clearDateRange()">Reset</button>
+          </div>
+        </div>
+
+
         <!-- Quick Trending Bar -->
         <div class="trending-pills-row" style="margin-top: 12px;">
           <span class="trending-label">⭐ Quick Watch:</span>
@@ -2104,7 +2134,8 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=35.0"></script>
+  <script src="/static/app.js?v=36.0"></script>
+
 
 
 

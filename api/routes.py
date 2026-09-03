@@ -221,14 +221,18 @@ def run_backtest_endpoint(
 
 
 @router.get("/market/ohlc/{symbol}", response_model=list[dict[str, Any]])
-def get_symbol_ohlc(symbol: str) -> list[dict[str, Any]]:
+def get_symbol_ohlc(
+    symbol: str,
+    period: str = Query("1y", description="Time period window (3mo, 6mo, 1y, 2y, 3y, 5y, max)"),
+) -> list[dict[str, Any]]:
     """Return historical daily OHLC candles for candlestick chart rendering."""
     s_clean = symbol.strip().upper()
     try:
         from services.market_data import MarketDataProvider
-        ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean])
+        ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean], period=period)
         if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
             raise HTTPException(404, f"No OHLC history available for {s_clean}")
+
 
         df = ohlc_dict[s_clean]
         candles = []

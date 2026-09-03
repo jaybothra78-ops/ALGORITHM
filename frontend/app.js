@@ -1955,6 +1955,7 @@ App.Backtester = {
   _currentTrades: [],
   _selectedTradeIndex: 0,
   _activeStrategy: 'RB_KnoxDiv',
+  _activePeriod: '1y',
 
   init() {
     if (this._initialized) return;
@@ -1969,6 +1970,22 @@ App.Backtester = {
         this.runBacktest();
       });
     });
+
+    // Time Horizon period pills
+    document.querySelectorAll('#backtest-period-group .pill').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('#backtest-period-group .pill').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        this._activePeriod = btn.dataset.period || '1y';
+        this.runBacktest();
+      });
+    });
+
+    // Custom Date Range inputs -> auto re-run
+    const startDateInput = document.querySelector('#backtest-start-date');
+    const endDateInput = document.querySelector('#backtest-end-date');
+    if (startDateInput) startDateInput.addEventListener('change', () => this.runBacktest());
+    if (endDateInput) endDateInput.addEventListener('change', () => this.runBacktest());
 
     // Universe/Watchlist dropdown change -> populate stock dropdown & reset specific stock
     const univSelect = document.querySelector('#backtest-universe-select');
@@ -2016,6 +2033,15 @@ App.Backtester = {
     this.populateUniverseSelect();
     this.populateStockSelect('');
   },
+
+  clearDateRange() {
+    const startDateInput = document.querySelector('#backtest-start-date');
+    const endDateInput = document.querySelector('#backtest-end-date');
+    if (startDateInput) startDateInput.value = '';
+    if (endDateInput) endDateInput.value = '';
+    this.runBacktest();
+  },
+
 
   initOnce() {
     this.init();
@@ -2143,6 +2169,12 @@ App.Backtester = {
     }
 
     try {
+      const startDateInput = document.querySelector('#backtest-start-date');
+      const endDateInput = document.querySelector('#backtest-end-date');
+      const startDate = startDateInput ? startDateInput.value.trim() || null : null;
+      const endDate = endDateInput ? endDateInput.value.trim() || null : null;
+      const period = this._activePeriod || '1y';
+
       const payload = {
         symbol: symbolToTest,
         index: universe,
@@ -2151,6 +2183,9 @@ App.Backtester = {
         stop_loss_pct: stopLossPct,
         max_holding_days: maxDays,
         signal_type: signalType,
+        period: period,
+        start_date: startDate,
+        end_date: endDate,
       };
 
       const res = await fetch('/backtest/run', {
@@ -2158,6 +2193,7 @@ App.Backtester = {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
@@ -2398,13 +2434,16 @@ App.Backtester = {
     try {
       if (!this._ohlcCache) this._ohlcCache = {};
 
-      let candles = this._ohlcCache[t.symbol];
+      const period = this._activePeriod || '1y';
+      const cacheKey = `${t.symbol}_${period}`;
+      let candles = this._ohlcCache[cacheKey];
       if (!candles) {
-        const res = await fetch(`/market/ohlc/${t.symbol}`);
+        const res = await fetch(`/market/ohlc/${t.symbol}?period=${period}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         candles = await res.json();
-        this._ohlcCache[t.symbol] = candles;
+        this._ohlcCache[cacheKey] = candles;
       }
+
 
       this._currentCandles = candles;
 

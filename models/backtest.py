@@ -27,6 +27,8 @@ class BacktestRequest(BaseModel):
     signal_type: str | None = Field(default=None, description="Filter: buy, sell, or all")
     start_date: str | None = Field(default=None, description="Earliest entry date (YYYY-MM-DD)")
     end_date: str | None = Field(default=None, description="Latest entry date (YYYY-MM-DD)")
+    period: str | None = Field(default="1y", description="Historical period window (e.g. 3mo, 6mo, 1y, 2y, 3y, 5y, max)")
+
 
 
 
