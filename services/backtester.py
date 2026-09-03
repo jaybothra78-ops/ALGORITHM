@@ -106,16 +106,17 @@ class BacktesterEngine:
     def _backtest_rsi(
         cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
     ) -> list[BacktestTrade]:
-        """Simulate RSI Dual Extreme Strategy."""
+        """Simulate Dual RSI Extremes (<30 oversold buy, >70 overbought sell)."""
         trades: list[BacktestTrade] = []
         sigs = rsi_signals(df)
         n = len(df)
+        i = 1
 
-        for i in range(1, n - 1):
+        while i < n - 1:
             row_sig = sigs.iloc[i]
             # Buy condition: Both RSI and RSI-MA < 30
             if bool(row_sig["buy_signal"]):
-                trade = cls._simulate_trade(
+                trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RSI",
                     signal_type="buy",
@@ -127,10 +128,12 @@ class BacktesterEngine:
                 )
                 if trade:
                     trades.append(trade)
+                    i = max(i + 1, exit_idx + 1)
+                    continue
 
             # Sell condition: Both RSI and RSI-MA > 70
             elif bool(row_sig["sell_signal"]):
-                trade = cls._simulate_trade(
+                trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RSI",
                     signal_type="sell",
@@ -142,6 +145,9 @@ class BacktesterEngine:
                 )
                 if trade:
                     trades.append(trade)
+                    i = max(i + 1, exit_idx + 1)
+                    continue
+            i += 1
 
         return trades
 
@@ -153,8 +159,9 @@ class BacktesterEngine:
         trades: list[BacktestTrade] = []
         sigs = rb_knox_divergence(df)
         n = len(df)
+        i = 1
 
-        for i in range(1, n - 2):
+        while i < n - 2:
             row_sig = sigs.iloc[i]
             c_sig = float(df["Close"].iloc[i])
             c_next = float(df["Close"].iloc[i + 1])
@@ -164,7 +171,7 @@ class BacktesterEngine:
             if bool(row_sig["buy_signal"]) and c_next > c_sig and c_next > o_next:
                 # Predetermined Stop Loss: Lowest price of the day when Knoxville was made
                 signal_candle_low = float(df["Low"].iloc[i])
-                trade = cls._simulate_trade(
+                trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
                     signal_type="buy",
@@ -177,12 +184,14 @@ class BacktesterEngine:
                 )
                 if trade:
                     trades.append(trade)
+                    i = max(i + 1, exit_idx + 1)
+                    continue
 
             # Sell Breakout Confirmation: Next close < signal close AND Red candle (Next close < Next open)
             elif bool(row_sig["sell_signal"]) and c_next < c_sig and c_next < o_next:
                 # Predetermined Stop Loss: Highest price of the day when Knoxville was made
                 signal_candle_high = float(df["High"].iloc[i])
-                trade = cls._simulate_trade(
+                trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
                     signal_type="sell",
@@ -195,6 +204,9 @@ class BacktesterEngine:
                 )
                 if trade:
                     trades.append(trade)
+                    i = max(i + 1, exit_idx + 1)
+                    continue
+            i += 1
 
         return trades
 
@@ -207,11 +219,12 @@ class BacktesterEngine:
         trades: list[BacktestTrade] = []
         sigs = ma200_signals(df)
         n = len(df)
+        i = 200
 
-        for i in range(200, n - 1):
+        while i < n - 1:
             row_sig = sigs.iloc[i]
             if bool(row_sig.get("cross_up", False)):
-                trade = cls._simulate_trade(
+                trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="SMA_200",
                     signal_type="buy",
@@ -223,9 +236,11 @@ class BacktesterEngine:
                 )
                 if trade:
                     trades.append(trade)
+                    i = max(i + 1, exit_idx + 1)
+                    continue
 
             elif bool(row_sig.get("cross_down", False)):
-                trade = cls._simulate_trade(
+                trade, exit_idx = cls._simulate_trade(
                     symbol=symbol,
                     strategy="SMA_200",
                     signal_type="sell",
@@ -237,6 +252,9 @@ class BacktesterEngine:
                 )
                 if trade:
                     trades.append(trade)
+                    i = max(i + 1, exit_idx + 1)
+                    continue
+            i += 1
 
         return trades
 
@@ -252,17 +270,17 @@ class BacktesterEngine:
         stop_loss_pct: float | None,
         max_holding_days: int | None = None,
         override_stop_price: float | None = None,
-    ) -> BacktestTrade | None:
+    ) -> tuple[BacktestTrade | None, int]:
         """Simulate the forward price action until Target Hit or Stop Loss Hit."""
         n = len(df)
         if entry_idx >= n:
-            return None
+            return None, entry_idx
 
         entry_date = df.index[entry_idx].date().isoformat()
         signal_date = df.index[signal_idx].date().isoformat()
         entry_price = float(df["Close"].iloc[entry_idx])
         if entry_price <= 0:
-            return None
+            return None, entry_idx
 
         is_buy = signal_type.lower() == "buy"
 
@@ -347,7 +365,7 @@ class BacktesterEngine:
         pnl_amount = round(pnl_amount, 2)
         outcome = "WIN" if pnl_pct > 0 else "LOSS"
 
-        return BacktestTrade(
+        trade = BacktestTrade(
             symbol=symbol,
             strategy=strategy,
             signal_type=signal_type,
@@ -364,6 +382,7 @@ class BacktesterEngine:
             holding_days=holding_days,
             outcome=outcome,
         )
+        return trade, exit_idx
 
     @classmethod
     def _compute_summary(

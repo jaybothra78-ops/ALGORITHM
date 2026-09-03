@@ -2504,33 +2504,42 @@ App.Backtester = {
 
       candleSeries.setData(candles);
 
-      // Add Markers on Exact Trade Candles
+      // Add Markers on Exact Trade Candles (ensuring unique timestamps per series)
       const markers = [];
 
-      // Signal Candle Marker
-      if (t.signal_date) {
-        markers.push({
-          time: t.signal_date,
-          position: isBuy ? 'belowBar' : 'aboveBar',
-          color: '#818cf8',
-          shape: isBuy ? 'arrowUp' : 'arrowDown',
-          text: `SIGNAL (${t.strategy})`,
-        });
-      }
-
-      // Entry Candle Marker
-      if (t.entry_date) {
-        markers.push({
-          time: t.entry_date,
-          position: isBuy ? 'belowBar' : 'aboveBar',
-          color: '#10b981',
-          shape: isBuy ? 'arrowUp' : 'arrowDown',
-          text: `ENTRY ₹${t.entry_price.toFixed(2)}`,
-        });
+      if (t.signal_date === t.entry_date) {
+        if (t.entry_date) {
+          markers.push({
+            time: t.entry_date,
+            position: isBuy ? 'belowBar' : 'aboveBar',
+            color: '#10b981',
+            shape: isBuy ? 'arrowUp' : 'arrowDown',
+            text: `ENTRY ₹${t.entry_price.toFixed(2)} (${t.strategy})`,
+          });
+        }
+      } else {
+        if (t.signal_date) {
+          markers.push({
+            time: t.signal_date,
+            position: isBuy ? 'belowBar' : 'aboveBar',
+            color: '#818cf8',
+            shape: isBuy ? 'arrowUp' : 'arrowDown',
+            text: `SIGNAL (${t.strategy})`,
+          });
+        }
+        if (t.entry_date) {
+          markers.push({
+            time: t.entry_date,
+            position: isBuy ? 'belowBar' : 'aboveBar',
+            color: '#10b981',
+            shape: isBuy ? 'arrowUp' : 'arrowDown',
+            text: `ENTRY ₹${t.entry_price.toFixed(2)}`,
+          });
+        }
       }
 
       // Exit Candle Marker
-      if (t.exit_date) {
+      if (t.exit_date && t.exit_date !== t.entry_date) {
         const isWin = t.outcome === 'WIN';
         markers.push({
           time: t.exit_date,
@@ -2544,6 +2553,7 @@ App.Backtester = {
       // Sort markers chronologically (required by Lightweight Charts)
       markers.sort((a, b) => (a.time > b.time ? 1 : -1));
       candleSeries.setMarkers(markers);
+
 
       // Add Target Level Price Line
       if (t.target_price) {

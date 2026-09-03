@@ -29,7 +29,7 @@ def test_simulate_trade_target_exit():
     # Force a 6% gain on day 8
     df.loc[df.index[8], "High"] = entry_price * 1.06
 
-    trade = BacktesterEngine._simulate_trade(
+    trade, _ = BacktesterEngine._simulate_trade(
         symbol="TEST",
         strategy="RSI",
         signal_type="buy",
@@ -38,7 +38,6 @@ def test_simulate_trade_target_exit():
         entry_idx=5,
         target_pct=5.0,
         stop_loss_pct=2.0,
-        max_holding_days=10,
     )
 
     assert trade is not None
@@ -55,8 +54,7 @@ def test_simulate_trade_stop_loss_exit():
     df.loc[df.index[6]:df.index[8], "High"] = entry_price * 1.01
     df.loc[df.index[6], "Low"] = entry_price * 0.97
 
-
-    trade = BacktesterEngine._simulate_trade(
+    trade, _ = BacktesterEngine._simulate_trade(
         symbol="TEST",
         strategy="RSI",
         signal_type="buy",
@@ -65,13 +63,13 @@ def test_simulate_trade_stop_loss_exit():
         entry_idx=5,
         target_pct=5.0,
         stop_loss_pct=2.0,
-        max_holding_days=10,
     )
 
     assert trade is not None
     assert trade.outcome == "LOSS"
     assert trade.exit_reason == "Stop Loss Hit"
     assert trade.pnl_pct <= -2.0
+
 
 
 def test_backtest_api_endpoint():
