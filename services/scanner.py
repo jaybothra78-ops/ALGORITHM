@@ -135,7 +135,7 @@ class ScannerEngine:
                         continue
                     elif sf == "sell" and item.primary_type not in ("sell", "overbought"):
                         continue
-                    elif sf == "signals_only" and not any(r.category == "Strategy_Signal" for r in item.reasons):
+                    elif sf in ("signals_only", "knoxville", "knox", "rb_knoxdiv", "knox_div") and not any(r.category == "Strategy_Signal" for r in item.reasons):
                         continue
                     elif sf in ("ma200", "200ma", "ma_200") and not any(r.category == "MA200" for r in item.reasons):
                         continue
@@ -146,6 +146,7 @@ class ScannerEngine:
                     elif sf in ("ma200_cross_down", "cross_down", "crossed_down") and not any(r.category == "MA200" and r.type == "cross_down" for r in item.reasons):
                         continue
                 flagged_items.append(item)
+
 
         response = LookbackResponse(
             lookback_days=lookback_days,
@@ -222,41 +223,57 @@ class ScannerEngine:
         except Exception:
             pass
 
-        # 2. Check RB Knoxville Divergence in Lookback Window
+        # 2. Check RB Knoxville Divergence in Lookback Window (CONFIRMED SIGNALS ONLY)
+        # Buy confirmed: Day T+1 Close > Day T Close
+        # Sell confirmed: Day T+1 Close < Day T Close
         try:
             knox_sigs = rb_knox_divergence(df)
-            for idx in window_df.index:
-                dt_str = idx.date().isoformat()
-                if idx in knox_sigs.index:
-                    row_k = knox_sigs.loc[idx]
-                    if bool(row_k.get("sell_signal", False)):
-                        is_flagged = True
-                        if primary_type == "neutral":
-                            primary_type = "sell"
-                        most_recent_signal_date = dt_str
-                        reasons.append(ReasonTag(
-                            category="Strategy_Signal",
-                            strategy="RB_KnoxDiv",
-                            type="sell",
-                            text=f"Knoxville Bearish Divergence on {dt_str}",
-                            date=dt_str,
-                            entry_price=float(df.loc[idx, "Close"]),
-                        ))
-                    elif bool(row_k.get("buy_signal", False)):
-                        is_flagged = True
-                        if primary_type == "neutral":
-                            primary_type = "buy"
-                        most_recent_signal_date = dt_str
-                        reasons.append(ReasonTag(
-                            category="Strategy_Signal",
-                            strategy="RB_KnoxDiv",
-                            type="buy",
-                            text=f"Knoxville Bullish Divergence on {dt_str}",
-                            date=dt_str,
-                            entry_price=float(df.loc[idx, "Close"]),
-                        ))
+            n_bars = len(df)
+            start_pos = max(0, n_bars - lookback_days - 1)
+            for i in range(start_pos, n_bars - 1):
+                sig_dt_str = df.index[i].date().isoformat()
+                conf_dt_str = df.index[i + 1].date().isoformat()
+
+                # Check if confirmation date or signal date falls within the selected lookback window
+                if conf_dt_str not in window_dates and sig_dt_str not in window_dates:
+                    continue
+
+                sig_row = knox_sigs.iloc[i]
+                price_sig = float(df["Close"].iloc[i])
+                price_conf = float(df["Close"].iloc[i + 1])
+
+                # Bullish Confirmed: Buy signal on Day T AND Day T+1 Close > Day T Close
+                if bool(sig_row.get("buy_signal", False)) and price_conf > price_sig:
+                    is_flagged = True
+                    if primary_type == "neutral":
+                        primary_type = "buy"
+                    most_recent_signal_date = conf_dt_str
+                    reasons.append(ReasonTag(
+                        category="Strategy_Signal",
+                        strategy="RB_KnoxDiv",
+                        type="buy",
+                        text=f"Knoxville Bullish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} on {conf_dt_str})",
+                        date=conf_dt_str,
+                        entry_price=price_conf,
+                    ))
+
+                # Bearish Confirmed: Sell signal on Day T AND Day T+1 Close < Day T Close
+                elif bool(sig_row.get("sell_signal", False)) and price_conf < price_sig:
+                    is_flagged = True
+                    if primary_type == "neutral":
+                        primary_type = "sell"
+                    most_recent_signal_date = conf_dt_str
+                    reasons.append(ReasonTag(
+                        category="Strategy_Signal",
+                        strategy="RB_KnoxDiv",
+                        type="sell",
+                        text=f"Knoxville Bearish Confirmed (Signal: {sig_dt_str}, Entry: ₹{price_conf:.2f} on {conf_dt_str})",
+                        date=conf_dt_str,
+                        entry_price=price_conf,
+                    ))
         except Exception:
             pass
+
 
 
         # 3. Check 200-Day Moving Average Touch and Crossover in Lookback Window
