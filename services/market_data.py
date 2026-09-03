@@ -114,62 +114,85 @@ class MarketDataProvider:
     ) -> dict[str, pd.DataFrame]:
         """Fetch or return cached OHLC history for the requested universe."""
         now = time.time()
-        cached = cls._CACHE.get("ohlc_data", {})
-        cache_time = cls._CACHE.get("ohlc_timestamp", 0.0)
 
-        # 1. Check in-memory cache
-        if not force_refresh and cached and (now - cache_time < settings.CACHE_TTL_SECONDS):
+        # Ensure disk cache is loaded if in-memory is empty
+        if not cls._CACHE.get("ohlc_data"):
+            cls.load_disk_cache()
+
+        cached: dict[str, pd.DataFrame] = cls._CACHE.get("ohlc_data", {})
+
+        # Check which requested symbols are missing from cache
+        if force_refresh:
+            missing_symbols = [s for s in symbols if s.upper() not in cls.INVALID_SYMBOLS]
+        else:
+            missing_symbols = [
+                s for s in symbols
+                if s.upper() not in cls.INVALID_SYMBOLS and (s not in cached or cached[s].empty)
+            ]
+
+        # If all requested symbols are already cached and fresh, return them
+        if not missing_symbols and cached:
+            if symbols:
+                return {s: cached[s] for s in symbols if s in cached}
             return cached
 
-        # 2. Check disk cache
-        if not force_refresh and not cached and cls.load_disk_cache():
-            return cls._CACHE["ohlc_data"]
+        if not missing_symbols and not symbols:
+            return cached
 
-        if not symbols:
-            return {}
+        valid_symbols = missing_symbols
+        if not valid_symbols:
+            return {s: cached[s] for s in symbols if s in cached}
 
-        # Filter out known invalid non-stock tickers to prevent timeout retries
-        valid_symbols = [s for s in symbols if s.upper() not in cls.INVALID_SYMBOLS]
         ticker_map = {cls.normalize_ticker(s): s for s in valid_symbols}
         tickers_list = list(ticker_map.keys())
 
-        logger.info(f"Fetching fresh market data for {len(tickers_list)} tickers from Yahoo Finance...")
-        raw_data = yf.download(
-            tickers_list,
-            period=settings.DATA_PERIOD,
-            interval=settings.DATA_INTERVAL,
-            auto_adjust=False,
-            group_by="ticker",
-            threads=True,
-            progress=False,
-        )
+        logger.info(f"Fetching market data for {len(tickers_list)} tickers from Yahoo Finance...")
+        try:
+            raw_data = yf.download(
+                tickers_list,
+                period=settings.DATA_PERIOD,
+                interval=settings.DATA_INTERVAL,
+                auto_adjust=False,
+                group_by="ticker",
+                threads=True,
+                progress=False,
+            )
 
-        result: dict[str, pd.DataFrame] = {}
-        if isinstance(raw_data.columns, pd.MultiIndex):
-            lvl0 = set(raw_data.columns.get_level_values(0))
-            lvl1 = set(raw_data.columns.get_level_values(1))
-            for ticker, sym in ticker_map.items():
-                try:
-                    if ticker in lvl0:
-                        df = raw_data[ticker]
-                    elif ticker in lvl1:
-                        df = raw_data.xs(ticker, level=1, axis=1)
-                    else:
+            new_results: dict[str, pd.DataFrame] = {}
+            if isinstance(raw_data.columns, pd.MultiIndex):
+                lvl0 = set(raw_data.columns.get_level_values(0))
+                lvl1 = set(raw_data.columns.get_level_values(1))
+                for ticker, sym in ticker_map.items():
+                    try:
+                        if ticker in lvl0:
+                            df = raw_data[ticker]
+                        elif ticker in lvl1:
+                            df = raw_data.xs(ticker, level=1, axis=1)
+                        else:
+                            continue
+                        new_results[sym] = cls.normalize_ohlc(df)
+                    except Exception as exc:
+                        logger.debug(f"Failed to normalize {sym}: {exc}")
                         continue
-                    result[sym] = cls.normalize_ohlc(df)
-                except Exception as exc:
-                    logger.debug(f"Failed to normalize {sym}: {exc}")
-                    continue
-        else:
-            if len(valid_symbols) == 1:
-                try:
-                    result[valid_symbols[0]] = cls.normalize_ohlc(raw_data)
-                except Exception as exc:
-                    logger.debug(f"Failed to normalize single symbol {valid_symbols[0]}: {exc}")
+            else:
+                if len(valid_symbols) == 1:
+                    try:
+                        new_results[valid_symbols[0]] = cls.normalize_ohlc(raw_data)
+                    except Exception as exc:
+                        logger.debug(f"Failed to normalize single symbol {valid_symbols[0]}: {exc}")
 
-        cls._CACHE["ohlc_data"] = result
-        cls._CACHE["ohlc_timestamp"] = now
-        cls.save_disk_cache(result)
-        logger.info(f"Market data cache updated with {len(result)} valid symbols.")
-        return result
+            if "ohlc_data" not in cls._CACHE:
+                cls._CACHE["ohlc_data"] = {}
+            cls._CACHE["ohlc_data"].update(new_results)
+            cls._CACHE["ohlc_timestamp"] = now
+            cls.save_disk_cache(cls._CACHE["ohlc_data"])
+            logger.info(f"Market data cache updated with {len(new_results)} new symbols (total {len(cls._CACHE['ohlc_data'])}).")
+        except Exception as exc:
+            logger.error(f"Failed to download OHLC data: {exc}")
+
+        cached = cls._CACHE.get("ohlc_data", {})
+        if symbols:
+            return {s: cached[s] for s in symbols if s in cached}
+        return cached
+
 

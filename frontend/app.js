@@ -1966,25 +1966,50 @@ App.Backtester = {
         document.querySelectorAll('#backtest-strategy-group .pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this._activeStrategy = btn.dataset.strategy || 'RB_KnoxDiv';
+        this.runBacktest();
       });
     });
 
-    // Universe/Watchlist dropdown change -> populate stock dropdown
+    // Universe/Watchlist dropdown change -> populate stock dropdown & reset specific stock
     const univSelect = document.querySelector('#backtest-universe-select');
+    const stockSelect = document.querySelector('#backtest-stock-select');
+    const customInput = document.querySelector('#backtest-custom-input');
+
     if (univSelect) {
       univSelect.addEventListener('change', () => {
+        if (customInput) customInput.value = '';
+        if (stockSelect) stockSelect.value = '';
         this.populateStockSelect(univSelect.value);
+        this.runBacktest();
       });
     }
 
-    // Enter key on custom stock input -> run backtest
-    const customInput = document.querySelector('#backtest-custom-input');
+    // Specific stock dropdown change -> clear custom input & auto-run
+    if (stockSelect) {
+      stockSelect.addEventListener('change', () => {
+        if (customInput) customInput.value = '';
+        this.runBacktest();
+      });
+    }
+
+    // Input on custom ticker -> clear stock select
     if (customInput) {
+      customInput.addEventListener('input', () => {
+        if (stockSelect) stockSelect.value = '';
+      });
       customInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
           this.runBacktest();
         }
+      });
+    }
+
+    // Direction change -> auto re-run
+    const directionSelect = document.querySelector('#backtest-direction-select');
+    if (directionSelect) {
+      directionSelect.addEventListener('change', () => {
+        this.runBacktest();
       });
     }
 
@@ -2052,12 +2077,19 @@ App.Backtester = {
 
   quickPickStock(symbol) {
     const customInput = document.querySelector('#backtest-custom-input');
+    const stockSelect = document.querySelector('#backtest-stock-select');
+    if (stockSelect) stockSelect.value = '';
     if (customInput) customInput.value = symbol;
     this.runBacktest();
   },
 
   quickPickUniverse(univName) {
     const univSelect = document.querySelector('#backtest-universe-select');
+    const stockSelect = document.querySelector('#backtest-stock-select');
+    const customInput = document.querySelector('#backtest-custom-input');
+    if (stockSelect) stockSelect.value = '';
+    if (customInput) customInput.value = '';
+
     if (univSelect) {
       const match = Array.from(univSelect.options).find(o => o.value.includes(univName) || o.text.includes(univName));
       if (match) {
@@ -2065,10 +2097,9 @@ App.Backtester = {
         this.populateStockSelect(match.value);
       }
     }
-    const customInput = document.querySelector('#backtest-custom-input');
-    if (customInput) customInput.value = '';
     this.runBacktest();
   },
+
 
   async runBacktest() {
     const univSelect = document.querySelector('#backtest-universe-select');
