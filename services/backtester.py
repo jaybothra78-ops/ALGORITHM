@@ -150,7 +150,7 @@ class BacktesterEngine:
     def _backtest_knoxville(
         cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
     ) -> list[BacktestTrade]:
-        """Simulate RB Knoxville Divergence with Next-Candle Confirmation."""
+        """Simulate RB Knoxville Divergence with Next-Candle Confirmation and Signal Candle Stop Loss."""
         trades: list[BacktestTrade] = []
         sigs = rb_knox_divergence(df)
         n = len(df)
@@ -159,6 +159,8 @@ class BacktesterEngine:
             row_sig = sigs.iloc[i]
             # Buy Breakout Confirmation: Next close > signal close
             if bool(row_sig["buy_signal"]) and df["Close"].iloc[i + 1] > df["Close"].iloc[i]:
+                # Predetermined Stop Loss: Lowest price of the day when Knoxville was made
+                signal_candle_low = float(df["Low"].iloc[i])
                 trade = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
@@ -169,12 +171,15 @@ class BacktesterEngine:
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
                     max_holding_days=req.max_holding_days,
+                    override_stop_price=signal_candle_low,
                 )
                 if trade:
                     trades.append(trade)
 
             # Sell Breakout Confirmation: Next close < signal close
             elif bool(row_sig["sell_signal"]) and df["Close"].iloc[i + 1] < df["Close"].iloc[i]:
+                # Predetermined Stop Loss: Highest price of the day when Knoxville was made
+                signal_candle_high = float(df["High"].iloc[i])
                 trade = cls._simulate_trade(
                     symbol=symbol,
                     strategy="RB_KnoxDiv",
@@ -185,6 +190,7 @@ class BacktesterEngine:
                     target_pct=req.target_pct,
                     stop_loss_pct=req.stop_loss_pct,
                     max_holding_days=req.max_holding_days,
+                    override_stop_price=signal_candle_high,
                 )
                 if trade:
                     trades.append(trade)
@@ -245,6 +251,7 @@ class BacktesterEngine:
         target_pct: float | None,
         stop_loss_pct: float | None,
         max_holding_days: int,
+        override_stop_price: float | None = None,
     ) -> BacktestTrade | None:
         """Simulate the forward price action of an opened position."""
         n = len(df)
@@ -264,9 +271,13 @@ class BacktesterEngine:
         if target_pct is not None and target_pct > 0:
             target_price = entry_price * (1.0 + target_pct / 100.0) if is_buy else entry_price * (1.0 - target_pct / 100.0)
 
+        # Stop loss: Use predetermined price if specified (e.g. Knoxville signal candle low/high), else percentage
         stop_price = None
-        if stop_loss_pct is not None and stop_loss_pct > 0:
+        if override_stop_price is not None and override_stop_price > 0:
+            stop_price = override_stop_price
+        elif stop_loss_pct is not None and stop_loss_pct > 0:
             stop_price = entry_price * (1.0 - stop_loss_pct / 100.0) if is_buy else entry_price * (1.0 + stop_loss_pct / 100.0)
+
 
         # Track forward sessions
         exit_idx = entry_idx
