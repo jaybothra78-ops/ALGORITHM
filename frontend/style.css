@@ -77,7 +77,7 @@
 
 html {
   scroll-behavior: smooth;
-  color-scheme: dark;
+  color-scheme: light !important;
 }
 
 body {
@@ -3699,6 +3699,55 @@ input:focus, select:focus {
   box-shadow: 0 2px 8px rgba(180, 83, 9, 0.15) !important;
   font-weight: 800 !important;
 }
+
+/* =========================================================
+   GLOBAL LIGHT WARM BEIGE DROPDOWNS, DATALISTS & OPTIONS
+   ========================================================= */
+html,
+body,
+:root,
+input,
+select,
+textarea,
+datalist,
+option,
+optgroup {
+  color-scheme: light !important;
+}
+
+select {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+}
+
+select option,
+datalist option,
+optgroup option,
+option {
+  background-color: #ffffff !important;
+  color: #1c1917 !important;
+  padding: 8px 12px !important;
+  font-size: 0.85rem !important;
+}
+
+select option:checked,
+select option:hover,
+option:checked,
+option:hover {
+  background-color: #f7f1e6 !important;
+  color: #92400e !important;
+}
+
+/* Chrome/Edge autofill & autocomplete light styling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 30px #ffffff inset !important;
+  -webkit-text-fill-color: #1c1917 !important;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
 
 
 
