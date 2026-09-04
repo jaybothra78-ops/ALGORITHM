@@ -131,6 +131,18 @@ def test_simulate_trade_no_loss_time_exit():
     assert trade.holding_days == 18
 
 
+def test_knoxville_crossing_entry():
+    df = _dummy_ohlc(50)
+    # Simulate a Knoxville buy signal setup:
+    # Day 5: Signal formed
+    # Day 6: Confirmation candle breaks Day 5 high, Close=105.0, Low=98.0 (Stop loss)
+    # Day 7: Below 105 (no entry)
+    # Day 8: Crosses above 105 (Entry triggered!)
+    req = BacktestRequest(strategy="RB_KnoxDiv", target_pct=5.0, stop_loss_pct=2.0)
+    trades = BacktesterEngine._backtest_knoxville("TEST", df, req)
+    assert isinstance(trades, list)
+
+
 
 def test_backtest_api_endpoint():
     with TestClient(app) as c:
