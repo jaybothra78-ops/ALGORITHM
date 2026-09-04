@@ -2617,12 +2617,18 @@ App.Backtester = {
       // Auto-focus around the trade candle
       this.centerChartOnTrade();
 
-      // Window resize listener
-      window.addEventListener('resize', () => {
-        if (this._chartInstance && container) {
-          this._chartInstance.applyOptions({ width: container.clientWidth });
+      // Responsive Chart Resizing via ResizeObserver
+      if (this._resizeObserver) {
+        try { this._resizeObserver.disconnect(); } catch (e) {}
+      }
+      this._resizeObserver = new ResizeObserver((entries) => {
+        if (!entries || !entries.length || !this._chartInstance) return;
+        const width = entries[0].contentRect.width;
+        if (width > 0) {
+          this._chartInstance.applyOptions({ width });
         }
       });
+      this._resizeObserver.observe(container);
 
       if (loadingEl) loadingEl.style.display = 'none';
 
@@ -2632,6 +2638,7 @@ App.Backtester = {
       }
     }
   },
+
 
   centerChartOnTrade() {
     const trades = this._currentTrades || [];
