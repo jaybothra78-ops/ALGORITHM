@@ -1,7 +1,8 @@
 /**
- * ALGORYTHM Institutional Trading Platform - Modular Frontend Architecture
+ * STRATLAB Institutional Trading Platform - Modular Frontend Architecture
  * Namespaces: App.State, App.Utils, App.Screener, App.News, App.Paper, App.Zerodha, App.Init
  */
+
 'use strict';
 
 const App = window.App = window.App || {};

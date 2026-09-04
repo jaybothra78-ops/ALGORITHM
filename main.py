@@ -46,11 +46,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 app = FastAPI(
-    title="Algo Stock Scanner — RSI & RB Knoxville Divergence",
-    description="Enterprise-grade Indian Equity Scanner with Lookback Screening and Next-Candle Confirmation.",
+    title="STRATLAB — Quantitative Trading & Strategy Studio",
+    description="Institutional-grade Indian Equity Scanner, Multi-Period Strategy Tester, and Quantitative Studio.",
     version="2.0.0",
     lifespan=lifespan,
 )
+
 
 # Static and UI routes
 app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend"), name="static")
