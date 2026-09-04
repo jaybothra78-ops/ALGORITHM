@@ -3,6 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -11,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=32.0">
+  <link rel="stylesheet" href="/static/style.css?v=33.0">
 
 
 
@@ -1219,7 +1220,7 @@
         <!-- Modern Minimal Search Bar with Scope and Clear -->
         <div class="search-wrapper modern-search">
           <span class="search-icon">🔍</span>
-          <input type="text" id="symbol-search" list="lookback-stocks-datalist" placeholder="Search watchlist stocks..." autocomplete="off">
+          <input type="text" id="symbol-search" placeholder="Search watchlist stocks..." autocomplete="off">
           <span id="search-scope-badge" class="search-scope-badge">All</span>
           <button type="button" id="btn-clear-search" class="search-clear-btn" title="Clear search" style="display: none;">&times;</button>
           <span class="search-shortcut" title="Press / to focus">/</span>
@@ -1309,7 +1310,7 @@
             <label class="cmd-label">Direct Search</label>
             <div class="stock-input-wrapper">
               <span class="stock-input-icon">🔍</span>
-              <input type="text" id="news-custom-input" list="news-stocks-datalist" placeholder="Enter ticker (e.g. TVSMOTOR)" autocomplete="off">
+              <input type="text" id="news-custom-input" placeholder="Enter ticker (e.g. TVSMOTOR)" autocomplete="off">
             </div>
           </div>
 
@@ -1694,7 +1695,7 @@
             <label for="paper-stock-input">Underlying Stock / Index</label>
             <div class="stock-input-wrapper">
               <span class="stock-input-icon">🔍</span>
-              <input type="text" id="paper-stock-input" list="paper-stocks-datalist" placeholder="e.g. NIFTY, TVSMOTOR, RELIANCE" autocomplete="off">
+              <input type="text" id="paper-stock-input" placeholder="e.g. NIFTY, TVSMOTOR, RELIANCE" autocomplete="off">
             </div>
           </div>
 
@@ -1884,7 +1885,7 @@
             <label class="cmd-label">Direct Search</label>
             <div class="stock-input-wrapper">
               <span class="stock-input-icon">🔍</span>
-              <input type="text" id="backtest-custom-input" list="backtest-stocks-datalist" placeholder="e.g. TVSMOTOR" style="text-transform: uppercase;" autocomplete="off">
+              <input type="text" id="backtest-custom-input" placeholder="e.g. TVSMOTOR" style="text-transform: uppercase;" autocomplete="off">
             </div>
           </div>
 
@@ -2148,7 +2149,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=49.0"></script>
+  <script src="/static/app.js?v=50.0"></script>
 
 
 

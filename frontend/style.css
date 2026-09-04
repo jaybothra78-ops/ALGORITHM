@@ -3748,12 +3748,91 @@ input:-webkit-autofill:active {
   transition: background-color 5000s ease-in-out 0s;
 }
 
+/* =========================================================
+   CUSTOM LUXURY FLOATING AUTOCOMPLETE DROPDOWN
+   ========================================================= */
+.stock-input-wrapper {
+  position: relative !important;
+  display: flex !important;
+  align-items: center !important;
+  width: 100% !important;
+}
 
+.custom-autocomplete-dropdown {
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  right: 0 !important;
+  min-width: 250px !important;
+  max-height: 270px !important;
+  overflow-y: auto !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(168, 142, 110, 0.35) !important;
+  border-radius: 10px !important;
+  box-shadow: 0 12px 36px rgba(70, 55, 35, 0.16), 0 2px 8px rgba(70, 55, 35, 0.08) !important;
+  z-index: 100000 !important;
+  padding: 4px 0 !important;
+  display: none;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(168, 142, 110, 0.4) transparent;
+}
 
+.custom-autocomplete-dropdown::-webkit-scrollbar {
+  width: 6px;
+}
 
+.custom-autocomplete-dropdown::-webkit-scrollbar-thumb {
+  background: rgba(168, 142, 110, 0.4);
+  border-radius: 4px;
+}
 
+.custom-autocomplete-item {
+  padding: 8px 14px !important;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  gap: 12px !important;
+  font-size: 0.82rem !important;
+  color: #1c1917 !important;
+  cursor: pointer !important;
+  transition: all 0.1s ease !important;
+  border-bottom: 1px solid rgba(168, 142, 110, 0.08) !important;
+}
 
+.custom-autocomplete-item:last-child {
+  border-bottom: none !important;
+}
 
+.custom-autocomplete-item:hover,
+.custom-autocomplete-item.active {
+  background: #fbf4ea !important;
+  color: #92400e !important;
+}
 
+.custom-autocomplete-symbol {
+  font-family: var(--font-mono, 'JetBrains Mono', monospace) !important;
+  font-weight: 800 !important;
+  color: #1c1917 !important;
+}
 
+.custom-autocomplete-item:hover .custom-autocomplete-symbol,
+.custom-autocomplete-item.active .custom-autocomplete-symbol {
+  color: #92400e !important;
+}
 
+.custom-autocomplete-meta {
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  color: #78716c !important;
+  background: rgba(168, 142, 110, 0.12) !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+}
+
+.custom-autocomplete-empty {
+  padding: 12px 14px !important;
+  font-size: 0.78rem !important;
+  color: #78716c !important;
+  text-align: center !important;
+  font-style: italic !important;
+}

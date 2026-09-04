@@ -214,13 +214,30 @@ App.Screener = {
       const res = await fetch(`/signals/lookback?${params}`);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      this.renderTable(data.signals || []);
+      this._allSignals = data.signals || [];
+      this.renderTable(this._allSignals);
       this.updateMetricsRibbon(data);
       if (statusEl) statusEl.textContent = `Market Ready · ${data.total_signals || 0} Signals Found`;
     } catch (err) {
       console.error('Signals fetch error:', err);
       if (statusEl) statusEl.textContent = 'Failed to load signals';
     }
+  },
+
+  filterTableByQuery(query) {
+    const q = (query || '').trim().toUpperCase();
+    if (!this._allSignals) return;
+    if (!q) {
+      this.renderTable(this._allSignals);
+      return;
+    }
+    const filtered = this._allSignals.filter(s => {
+      const sym = (s.symbol || '').toUpperCase();
+      const uni = (s.universe || s.index_membership || '').toUpperCase();
+      const strat = (s.strategy || '').toUpperCase();
+      return sym.includes(q) || uni.includes(q) || strat.includes(q);
+    });
+    this.renderTable(filtered);
   },
 
   renderTable(signals) {
@@ -2809,7 +2826,242 @@ App.Backtester = {
 };
 
 // =====================================================================
-// 8. Application Auto-Complete Datalist Manager & Bootstrapping
+// 8. Custom Floating Autocomplete Manager
+// =====================================================================
+App.Autocomplete = {
+  initAll() {
+    this.attach('#symbol-search', {
+      onSelect: (item) => {
+        const input = document.querySelector('#symbol-search');
+        if (input) {
+          input.value = item.symbol;
+          App.Screener.filterTableByQuery(item.symbol);
+          const clearBtn = document.querySelector('#btn-clear-search');
+          if (clearBtn) clearBtn.style.display = 'block';
+        }
+      },
+      onInput: (query) => {
+        App.Screener.filterTableByQuery(query);
+        const clearBtn = document.querySelector('#btn-clear-search');
+        if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+      }
+    });
+
+    this.attach('#news-custom-input', {
+      onSelect: (item) => {
+        const input = document.querySelector('#news-custom-input');
+        if (input) input.value = item.symbol;
+      }
+    });
+
+    this.attach('#paper-stock-input', {
+      onSelect: (item) => {
+        const input = document.querySelector('#paper-stock-input');
+        if (input) {
+          input.value = item.symbol;
+          if (App.State.paperInstrument === 'OPTION') {
+            App.Paper.fetchOptionStrikes(item.symbol);
+          } else {
+            App.Paper.fetchLivePriceOrPremium();
+          }
+        }
+      }
+    });
+
+    this.attach('#backtest-custom-input', {
+      onSelect: (item) => {
+        const input = document.querySelector('#backtest-custom-input');
+        if (input) input.value = item.symbol;
+      }
+    });
+
+    // Wire clear search button
+    const clearBtn = document.querySelector('#btn-clear-search');
+    const searchInput = document.querySelector('#symbol-search');
+    if (clearBtn && searchInput) {
+      clearBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearBtn.style.display = 'none';
+        App.Screener.filterTableByQuery('');
+        searchInput.focus();
+      });
+    }
+
+    // '/' keyboard shortcut to focus search input
+    document.addEventListener('keydown', (e) => {
+      if (e.key === '/' && document.activeElement && !['INPUT', 'TEXTAREA', 'SELECT'].includes(document.activeElement.tagName)) {
+        if (searchInput && App.State.activeTab === 'screener') {
+          e.preventDefault();
+          searchInput.focus();
+        }
+      }
+    });
+  },
+
+  attach(selector, options = {}) {
+    const input = document.querySelector(selector);
+    if (!input) return;
+
+    const parent = input.parentElement;
+    if (parent) {
+      const parentPos = window.getComputedStyle(parent).position;
+      if (parentPos === 'static') {
+        parent.style.position = 'relative';
+      }
+    }
+
+    let dropdown = parent ? parent.querySelector('.custom-autocomplete-dropdown') : null;
+    if (!dropdown && parent) {
+      dropdown = document.createElement('div');
+      dropdown.className = 'custom-autocomplete-dropdown';
+      parent.appendChild(dropdown);
+    }
+    if (!dropdown) return;
+
+    let activeIndex = -1;
+    let currentMatches = [];
+
+    const getSymbols = () => {
+      if (App.State.universeSymbols && App.State.universeSymbols.length) {
+        return App.State.universeSymbols;
+      }
+      return [];
+    };
+
+    const closeDropdown = () => {
+      dropdown.style.display = 'none';
+      dropdown.innerHTML = '';
+      activeIndex = -1;
+      currentMatches = [];
+    };
+
+    const renderItems = (matches) => {
+      currentMatches = matches;
+      activeIndex = -1;
+      if (!matches.length) {
+        dropdown.innerHTML = `<div class="custom-autocomplete-empty">No matching symbols found</div>`;
+        dropdown.style.display = 'block';
+        return;
+      }
+
+      dropdown.innerHTML = matches.slice(0, 30).map((m, idx) => {
+        const mem = Array.isArray(m.membership) ? m.membership.join(', ') : (m.membership || '');
+        return `
+          <div class="custom-autocomplete-item" data-index="${idx}">
+            <span class="custom-autocomplete-symbol">${m.symbol}</span>
+            <span class="custom-autocomplete-meta">${mem}</span>
+          </div>
+        `;
+      }).join('');
+
+      dropdown.querySelectorAll('.custom-autocomplete-item').forEach(itemEl => {
+        itemEl.addEventListener('mousedown', (e) => {
+          e.preventDefault();
+          const idx = parseInt(itemEl.dataset.index, 10);
+          const selected = currentMatches[idx];
+          if (selected) {
+            input.value = selected.symbol;
+            if (options.onSelect) options.onSelect(selected);
+          }
+          closeDropdown();
+        });
+      });
+
+      dropdown.style.display = 'block';
+    };
+
+    const updateActiveItem = () => {
+      const items = dropdown.querySelectorAll('.custom-autocomplete-item');
+      items.forEach((it, idx) => {
+        if (idx === activeIndex) {
+          it.classList.add('active');
+          it.scrollIntoView({ block: 'nearest' });
+        } else {
+          it.classList.remove('active');
+        }
+      });
+    };
+
+    const doSearch = (val) => {
+      const query = (val || '').trim().toUpperCase();
+      const all = getSymbols();
+      if (!all.length) {
+        closeDropdown();
+        return;
+      }
+
+      let matches = [];
+      if (!query) {
+        matches = all.slice(0, 25);
+      } else {
+        matches = all.filter(s => {
+          const sym = (s.symbol || '').toUpperCase();
+          const mem = Array.isArray(s.membership) ? s.membership.join(' ').toUpperCase() : '';
+          return sym.includes(query) || mem.includes(query);
+        }).sort((a, b) => {
+          const aExact = a.symbol.toUpperCase() === query;
+          const bExact = b.symbol.toUpperCase() === query;
+          if (aExact && !bExact) return -1;
+          if (!aExact && bExact) return 1;
+          const aStarts = a.symbol.toUpperCase().startsWith(query);
+          const bStarts = b.symbol.toUpperCase().startsWith(query);
+          if (aStarts && !bStarts) return -1;
+          if (!aStarts && bStarts) return 1;
+          return a.symbol.localeCompare(b.symbol);
+        }).slice(0, 30);
+      }
+
+      renderItems(matches);
+    };
+
+    input.addEventListener('focus', () => {
+      doSearch(input.value);
+    });
+
+    input.addEventListener('input', () => {
+      if (options.onInput) options.onInput(input.value);
+      doSearch(input.value);
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (dropdown.style.display === 'none' || !currentMatches.length) {
+        if (e.key === 'ArrowDown') {
+          doSearch(input.value);
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        activeIndex = (activeIndex + 1) % Math.min(currentMatches.length, 30);
+        updateActiveItem();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        activeIndex = (activeIndex - 1 + Math.min(currentMatches.length, 30)) % Math.min(currentMatches.length, 30);
+        updateActiveItem();
+      } else if (e.key === 'Enter') {
+        if (activeIndex >= 0 && activeIndex < currentMatches.length) {
+          e.preventDefault();
+          const selected = currentMatches[activeIndex];
+          input.value = selected.symbol;
+          if (options.onSelect) options.onSelect(selected);
+          closeDropdown();
+        }
+      } else if (e.key === 'Escape') {
+        closeDropdown();
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (parent && !parent.contains(e.target)) {
+        closeDropdown();
+      }
+    });
+  }
+};
+
+// =====================================================================
+// 9. Application Bootstrapping
 // =====================================================================
 App.Init = {
   async bootstrap() {
@@ -2822,6 +3074,7 @@ App.Init = {
 
     await App.Screener.loadCustomWatchlists();
     await this.populateDatalists();
+    App.Autocomplete.initAll();
     App.Screener.fetchSignals();
   },
 
