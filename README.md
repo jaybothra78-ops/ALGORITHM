@@ -12,7 +12,7 @@ Tracks over 350+ Indian equities (Nifty 50, Bank Nifty, Nifty IT, Smallcap 100, 
   - **Dual Oversold (BUY)**: Only triggers when **both** (14) < 30$ and the \text{-}MA(14) < 30$ simultaneously.
   - **Dual Overbought (SELL)**: Only triggers when **both** (14) > 70$ and the \text{-}MA(14) > 70$ simultaneously.
 - **Rob Booker Knoxville Divergence**:
-  - Vectorized 150-period momentum divergence detection with next-candle confirmation.
+  - Vectorized 200-period momentum divergence detection with next-candle confirmation.
 - **Multi-Period Lookback Screener**:
   - Real-time screening across **1-Day, 3-Day, 7-Day, and 14-Day** historical lookback windows in sub-15ms from memory cache.
 - **🔗 Instant TradingView Watchlist Import**:

@@ -50,7 +50,7 @@ def rsi_signals(
 
 def rb_knox_divergence(
     ohlc: pd.DataFrame,
-    look_back: int = 150,
+    look_back: int = 200,
     mom_period: int = 20,
     rsi_period: int = 21,
     rsi_ob: float = 70.0,
@@ -58,7 +58,7 @@ def rb_knox_divergence(
 ) -> pd.DataFrame:
     """Calculate Rob Booker Knoxville Divergence indicator.
 
-    Standard TradingView Rules (RB_KnoxDiv 150 21 20):
+    Standard TradingView Rules (RB_KnoxDiv 200 21 20):
     - Bearish Divergence (Sell Line):
       1. An earlier candle in the lookback window was Overbought (RSI >= rsi_ob).
       2. Current candle makes a HIGHER HIGH in price than the highest overbought high (high > past_ob_high).

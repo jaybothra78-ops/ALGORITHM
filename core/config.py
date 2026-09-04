@@ -31,7 +31,7 @@ class Settings(BaseSettings):
     RSI_OVERSOLD: float = 30.0
 
     # RB Knoxville defaults
-    KNOX_LOOKBACK: int = 150
+    KNOX_LOOKBACK: int = 200
     KNOX_MOM_PERIOD: int = 20
     KNOX_RSI_PERIOD: int = 21
 
