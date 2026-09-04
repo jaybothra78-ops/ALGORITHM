@@ -71,6 +71,62 @@ def test_simulate_trade_stop_loss_exit():
     assert trade.pnl_pct <= -2.0
 
 
+def test_simulate_trade_time_exit_profitable():
+    df = _dummy_ohlc(50)
+    entry_price = float(df["Close"].iloc[5])
+    # Keep prices within 0.99 and 1.03 for 12 days so target (5%) and stop loss (2%) are NOT hit
+    for day_idx in range(6, 18):
+        df.loc[df.index[day_idx], "High"] = entry_price * 1.025
+        df.loc[df.index[day_idx], "Low"] = entry_price * 0.995
+        df.loc[df.index[day_idx], "Close"] = entry_price * 1.02
+        df.loc[df.index[day_idx], "Open"] = entry_price * 1.01
+
+    trade, _ = BacktesterEngine._simulate_trade(
+        symbol="TEST",
+        strategy="RSI",
+        signal_type="buy",
+        df=df,
+        signal_idx=5,
+        entry_idx=5,
+        target_pct=5.0,
+        stop_loss_pct=2.0,
+    )
+
+    assert trade is not None
+    assert trade.outcome == "WIN"
+    assert trade.exit_reason == "Time Exit (Profitable)"
+    assert trade.holding_days == 12
+    assert trade.pnl_pct > 0
+
+
+def test_simulate_trade_time_exit_stalled_loss():
+    df = _dummy_ohlc(50)
+    entry_price = float(df["Close"].iloc[5])
+    # Keep prices slightly down (-0.8%) between days 6 and 21 (15 days), within stop loss (2%)
+    for day_idx in range(6, 22):
+        df.loc[df.index[day_idx], "High"] = entry_price * 0.998
+        df.loc[df.index[day_idx], "Low"] = entry_price * 0.990
+        df.loc[df.index[day_idx], "Close"] = entry_price * 0.992
+        df.loc[df.index[day_idx], "Open"] = entry_price * 0.995
+
+    trade, _ = BacktesterEngine._simulate_trade(
+        symbol="TEST",
+        strategy="RSI",
+        signal_type="buy",
+        df=df,
+        signal_idx=5,
+        entry_idx=5,
+        target_pct=5.0,
+        stop_loss_pct=2.0,
+    )
+
+    assert trade is not None
+    assert trade.outcome == "LOSS"
+    assert trade.exit_reason == "Time Exit (Stalled Loss)"
+    assert trade.holding_days == 15
+    assert trade.pnl_pct <= 0
+
+
 
 def test_backtest_api_endpoint():
     with TestClient(app) as c:

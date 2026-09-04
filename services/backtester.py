@@ -382,43 +382,73 @@ class BacktesterEngine:
         exit_reason = ExitReason.OPEN_POSITION
         max_idx = min(entry_idx + max_holding_days, n - 1) if max_holding_days else (n - 1)
 
-        # Forward scan day-by-day until Target Hit or Stop Loss Hit
+        # Forward scan day-by-day until Target Hit, Stop Loss Hit, or Smart Time Exits
         for cur_idx in range(entry_idx + 1, max_idx + 1):
             cur_high = float(df["High"].iloc[cur_idx])
             cur_low = float(df["Low"].iloc[cur_idx])
             cur_close = float(df["Close"].iloc[cur_idx])
+            cur_open = float(df["Open"].iloc[cur_idx])
+            holding_days = cur_idx - entry_idx
 
             if is_buy:
                 # 1. Stop Loss Check (Low touches or pierces stop)
                 if stop_price is not None and cur_low <= stop_price:
                     exit_idx = cur_idx
-                    exit_price = min(stop_price, float(df["Open"].iloc[cur_idx]))
+                    exit_price = min(stop_price, cur_open)
                     exit_reason = ExitReason.STOP_LOSS_HIT
                     break
 
                 # 2. Target Check (High touches or exceeds target)
                 if target_price is not None and cur_high >= target_price:
                     exit_idx = cur_idx
-                    exit_price = max(target_price, float(df["Open"].iloc[cur_idx]))
+                    exit_price = max(target_price, cur_open)
                     exit_reason = ExitReason.TARGET_HIT
                     break
+
+                cur_pnl_pct = ((cur_close - entry_price) / entry_price) * 100.0
             else:
                 # Short/Sell:
                 # 1. Stop Loss Check (High touches or pierces stop)
                 if stop_price is not None and cur_high >= stop_price:
                     exit_idx = cur_idx
-                    exit_price = max(stop_price, float(df["Open"].iloc[cur_idx]))
+                    exit_price = max(stop_price, cur_open)
                     exit_reason = ExitReason.STOP_LOSS_HIT
                     break
 
                 # 2. Target Check (Low touches or pierces target)
                 if target_price is not None and cur_low <= target_price:
                     exit_idx = cur_idx
-                    exit_price = min(target_price, float(df["Open"].iloc[cur_idx]))
+                    exit_price = min(target_price, cur_open)
                     exit_reason = ExitReason.TARGET_HIT
                     break
 
-            # If reached end of dataset without hitting target or stop loss
+                cur_pnl_pct = ((entry_price - cur_close) / entry_price) * 100.0
+
+            # 3. Smart Time-Based Exits:
+            # A) Profitable Trade Exit (12-15 Days):
+            # If held for 12+ trading sessions and the trade is profitable (cur_pnl_pct > 0), take profit
+            if holding_days >= 12 and cur_pnl_pct > 0.0:
+                exit_idx = cur_idx
+                exit_price = cur_close
+                exit_reason = ExitReason.TIME_EXIT_PROFIT
+                break
+
+            # B) Minimal Loss / Stalled Trade Exit (15-18 Days):
+            # If held for 15+ trading sessions and trade is at minimal loss (cur_pnl_pct <= 0.0), cut stalled trade
+            if holding_days >= 15 and cur_pnl_pct <= 0.0:
+                exit_idx = cur_idx
+                exit_price = cur_close
+                exit_reason = ExitReason.TIME_EXIT_LOSS
+                break
+
+            # C) Maximum Holding Window Timeout (18 sessions default cap)
+            if holding_days >= 18:
+                exit_idx = cur_idx
+                exit_price = cur_close
+                exit_reason = ExitReason.TIME_EXIT
+                break
+
+            # If reached end of dataset without hitting target, stop loss, or time exits
             if cur_idx == max_idx:
                 exit_idx = cur_idx
                 exit_price = cur_close

@@ -10,8 +10,10 @@ class ExitReason(str, Enum):
     """Reason a simulated trade was closed."""
     TARGET_HIT = "Target Hit"
     STOP_LOSS_HIT = "Stop Loss Hit"
-    OPEN_POSITION = "Open / Current Close"
+    TIME_EXIT_PROFIT = "Time Exit (Profitable)"
+    TIME_EXIT_LOSS = "Time Exit (Stalled Loss)"
     TIME_EXIT = "Time Exit"
+    OPEN_POSITION = "Open / Current Close"
     OPPOSITE_SIGNAL = "Opposite Signal"
 
 
