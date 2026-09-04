@@ -1577,19 +1577,25 @@ App.Paper = {
       if (openCntEl) openCntEl.textContent = `${s.open_positions_count} active positions`;
 
       if (totPnlEl) {
-        totPnlEl.textContent = `${App.Utils.money(s.total_pnl)} (${App.Utils.formatPct(s.total_pnl_pct)})`;
+        const sign = s.total_pnl > 0 ? '+' : '';
+        totPnlEl.textContent = `${sign}${App.Utils.money(s.total_pnl)} (${App.Utils.formatPct(s.total_pnl_pct)})`;
         totPnlEl.className = s.total_pnl > 0 ? 'kpi-pnl-pos' : (s.total_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral');
       }
 
       if (uPnlEl) {
-        uPnlEl.textContent = App.Utils.money(s.unrealized_pnl);
+        const sign = s.unrealized_pnl > 0 ? '+' : '';
+        uPnlEl.textContent = `${sign}${App.Utils.money(s.unrealized_pnl)}`;
         uPnlEl.className = `kpi-main-val ${s.unrealized_pnl > 0 ? 'kpi-pnl-pos' : (s.unrealized_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
       }
 
-      if (uPctEl) uPctEl.textContent = App.Utils.formatPct(s.unrealized_pnl_pct);
+      if (uPctEl) {
+        uPctEl.textContent = App.Utils.formatPct(s.unrealized_pnl_pct);
+        uPctEl.className = `kpi-sub-text ${s.unrealized_pnl > 0 ? 'kpi-pnl-pos' : (s.unrealized_pnl < 0 ? 'kpi-pnl-neg' : '')}`;
+      }
 
       if (rPnlEl) {
-        rPnlEl.textContent = App.Utils.money(s.realized_pnl);
+        const sign = s.realized_pnl > 0 ? '+' : '';
+        rPnlEl.textContent = `${sign}${App.Utils.money(s.realized_pnl)}`;
         rPnlEl.className = `kpi-main-val ${s.realized_pnl > 0 ? 'kpi-pnl-pos' : (s.realized_pnl < 0 ? 'kpi-pnl-neg' : 'kpi-pnl-neutral')}`;
       }
 

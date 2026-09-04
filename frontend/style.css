@@ -3453,7 +3453,43 @@ input:focus, select:focus {
 }
 
 .kpi-main-val {
-  color: #1c1917 !important;
+  color: #1c1917;
+}
+
+/* Paper Trading PnL Dynamic Colors (Green for Profit, Red for Loss) */
+.kpi-pnl-pos,
+.kpi-main-val.kpi-pnl-pos,
+#paper-total-pnl.kpi-pnl-pos,
+#paper-unrealized-pnl.kpi-pnl-pos,
+#paper-realized-pnl.kpi-pnl-pos,
+.data-table td.positive,
+.data-table td.price-cell.positive,
+.price-cell.positive,
+.price-cell.positive strong,
+.price-cell.positive div,
+.pnl-pos {
+  color: #15803d !important;
+  font-weight: 800 !important;
+}
+
+.kpi-pnl-neg,
+.kpi-main-val.kpi-pnl-neg,
+#paper-total-pnl.kpi-pnl-neg,
+#paper-unrealized-pnl.kpi-pnl-neg,
+#paper-realized-pnl.kpi-pnl-neg,
+.data-table td.negative,
+.data-table td.price-cell.negative,
+.price-cell.negative,
+.price-cell.negative strong,
+.price-cell.negative div,
+.pnl-neg {
+  color: #b91c1c !important;
+  font-weight: 800 !important;
+}
+
+.kpi-pnl-neutral,
+.kpi-main-val.kpi-pnl-neutral {
+  color: #78716c !important;
 }
 
 .paper-order-card {
