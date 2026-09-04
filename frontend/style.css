@@ -1,8 +1,8 @@
 /* =========================================================
-   ALGORITHM DESIGN SYSTEM — AESTHETIC INSTITUTIONAL DARK THEME
+   STRATLAB GEN-Z QUANTITATIVE STUDIO DESIGN SYSTEM
    ========================================================= */
 
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;600;700;800;900&family=JetBrains+Mono:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
   color-scheme: light;
@@ -52,7 +52,9 @@
   --amber-soft: rgba(217, 119, 6, 0.1);
   --amber-border: rgba(217, 119, 6, 0.3);
 
-  /* Fonts & Soft Warm Shadows */
+  /* Gen-Z Typography System */
+  --font-display: 'Bricolage Grotesque', 'Space Grotesk', -apple-system, sans-serif;
+  --font-tech: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
 
@@ -61,10 +63,11 @@
   --shadow-lg: 0 12px 32px rgba(70, 55, 35, 0.12);
   --shadow-glow: 0 0 20px rgba(217, 119, 6, 0.15);
 
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 18px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-pill: 9999px;
 }
 
 
@@ -3184,65 +3187,142 @@ body {
 
 /* Warm Beige Navigation Bar */
 .navbar {
-  background: rgba(247, 243, 235, 0.92) !important;
-  backdrop-filter: blur(24px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
+  background: rgba(247, 243, 235, 0.94) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
   border-bottom: 1px solid rgba(168, 142, 110, 0.28) !important;
-  box-shadow: 0 4px 24px rgba(70, 55, 35, 0.06) !important;
+  box-shadow: 0 4px 24px rgba(70, 55, 35, 0.05) !important;
+}
+
+.nav-brand {
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  text-decoration: none !important;
 }
 
 .brand-badge-icon {
-  background: linear-gradient(135deg, #e8d7be 0%, #d8c29d 100%) !important;
-  border: 1px solid rgba(180, 140, 95, 0.45) !important;
-  box-shadow: 0 2px 10px rgba(180, 140, 95, 0.25) !important;
-  color: #78350f !important;
+  width: 38px !important;
+  height: 38px !important;
+  border-radius: 11px !important;
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 40%, #f59e0b 100%) !important;
+  border: 1px solid rgba(217, 119, 6, 0.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.18rem !important;
+  box-shadow: 0 4px 14px rgba(217, 119, 6, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.7) !important;
+  transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  transform: rotate(-3deg) !important;
+}
+
+.nav-brand:hover .brand-badge-icon {
+  transform: rotate(6deg) scale(1.1) !important;
+  box-shadow: 0 6px 20px rgba(217, 119, 6, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.9) !important;
+}
+
+.brand-text {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 3px !important;
+}
+
+.brand-name-row {
+  display: flex !important;
+  align-items: center !important;
+  gap: 7px !important;
 }
 
 .brand-name {
-  font-size: 1.2rem !important;
+  font-family: var(--font-display) !important;
+  font-size: 1.35rem !important;
   font-weight: 900 !important;
-  letter-spacing: 0.5px !important;
-  background: linear-gradient(135deg, #1c1917 0%, #44403c 50%, #b45309 100%) !important;
+  letter-spacing: -0.04em !important;
+  color: #18181b !important;
+  line-height: 1 !important;
+  text-transform: uppercase !important;
+}
+
+.brand-accent {
+  background: linear-gradient(135deg, #d97706 0%, #ea580c 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
+  font-weight: 900 !important;
+}
+
+.brand-sub-badge {
+  font-family: var(--font-mono) !important;
+  font-size: 0.58rem !important;
+  font-weight: 800 !important;
+  color: #92400e !important;
+  background: rgba(217, 119, 6, 0.12) !important;
+  border: 1px solid rgba(217, 119, 6, 0.28) !important;
+  border-radius: 9999px !important;
+  padding: 1px 6px !important;
+  letter-spacing: 0.02em !important;
+  line-height: 1.2 !important;
 }
 
 .brand-tag {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-family: var(--font-tech) !important;
   font-size: 0.62rem !important;
   font-weight: 800 !important;
   color: #78350f !important;
-  background: rgba(217, 119, 6, 0.12) !important;
-  border: 1px solid rgba(217, 119, 6, 0.3) !important;
-  border-radius: 4px !important;
-  padding: 2px 7px !important;
-  letter-spacing: 0.8px !important;
+  background: rgba(235, 227, 214, 0.9) !important;
+  border: 1px solid rgba(168, 142, 110, 0.32) !important;
+  border-radius: 9999px !important;
+  padding: 2px 8px !important;
+  letter-spacing: 0.08em !important;
+  text-transform: uppercase !important;
+  width: fit-content !important;
+  line-height: 1 !important;
+}
+
+.brand-pulse-dot {
+  width: 5px !important;
+  height: 5px !important;
+  border-radius: 50% !important;
+  background: #16a34a !important;
+  box-shadow: 0 0 6px #16a34a !important;
+  animation: pulseLive 1.8s infinite ease-in-out !important;
+  display: inline-block !important;
 }
 
 .nav-tabs {
-  background: rgba(235, 227, 214, 0.85) !important;
-  border: 1px solid rgba(168, 142, 110, 0.28) !important;
-  border-radius: 12px !important;
+  background: rgba(235, 227, 214, 0.88) !important;
+  border: 1px solid rgba(168, 142, 110, 0.3) !important;
+  border-radius: 9999px !important;
   padding: 4px !important;
+  gap: 3px !important;
 }
 
 .nav-tab {
+  font-family: var(--font-tech) !important;
   font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
   color: #57534e !important;
-  padding: 7px 16px !important;
-  border-radius: 8px !important;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  padding: 7px 18px !important;
+  border-radius: 9999px !important;
+  transition: all 0.22s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
 }
 
 .nav-tab:hover {
   color: #1c1917 !important;
-  background: rgba(255, 255, 255, 0.7) !important;
+  background: rgba(255, 255, 255, 0.75) !important;
+  transform: translateY(-1px) !important;
 }
 
 .nav-tab.active {
   background: #ffffff !important;
   border: 1px solid rgba(180, 83, 9, 0.45) !important;
   color: #92400e !important;
-  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.18), 0 1px 3px rgba(70, 55, 35, 0.08) !important;
+  box-shadow: 0 4px 14px rgba(180, 83, 9, 0.16), 0 1px 3px rgba(70, 55, 35, 0.08) !important;
   font-weight: 800 !important;
 }
 
@@ -3569,27 +3649,99 @@ input:focus, select:focus {
 .kpi-card {
   background: #ffffff !important;
   border: 1px solid rgba(168, 142, 110, 0.28) !important;
-  border-radius: 12px !important;
+  border-radius: 14px !important;
   box-shadow: 0 4px 16px rgba(70, 55, 35, 0.06) !important;
   color: #1c1917 !important;
 }
 
 .strategy-hero-banner .kpi-label,
 .kpi-label {
+  font-family: var(--font-tech) !important;
   color: #78716c !important;
   font-weight: 800 !important;
+  letter-spacing: 0.06em !important;
 }
 
 .strategy-hero-banner .kpi-val,
 .kpi-val {
+  font-family: var(--font-mono) !important;
   color: #1c1917 !important;
   font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
 }
 
 .strategy-hero-banner .kpi-sub,
 .kpi-sub {
   color: #a8a29e !important;
 }
+
+/* =========================================================
+   GEN-Z NEO-EDITORIAL TYPOGRAPHY & INTERACTION ACCELERATORS
+   ========================================================= */
+h1, h2, h3, h4,
+.wm-title,
+.screen-title,
+.order-card-title,
+.tester-title,
+.modal-title,
+.section-title {
+  font-family: var(--font-display) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.035em !important;
+  color: #18181b !important;
+}
+
+/* Tactile Buttons */
+.btn-primary, .cmd-run-btn, .btn-execute-order {
+  font-family: var(--font-tech) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.01em !important;
+  border-radius: 9999px !important;
+  padding: 10px 22px !important;
+  transition: all 0.24s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.btn-primary:hover, .cmd-run-btn:hover, .btn-execute-order:hover {
+  transform: translateY(-2px) scale(1.02) !important;
+  box-shadow: 0 8px 24px rgba(180, 83, 9, 0.4) !important;
+}
+
+.btn-subtle {
+  font-family: var(--font-tech) !important;
+  font-weight: 700 !important;
+  border-radius: 9999px !important;
+  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+}
+
+.btn-subtle:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 4px 12px rgba(70, 55, 35, 0.08) !important;
+}
+
+/* Tickers & Signal Chips */
+.stock-ticker, .ticker-badge, .td-symbol {
+  font-family: var(--font-mono) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em !important;
+  color: #1c1917 !important;
+}
+
+.pill, .btn-qty-chip, .btn-pct-chip {
+  font-family: var(--font-tech) !important;
+  border-radius: 9999px !important;
+}
+
+/* Modern Search Wrapper */
+.modern-search {
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 10px rgba(70, 55, 35, 0.05) !important;
+}
+
+.modern-search input {
+  font-family: var(--font-sans) !important;
+  font-weight: 600 !important;
+}
+
 
 
 
