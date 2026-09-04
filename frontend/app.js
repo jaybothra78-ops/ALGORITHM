@@ -2921,6 +2921,19 @@ App.Autocomplete = {
     let activeIndex = -1;
     let currentMatches = [];
 
+    const getParentsToElevate = () => {
+      return [
+        parent,
+        input.closest('.toolbar'),
+        input.closest('.command-bar'),
+        input.closest('.strategy-cmd-bar'),
+        input.closest('.search-wrapper'),
+        input.closest('.stock-input-wrapper'),
+        input.closest('.cmd-field-group'),
+        input.closest('.form-group'),
+      ].filter(Boolean);
+    };
+
     const getSymbols = () => {
       if (App.State.universeSymbols && App.State.universeSymbols.length) {
         return App.State.universeSymbols;
@@ -2933,6 +2946,7 @@ App.Autocomplete = {
       dropdown.innerHTML = '';
       activeIndex = -1;
       currentMatches = [];
+      getParentsToElevate().forEach(el => el.classList.remove('autocomplete-open'));
     };
 
     const renderItems = (matches) => {
@@ -2941,6 +2955,7 @@ App.Autocomplete = {
       if (!matches.length) {
         dropdown.innerHTML = `<div class="custom-autocomplete-empty">No matching symbols found</div>`;
         dropdown.style.display = 'block';
+        getParentsToElevate().forEach(el => el.classList.add('autocomplete-open'));
         return;
       }
 
@@ -2968,6 +2983,7 @@ App.Autocomplete = {
       });
 
       dropdown.style.display = 'block';
+      getParentsToElevate().forEach(el => el.classList.add('autocomplete-open'));
     };
 
     const updateActiveItem = () => {
@@ -3073,39 +3089,23 @@ App.Init = {
     App.Backtester.init();
 
     await App.Screener.loadCustomWatchlists();
-    await this.populateDatalists();
+    await this.loadUniverseSymbols();
     App.Autocomplete.initAll();
     App.Screener.fetchSignals();
   },
 
-  async populateDatalists() {
+  async loadUniverseSymbols() {
     try {
       const res = await fetch('/universe/symbols');
       if (!res.ok) return;
       const allData = await res.json();
       App.State.universeSymbols = allData;
-      const symbols = allData.map(s => s.symbol).filter(Boolean);
-      const uniqueSymbols = Array.from(new Set(symbols));
-
-      const datalists = [
-        '#lookback-stocks-datalist',
-        '#paper-stocks-datalist',
-        '#news-stocks-datalist',
-        '#backtest-stocks-datalist',
-      ];
-
-      datalists.forEach(id => {
-        const el = document.querySelector(id);
-        if (el && uniqueSymbols.length) {
-          el.innerHTML = uniqueSymbols.map(sym => `<option value="${sym}"></option>`).join('');
-        }
-      });
 
       // Populate initial news stock select with FNO or All
       App.News.populateStockSelect('FNO');
       App.Backtester.populateStockSelect('');
     } catch (err) {
-      console.debug('Datalists load error:', err);
+      console.debug('Universe symbols load error:', err);
     }
   },
 };
