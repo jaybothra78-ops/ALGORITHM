@@ -178,19 +178,21 @@ class BacktesterEngine:
     def _backtest_knoxville(
         cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
     ) -> list[BacktestTrade]:
-        """Simulate RB Knoxville Divergence with Sequential Breakout & Multi-Day Entry Window (Days 3-7):
+        """Simulate RB Knoxville Divergence with Sequential Confirmation & Price Crossing Entry:
         
         Buy Sequence:
         - Day 1 (Signal): Bullish Knoxville Divergence formed.
         - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/above Day 1 high. Stop Loss is locked at Low[Day 2].
-        - Days 3-7 (Entry Window): If on Day 3, 4, 5, 6, or 7 the stock opens at or above Day 2's close with a Green Candle (Close > Open) and has held above Day 2's Low, BUY the stock on that day.
-        - Stop Loss: Low of Day 2 (Trading signal confirmation day).
+        - Day 3+ (Crossing Entry): Whenever the stock crosses above Day 2's closing price (High >= Close[Day 2]), enter BUY.
+          - If the day opens above Day 2 Close, entry is at Open; otherwise at Day 2 Close.
+          - Setup is invalidated if price drops below Day 2 Stop Loss (Low <= Low[Day 2]) before crossing.
         
         Sell Sequence:
         - Day 1 (Signal): Bearish Knoxville Divergence formed.
         - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/below Day 1 low. Stop Loss is locked at High[Day 2].
-        - Days 3-7 (Entry Window): If on Day 3, 4, 5, 6, or 7 the stock opens at or below Day 2's close with a Red Candle (Close < Open) and has held below Day 2's High, SELL the stock on that day.
-        - Stop Loss: High of Day 2 (Trading signal confirmation day).
+        - Day 3+ (Crossing Entry): Whenever the stock crosses below Day 2's closing price (Low <= Close[Day 2]), enter SELL.
+          - If the day opens below Day 2 Close, entry is at Open; otherwise at Day 2 Close.
+          - Setup is invalidated if price rises above Day 2 Stop Loss (High >= High[Day 2]) before crossing.
         """
         trades: list[BacktestTrade] = []
         sigs = rb_knox_divergence(df)
@@ -211,19 +213,19 @@ class BacktesterEngine:
             if bool(row_sig["buy_signal"]) and day2_breaks_high:
                 day2_low_stop = l_day2
                 entry_found = False
-                # Scan Days 3, 4, 5, 6, 7 (offset 2 to 6)
-                for offset in range(2, min(7, n - i)):
+                for offset in range(2, n - i):
                     idx_entry = i + offset
                     o_entry = float(df["Open"].iloc[idx_entry])
-                    c_entry = float(df["Close"].iloc[idx_entry])
+                    h_entry = float(df["High"].iloc[idx_entry])
                     l_entry = float(df["Low"].iloc[idx_entry])
 
-                    # Invalidate setup if price drops below Day 2 Stop Loss before entry
+                    # Invalidate setup if price drops below Day 2 Stop Loss before crossing
                     if l_entry <= day2_low_stop:
                         break
 
-                    # Check if opens above Day 2 candle and forms a Green candle
-                    if o_entry >= c_day2 and c_entry > o_entry:
+                    # Whenever the stock crosses or opens above Day 2 closing price:
+                    if h_entry >= c_day2:
+                        exec_price = o_entry if o_entry >= c_day2 else c_day2
                         trade, exit_idx = cls._simulate_trade(
                             symbol=symbol,
                             strategy="RB_KnoxDiv",
@@ -234,6 +236,7 @@ class BacktesterEngine:
                             target_pct=req.target_pct,
                             stop_loss_pct=req.stop_loss_pct,
                             override_stop_price=day2_low_stop,
+                            override_entry_price=exec_price,
                         )
                         if trade:
                             trades.append(trade)
@@ -249,19 +252,19 @@ class BacktesterEngine:
             if bool(row_sig["sell_signal"]) and day2_breaks_low:
                 day2_high_stop = h_day2
                 entry_found = False
-                # Scan Days 3, 4, 5, 6, 7 (offset 2 to 6)
-                for offset in range(2, min(7, n - i)):
+                for offset in range(2, n - i):
                     idx_entry = i + offset
                     o_entry = float(df["Open"].iloc[idx_entry])
-                    c_entry = float(df["Close"].iloc[idx_entry])
                     h_entry = float(df["High"].iloc[idx_entry])
+                    l_entry = float(df["Low"].iloc[idx_entry])
 
-                    # Invalidate setup if price rises above Day 2 Stop Loss before entry
+                    # Invalidate setup if price rises above Day 2 Stop Loss before crossing
                     if h_entry >= day2_high_stop:
                         break
 
-                    # Check if opens below Day 2 candle and forms a Red candle
-                    if o_entry <= c_day2 and c_entry < o_entry:
+                    # Whenever the stock crosses or opens below Day 2 closing price:
+                    if l_entry <= c_day2:
+                        exec_price = o_entry if o_entry <= c_day2 else c_day2
                         trade, exit_idx = cls._simulate_trade(
                             symbol=symbol,
                             strategy="RB_KnoxDiv",
@@ -272,6 +275,7 @@ class BacktesterEngine:
                             target_pct=req.target_pct,
                             stop_loss_pct=req.stop_loss_pct,
                             override_stop_price=day2_high_stop,
+                            override_entry_price=exec_price,
                         )
                         if trade:
                             trades.append(trade)
@@ -285,8 +289,6 @@ class BacktesterEngine:
             i += 1
 
         return trades
-
-
 
 
 
@@ -350,6 +352,7 @@ class BacktesterEngine:
         stop_loss_pct: float | None,
         max_holding_days: int | None = None,
         override_stop_price: float | None = None,
+        override_entry_price: float | None = None,
     ) -> tuple[BacktestTrade | None, int]:
         """Simulate the forward price action until Target Hit or Stop Loss Hit."""
         n = len(df)
@@ -358,7 +361,7 @@ class BacktesterEngine:
 
         entry_date = df.index[entry_idx].date().isoformat()
         signal_date = df.index[signal_idx].date().isoformat()
-        entry_price = float(df["Close"].iloc[entry_idx])
+        entry_price = float(override_entry_price if override_entry_price is not None and override_entry_price > 0 else df["Close"].iloc[entry_idx])
         if entry_price <= 0:
             return None, entry_idx
 
