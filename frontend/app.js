@@ -2492,26 +2492,27 @@ App.Backtester = {
         width: container.clientWidth || 700,
         height: 420,
         layout: {
-          background: { color: '#070a13' },
-          textColor: '#94a3b8',
+          background: { color: '#161311' },
+          textColor: '#b8aca0',
           fontSize: 11,
           fontFamily: 'system-ui, -apple-system, sans-serif',
         },
         grid: {
-          vertLines: { color: 'rgba(255, 255, 255, 0.04)' },
-          horzLines: { color: 'rgba(255, 255, 255, 0.04)' },
+          vertLines: { color: 'rgba(235, 220, 195, 0.06)' },
+          horzLines: { color: 'rgba(235, 220, 195, 0.06)' },
         },
         crosshair: {
           mode: LightweightCharts.CrosshairMode.Normal,
         },
         rightPriceScale: {
-          borderColor: 'rgba(255, 255, 255, 0.08)',
+          borderColor: 'rgba(168, 142, 110, 0.25)',
         },
         timeScale: {
-          borderColor: 'rgba(255, 255, 255, 0.08)',
+          borderColor: 'rgba(168, 142, 110, 0.25)',
           timeVisible: true,
           secondsVisible: false,
         },
+
       });
 
       this._chartInstance = chart;

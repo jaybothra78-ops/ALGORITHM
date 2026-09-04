@@ -3149,40 +3149,42 @@ select:focus, input:focus, textarea:focus {
 }
 
 /* =========================================================
-   STRATLAB WARM BEIGE & CHAMPAGNE SANDSTONE LUXURY THEME
+   STRATLAB TRUE WARM BEIGE & EDITORIAL LUXURY THEME
    ========================================================= */
 
-/* Warm Linen & Espresso Ambient Canvas */
+/* Warm Beige Linen Ambient Canvas */
 body {
-  background: #151311 !important;
+  background: #f7f3eb !important;
   background-image: 
-    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(217, 180, 130, 0.14), transparent),
-    radial-gradient(ellipse 60% 40% at 85% 10%, rgba(197, 160, 110, 0.09), transparent),
-    radial-gradient(ellipse 50% 30% at 10% 90%, rgba(160, 130, 90, 0.07), transparent) !important;
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(217, 180, 130, 0.35), transparent),
+    radial-gradient(ellipse 60% 40% at 85% 10%, rgba(197, 160, 110, 0.25), transparent),
+    radial-gradient(ellipse 50% 30% at 10% 90%, rgba(180, 140, 95, 0.18), transparent) !important;
   background-attachment: fixed !important;
-  color: #f5efe6 !important;
+  color: #1c1917 !important;
+  color-scheme: light !important;
 }
 
 /* Warm Beige Navigation Bar */
 .navbar {
-  background: rgba(21, 19, 17, 0.85) !important;
+  background: rgba(247, 243, 235, 0.92) !important;
   backdrop-filter: blur(24px) saturate(160%) !important;
   -webkit-backdrop-filter: blur(24px) saturate(160%) !important;
-  border-bottom: 1px solid rgba(235, 220, 195, 0.08) !important;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.55) !important;
+  border-bottom: 1px solid rgba(168, 142, 110, 0.28) !important;
+  box-shadow: 0 4px 24px rgba(70, 55, 35, 0.06) !important;
 }
 
 .brand-badge-icon {
-  background: linear-gradient(135deg, rgba(212, 163, 89, 0.3) 0%, rgba(184, 130, 54, 0.15) 100%) !important;
-  border: 1px solid rgba(212, 163, 89, 0.45) !important;
-  box-shadow: 0 0 16px rgba(212, 163, 89, 0.25) !important;
+  background: linear-gradient(135deg, #e8d7be 0%, #d8c29d 100%) !important;
+  border: 1px solid rgba(180, 140, 95, 0.45) !important;
+  box-shadow: 0 2px 10px rgba(180, 140, 95, 0.25) !important;
+  color: #78350f !important;
 }
 
 .brand-name {
   font-size: 1.2rem !important;
   font-weight: 900 !important;
   letter-spacing: 0.5px !important;
-  background: linear-gradient(135deg, #fffaf3 0%, #f3e5d0 50%, #d4a359 100%) !important;
+  background: linear-gradient(135deg, #1c1917 0%, #44403c 50%, #b45309 100%) !important;
   -webkit-background-clip: text !important;
   -webkit-text-fill-color: transparent !important;
 }
@@ -3190,59 +3192,60 @@ body {
 .brand-tag {
   font-size: 0.62rem !important;
   font-weight: 800 !important;
-  color: #e0b268 !important;
-  background: rgba(224, 178, 104, 0.12) !important;
-  border: 1px solid rgba(224, 178, 104, 0.3) !important;
+  color: #78350f !important;
+  background: rgba(217, 119, 6, 0.12) !important;
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
   border-radius: 4px !important;
   padding: 2px 7px !important;
   letter-spacing: 0.8px !important;
 }
 
 .nav-tabs {
-  background: rgba(30, 26, 22, 0.7) !important;
-  border: 1px solid rgba(235, 220, 195, 0.09) !important;
+  background: rgba(235, 227, 214, 0.85) !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
   border-radius: 12px !important;
   padding: 4px !important;
 }
 
 .nav-tab {
   font-size: 0.84rem !important;
-  color: #b8aca0 !important;
+  color: #57534e !important;
   padding: 7px 16px !important;
   border-radius: 8px !important;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
 .nav-tab:hover {
-  color: #faf6ee !important;
-  background: rgba(235, 220, 195, 0.06) !important;
+  color: #1c1917 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
 }
 
 .nav-tab.active {
-  background: linear-gradient(135deg, rgba(48, 41, 34, 0.95), rgba(34, 29, 24, 0.95)) !important;
-  border: 1px solid rgba(212, 163, 89, 0.4) !important;
-  color: #fffaf3 !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5), 0 0 14px rgba(212, 163, 89, 0.18) !important;
+  background: #1c1917 !important;
+  border: 1px solid #1c1917 !important;
+  color: #faf5ee !important;
+  box-shadow: 0 3px 12px rgba(28, 25, 23, 0.25) !important;
 }
 
-/* Warm Champagne Glassmorphism Surface Cards */
+/* Warm Ivory Surface Cards & Workspaces */
 .news-command-bar,
 .news-command-center,
 .watchlist-manager-card,
 .table-container,
 .order-entry-card {
-  background: rgba(24, 21, 18, 0.76) !important;
-  backdrop-filter: blur(22px) !important;
-  -webkit-backdrop-filter: blur(22px) !important;
-  border: 1px solid rgba(235, 220, 195, 0.09) !important;
+  background: rgba(255, 252, 247, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border: 1px solid rgba(168, 142, 110, 0.25) !important;
   border-radius: 14px !important;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 245, 230, 0.08) !important;
+  box-shadow: 0 10px 32px rgba(70, 55, 35, 0.08), 0 1px 3px rgba(70, 55, 35, 0.05) !important;
+  color: #1c1917 !important;
 }
 
-/* Warm Beige Filter & Range Pills */
+/* Warm Filter & Range Pills */
 .pill-group {
-  background: rgba(30, 26, 22, 0.75) !important;
-  border: 1px solid rgba(235, 220, 195, 0.09) !important;
+  background: rgba(235, 227, 214, 0.85) !important;
+  border: 1px solid rgba(168, 142, 110, 0.25) !important;
   border-radius: 10px !important;
   padding: 3px !important;
 }
@@ -3250,76 +3253,76 @@ body {
 .pill {
   font-size: 0.78rem !important;
   font-weight: 700 !important;
-  color: #b8aca0 !important;
+  color: #57534e !important;
   padding: 5px 13px !important;
   border-radius: 7px !important;
   transition: all 0.18s ease !important;
 }
 
 .pill:hover {
-  color: #faf6ee !important;
-  background: rgba(235, 220, 195, 0.06) !important;
+  color: #1c1917 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
 }
 
 .pill.active {
-  background: linear-gradient(135deg, #c59341 0%, #9e6f24 100%) !important;
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%) !important;
   color: #ffffff !important;
-  box-shadow: 0 2px 12px rgba(197, 147, 65, 0.4) !important;
+  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.3) !important;
 }
 
 /* Warm Stats Ribbon */
 .stats-bar {
-  background: rgba(24, 21, 18, 0.7) !important;
-  border: 1px solid rgba(235, 220, 195, 0.08) !important;
+  background: rgba(255, 252, 247, 0.9) !important;
+  border: 1px solid rgba(168, 142, 110, 0.25) !important;
   border-radius: 12px !important;
   padding: 10px 16px !important;
   margin-bottom: 16px !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: 0 4px 16px rgba(70, 55, 35, 0.06) !important;
 }
 
 .stat-pill {
-  background: rgba(33, 28, 24, 0.85) !important;
-  border: 1px solid rgba(235, 220, 195, 0.08) !important;
+  background: rgba(238, 231, 220, 0.92) !important;
+  border: 1px solid rgba(168, 142, 110, 0.22) !important;
   border-radius: 8px !important;
   padding: 5px 12px !important;
   font-size: 0.78rem !important;
-  color: #d6cbbe !important;
+  color: #292524 !important;
 }
 
 .stat-pill.highlight {
-  border-color: rgba(212, 163, 89, 0.4) !important;
-  background: rgba(212, 163, 89, 0.12) !important;
-  color: #f5efe6 !important;
+  border-color: rgba(217, 119, 6, 0.45) !important;
+  background: rgba(217, 119, 6, 0.14) !important;
+  color: #78350f !important;
 }
 
-/* Warm Table Aesthetics */
+/* Data Table Elevated Typography */
 .data-table th {
-  background: rgba(30, 26, 22, 0.9) !important;
-  color: #b8aca0 !important;
+  background: rgba(240, 233, 222, 0.96) !important;
+  color: #57534e !important;
   font-size: 0.72rem !important;
   font-weight: 800 !important;
   text-transform: uppercase !important;
   letter-spacing: 0.7px !important;
   padding: 12px 16px !important;
-  border-bottom: 1px solid rgba(235, 220, 195, 0.09) !important;
+  border-bottom: 1px solid rgba(168, 142, 110, 0.3) !important;
 }
 
 .data-table td {
   padding: 13px 16px !important;
   font-size: 0.84rem !important;
-  color: #f5efe6 !important;
-  border-bottom: 1px solid rgba(235, 220, 195, 0.04) !important;
+  color: #1c1917 !important;
+  border-bottom: 1px solid rgba(168, 142, 110, 0.14) !important;
 }
 
 .data-table tbody tr:hover {
-  background: rgba(235, 220, 195, 0.038) !important;
+  background: rgba(235, 226, 212, 0.55) !important;
 }
 
-/* Buttons (Champagne Warm Amber) */
+/* Buttons (Warm Amber Terracotta) */
 .btn-primary, .cmd-run-btn, .btn-execute-order {
-  background: linear-gradient(135deg, #c59341 0%, #9e6f24 100%) !important;
-  border: 1px solid rgba(240, 195, 120, 0.45) !important;
-  box-shadow: 0 4px 18px rgba(197, 147, 65, 0.35) !important;
+  background: linear-gradient(135deg, #b45309 0%, #92400e 100%) !important;
+  border: 1px solid rgba(180, 83, 9, 0.45) !important;
+  box-shadow: 0 4px 18px rgba(180, 83, 9, 0.25) !important;
   border-radius: 9px !important;
   color: #ffffff !important;
   font-weight: 700 !important;
@@ -3328,19 +3331,19 @@ body {
 
 .btn-primary:hover, .cmd-run-btn:hover, .btn-execute-order:hover {
   transform: translateY(-1px) !important;
-  box-shadow: 0 6px 22px rgba(197, 147, 65, 0.55), 0 0 14px rgba(212, 163, 89, 0.4) !important;
+  box-shadow: 0 6px 22px rgba(180, 83, 9, 0.4) !important;
 }
 
 .btn-subtle {
-  background: rgba(35, 30, 25, 0.8) !important;
-  border: 1px solid rgba(235, 220, 195, 0.12) !important;
-  color: #d6cbbe !important;
+  background: rgba(238, 231, 220, 0.9) !important;
+  border: 1px solid rgba(168, 142, 110, 0.3) !important;
+  color: #292524 !important;
 }
 
 .btn-subtle:hover {
-  background: rgba(48, 41, 34, 0.9) !important;
-  border-color: rgba(212, 163, 89, 0.4) !important;
-  color: #fffaf3 !important;
+  background: #ffffff !important;
+  border-color: rgba(180, 83, 9, 0.4) !important;
+  color: #78350f !important;
 }
 
 /* Warm Inputs & Dropdowns */
@@ -3349,26 +3352,47 @@ input[type="number"],
 input[type="password"],
 input[type="url"],
 select {
-  background: rgba(30, 26, 22, 0.85) !important;
-  border: 1px solid rgba(235, 220, 195, 0.12) !important;
-  color: #fffaf3 !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(168, 142, 110, 0.38) !important;
+  color: #1c1917 !important;
   border-radius: 8px !important;
   font-size: 0.84rem !important;
   transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
 }
 
 input:focus, select:focus {
-  border-color: #d4a359 !important;
-  box-shadow: 0 0 0 3px rgba(212, 163, 89, 0.22) !important;
+  border-color: #b45309 !important;
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.2) !important;
   outline: none !important;
 }
 
-/* Smooth Sandstone Scrollbars */
+/* Status Indicators */
+.text-green, .dot-green {
+  color: #15803d !important;
+}
+.text-red, .dot-red {
+  color: #b91c1c !important;
+}
+.text-purple, .dot-purple {
+  color: #7e22ce !important;
+}
+.text-blue, .dot-blue {
+  color: #1d4ed8 !important;
+}
+
+/* Smooth Beige Scrollbars */
+.articles-list-stack::-webkit-scrollbar-thumb,
+.terminal-chat-thread::-webkit-scrollbar-thumb,
+.table-container::-webkit-scrollbar-thumb {
+  background: rgba(168, 142, 110, 0.35) !important;
+}
+
 .articles-list-stack::-webkit-scrollbar-thumb:hover,
 .terminal-chat-thread::-webkit-scrollbar-thumb:hover,
 .table-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(212, 163, 89, 0.45) !important;
+  background: rgba(180, 83, 9, 0.5) !important;
 }
+
 
 
 
