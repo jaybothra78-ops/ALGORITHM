@@ -33,7 +33,7 @@ class Settings(BaseSettings):
     # RB Knoxville defaults
     KNOX_LOOKBACK: int = 200
     KNOX_MOM_PERIOD: int = 20
-    KNOX_RSI_PERIOD: int = 21
+    KNOX_RSI_PERIOD: int = 14
 
     # Server settings
     SERVER_HOST: str = "127.0.0.1"

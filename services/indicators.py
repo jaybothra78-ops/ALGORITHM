@@ -52,13 +52,13 @@ def rb_knox_divergence(
     ohlc: pd.DataFrame,
     look_back: int = 200,
     mom_period: int = 20,
-    rsi_period: int = 21,
+    rsi_period: int = 14,
     rsi_ob: float = 70.0,
     rsi_os: float = 30.0,
 ) -> pd.DataFrame:
     """Calculate Rob Booker Knoxville Divergence indicator.
 
-    Standard TradingView Rules (RB_KnoxDiv 200 21 20):
+    Standard TradingView Rules (RB_KnoxDiv 200 14 20):
     - Bearish Divergence (Sell Line):
       1. An earlier candle in the lookback window was Overbought (RSI >= rsi_ob).
       2. Current candle makes a HIGHER HIGH in price than the highest overbought high (high > past_ob_high).
@@ -94,7 +94,7 @@ def rb_knox_divergence(
             continue
 
         # 1. Bearish Knoxville Divergence:
-        ob_indices = np.where(rsi_arr[w_start:w_end] >= rsi_ob)[0] + w_start
+        ob_indices = np.where((rsi_arr[w_start:w_end] >= rsi_ob) & (~np.isnan(mom_arr[w_start:w_end])))[0] + w_start
         if len(ob_indices) > 0:
             past_ob_high = np.nanmax(high_arr[ob_indices])
             past_ob_mom = np.nanmax(mom_arr[ob_indices])
@@ -104,7 +104,7 @@ def rb_knox_divergence(
                     sell_signal[i] = True
 
         # 2. Bullish Knoxville Divergence:
-        os_indices = np.where(rsi_arr[w_start:w_end] <= rsi_os)[0] + w_start
+        os_indices = np.where((rsi_arr[w_start:w_end] <= rsi_os) & (~np.isnan(mom_arr[w_start:w_end])))[0] + w_start
         if len(os_indices) > 0:
             past_os_low = np.nanmin(low_arr[os_indices])
             past_os_mom = np.nanmin(mom_arr[os_indices])
