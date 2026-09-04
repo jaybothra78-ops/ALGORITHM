@@ -132,14 +132,61 @@ def test_simulate_trade_no_loss_time_exit():
 
 
 def test_knoxville_crossing_entry():
-    df = _dummy_ohlc(50)
-    # Simulate a Knoxville buy signal setup:
-    # Day 5: Signal formed
-    # Day 6: Confirmation candle breaks Day 5 high, Close=105.0, Low=98.0 (Stop loss)
-    # Day 7: Below 105 (no entry)
-    # Day 8: Crosses above 105 (Entry triggered!)
+    from services.strategies import confirmed_trades
+    dates = pd.date_range("2026-01-01", periods=10, freq="D")
+    
+    # Buy Sequence Test
+    ohlc = pd.DataFrame(
+        {
+            "Open": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+            "High": [101, 102, 103, 104, 105, 110, 108, 112, 115, 120],
+            "Low":  [99,  98,  97,  96,  95,  94,  96,  96,  96,  96],
+            "Close":[100, 100, 100, 100, 102, 107, 106, 111, 114, 119],
+        },
+        index=dates,
+    )
+    signals = pd.DataFrame(
+        {
+            "buy_signal": [False, False, False, False, True, False, False, False, False, False],
+            "sell_signal": [False] * 10,
+            "rsi": [25.0] * 10,
+        },
+        index=dates,
+    )
+    rows = confirmed_trades(ohlc, signals)
+    assert len(rows) == 1
+    assert rows[0]["signal_type"] == "buy"
+    assert rows[0]["entry_price"] == 110.0  # Day 2 High
+    assert rows[0]["stop_loss"] == 94.0     # Day 2 Low
+
+    # Sell Sequence Test
+    sell_ohlc = pd.DataFrame(
+        {
+            "Open": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
+            "High": [101, 102, 103, 104, 105, 106, 104, 103, 102, 101],
+            "Low":  [99,  98,  97,  96,  95,  90,  92,  88,  85,  80],
+            "Close":[100, 100, 100, 100, 98,   93,  94,  89,  86,  81],
+        },
+        index=dates,
+    )
+    sell_signals = pd.DataFrame(
+        {
+            "buy_signal": [False] * 10,
+            "sell_signal": [False, False, False, False, True, False, False, False, False, False],
+            "rsi": [75.0] * 10,
+        },
+        index=dates,
+    )
+    sell_rows = confirmed_trades(sell_ohlc, sell_signals)
+    assert len(sell_rows) == 1
+    assert sell_rows[0]["signal_type"] == "sell"
+    assert sell_rows[0]["entry_price"] == 90.0   # Day 2 Low
+    assert sell_rows[0]["stop_loss"] == 106.0   # Day 2 High
+
+    # Also test backtester engine method
+    dummy_df = _dummy_ohlc(50)
     req = BacktestRequest(strategy="RB_KnoxDiv", target_pct=5.0, stop_loss_pct=2.0)
-    trades = BacktesterEngine._backtest_knoxville("TEST", df, req)
+    trades = BacktesterEngine._backtest_knoxville("TEST", dummy_df, req)
     assert isinstance(trades, list)
 
 

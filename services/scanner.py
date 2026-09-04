@@ -250,14 +250,15 @@ class ScannerEngine:
                 day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
                 if bool(sig_row.get("buy_signal", False)) and day2_breaks_high:
                     day2_low_stop = l_day2
-                    for offset in range(2, min(7, len(df) - i)):
+                    for offset in range(2, len(df) - i):
                         idx_entry = i + offset
                         o_e = float(df["Open"].iloc[idx_entry])
-                        c_e = float(df["Close"].iloc[idx_entry])
+                        h_e = float(df["High"].iloc[idx_entry])
                         l_e = float(df["Low"].iloc[idx_entry])
                         if l_e <= day2_low_stop:
                             break
-                        if o_e >= c_day2 and c_e > o_e:
+                        if h_e >= h_day2:
+                            exec_price = o_e if o_e >= h_day2 else h_day2
                             entry_dt_str = df.index[idx_entry].date().isoformat()
                             is_flagged = True
                             if primary_type == "neutral":
@@ -267,9 +268,9 @@ class ScannerEngine:
                                 category="Strategy_Signal",
                                 strategy="RB_KnoxDiv",
                                 type="buy",
-                                text=f"Knoxville Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry [Day {offset+1}]: ₹{c_e:.2f} on {entry_dt_str} | SL: ₹{day2_low_stop:.2f})",
+                                text=f"Knoxville Confirmed Buy (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry [Day {offset+1}]: ₹{exec_price:.2f} on {entry_dt_str} | SL: ₹{day2_low_stop:.2f})",
                                 date=entry_dt_str,
-                                entry_price=c_e,
+                                entry_price=exec_price,
                             ))
                             break
 
@@ -277,14 +278,15 @@ class ScannerEngine:
                 day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
                 if bool(sig_row.get("sell_signal", False)) and day2_breaks_low:
                     day2_high_stop = h_day2
-                    for offset in range(2, min(7, len(df) - i)):
+                    for offset in range(2, len(df) - i):
                         idx_entry = i + offset
                         o_e = float(df["Open"].iloc[idx_entry])
-                        c_e = float(df["Close"].iloc[idx_entry])
                         h_e = float(df["High"].iloc[idx_entry])
+                        l_e = float(df["Low"].iloc[idx_entry])
                         if h_e >= day2_high_stop:
                             break
-                        if o_e <= c_day2 and c_e < o_e:
+                        if l_e <= l_day2:
+                            exec_price = o_e if o_e <= l_day2 else l_day2
                             entry_dt_str = df.index[idx_entry].date().isoformat()
                             is_flagged = True
                             if primary_type == "neutral":
@@ -294,9 +296,9 @@ class ScannerEngine:
                                 category="Strategy_Signal",
                                 strategy="RB_KnoxDiv",
                                 type="sell",
-                                text=f"Knoxville Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry [Day {offset+1}]: ₹{c_e:.2f} on {entry_dt_str} | SL: ₹{day2_high_stop:.2f})",
+                                text=f"Knoxville Confirmed Sell (Knox: {sig_dt_str}, Break: {conf_dt_str}, Entry [Day {offset+1}]: ₹{exec_price:.2f} on {entry_dt_str} | SL: ₹{day2_high_stop:.2f})",
                                 date=entry_dt_str,
-                                entry_price=c_e,
+                                entry_price=exec_price,
                             ))
                             break
 

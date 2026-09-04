@@ -68,18 +68,19 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
         h_day2 = float(row_day2["High"])
         l_day2 = float(row_day2["Low"])
 
-        # Bullish Sequence: Day 1 (Knox) -> Day 2 (Breaks High) -> Days 3-7 (Green candle opening >= Day 2 close)
+        # Bullish Sequence: Day 1 (Knox) -> Day 2 (Breaks High) -> Day 3+ (Crosses above Day 2 High)
         day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
         if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high:
             day2_low_stop = l_day2
-            for offset in range(2, min(7, n - position)):
+            for offset in range(2, n - position):
                 idx_entry = position + offset
                 o_e = float(ohlc["Open"].iloc[idx_entry])
-                c_e = float(ohlc["Close"].iloc[idx_entry])
+                h_e = float(ohlc["High"].iloc[idx_entry])
                 l_e = float(ohlc["Low"].iloc[idx_entry])
                 if l_e <= day2_low_stop:
                     break
-                if o_e >= c_day2 and c_e > o_e:
+                if h_e >= h_day2:
+                    exec_price = o_e if o_e >= h_day2 else h_day2
                     entry_date = ohlc.index[idx_entry].date().isoformat()
                     rows.append({
                         "strategy": "RB_KnoxDiv",
@@ -87,24 +88,25 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                         "signal_date": signal_date,
                         "signal_candle_low": day2_low_stop,
                         "confirmation_date": entry_date,
-                        "entry_price": c_e,
+                        "entry_price": round(exec_price, 2),
                         "stop_loss": round(day2_low_stop, 2),
                         "rsi_value": rsi_val,
                     })
                     break
 
-        # Bearish Sequence: Day 1 (Knox) -> Day 2 (Breaks Low) -> Days 3-7 (Red candle opening <= Day 2 close)
+        # Bearish Sequence: Day 1 (Knox) -> Day 2 (Breaks Low) -> Day 3+ (Crosses below Day 2 Low)
         day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
         if bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low:
             day2_high_stop = h_day2
-            for offset in range(2, min(7, n - position)):
+            for offset in range(2, n - position):
                 idx_entry = position + offset
                 o_e = float(ohlc["Open"].iloc[idx_entry])
-                c_e = float(ohlc["Close"].iloc[idx_entry])
                 h_e = float(ohlc["High"].iloc[idx_entry])
+                l_e = float(ohlc["Low"].iloc[idx_entry])
                 if h_e >= day2_high_stop:
                     break
-                if o_e <= c_day2 and c_e < o_e:
+                if l_e <= l_day2:
+                    exec_price = o_e if o_e <= l_day2 else l_day2
                     entry_date = ohlc.index[idx_entry].date().isoformat()
                     rows.append({
                         "strategy": "RB_KnoxDiv",
@@ -112,7 +114,7 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                         "signal_date": signal_date,
                         "signal_candle_low": day2_high_stop,
                         "confirmation_date": entry_date,
-                        "entry_price": c_e,
+                        "entry_price": round(exec_price, 2),
                         "stop_loss": round(day2_high_stop, 2),
                         "rsi_value": rsi_val,
                     })

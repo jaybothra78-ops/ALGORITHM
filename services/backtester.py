@@ -183,15 +183,15 @@ class BacktesterEngine:
         Buy Sequence:
         - Day 1 (Signal): Bullish Knoxville Divergence formed.
         - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/above Day 1 high. Stop Loss is locked at Low[Day 2].
-        - Day 3+ (Crossing Entry): Whenever the stock crosses above Day 2's closing price (High >= Close[Day 2]), enter BUY.
-          - If the day opens above Day 2 Close, entry is at Open; otherwise at Day 2 Close.
+        - Day 3+ (Crossing Entry): Whenever the stock crosses above Day 2's High price (High >= High[Day 2]), enter BUY.
+          - If the day opens above Day 2 High, entry is at Open; otherwise at Day 2 High.
           - Setup is invalidated if price drops below Day 2 Stop Loss (Low <= Low[Day 2]) before crossing.
         
         Sell Sequence:
         - Day 1 (Signal): Bearish Knoxville Divergence formed.
         - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/below Day 1 low. Stop Loss is locked at High[Day 2].
-        - Day 3+ (Crossing Entry): Whenever the stock crosses below Day 2's closing price (Low <= Close[Day 2]), enter SELL.
-          - If the day opens below Day 2 Close, entry is at Open; otherwise at Day 2 Close.
+        - Day 3+ (Crossing Entry): Whenever the stock crosses below Day 2's Low price (Low <= Low[Day 2]), enter SELL.
+          - If the day opens below Day 2 Low, entry is at Open; otherwise at Day 2 Low.
           - Setup is invalidated if price rises above Day 2 Stop Loss (High >= High[Day 2]) before crossing.
         """
         trades: list[BacktestTrade] = []
@@ -223,9 +223,9 @@ class BacktesterEngine:
                     if l_entry <= day2_low_stop:
                         break
 
-                    # Whenever the stock crosses or opens above Day 2 closing price:
-                    if h_entry >= c_day2:
-                        exec_price = o_entry if o_entry >= c_day2 else c_day2
+                    # Whenever the stock crosses or opens above Day 2 high price:
+                    if h_entry >= h_day2:
+                        exec_price = o_entry if o_entry >= h_day2 else h_day2
                         trade, exit_idx = cls._simulate_trade(
                             symbol=symbol,
                             strategy="RB_KnoxDiv",
@@ -262,9 +262,9 @@ class BacktesterEngine:
                     if h_entry >= day2_high_stop:
                         break
 
-                    # Whenever the stock crosses or opens below Day 2 closing price:
-                    if l_entry <= c_day2:
-                        exec_price = o_entry if o_entry <= c_day2 else c_day2
+                    # Whenever the stock crosses or opens below Day 2 low price:
+                    if l_entry <= l_day2:
+                        exec_price = o_entry if o_entry <= l_day2 else l_day2
                         trade, exit_idx = cls._simulate_trade(
                             symbol=symbol,
                             strategy="RB_KnoxDiv",
