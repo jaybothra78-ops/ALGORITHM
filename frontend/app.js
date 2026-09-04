@@ -2339,27 +2339,27 @@ App.Backtester = {
           <div class="timeline-step">
             <div class="step-circle done">✓</div>
             <div class="step-name">Signal</div>
-            <div style="font-size: 0.65rem; color: #64748b;">${t.signal_date}</div>
+            <div style="font-size: 0.65rem; color: #78716c; font-weight: 600;">${t.signal_date}</div>
           </div>
           <div class="timeline-connector"></div>
           <div class="timeline-step">
             <div class="step-circle done">✓</div>
             <div class="step-name">Confirmed</div>
-            <div style="font-size: 0.65rem; color: #64748b;">Next Day</div>
+            <div style="font-size: 0.65rem; color: #78716c; font-weight: 600;">Next Day</div>
           </div>
           <div class="timeline-connector"></div>
           <div class="timeline-step">
             <div class="step-circle done">₹</div>
             <div class="step-name">Open</div>
-            <div style="font-size: 0.65rem; color: #64748b;">${t.entry_date}</div>
+            <div style="font-size: 0.65rem; color: #78716c; font-weight: 600;">${t.entry_date}</div>
           </div>
           <div class="timeline-connector"></div>
           <div class="timeline-step">
-            <div class="step-circle" style="border-color: ${isWin ? '#10b981' : '#f43f5e'}; color: ${isWin ? '#10b981' : '#f43f5e'};">
+            <div class="step-circle" style="border-color: ${isWin ? '#15803d' : '#b91c1c'}; color: ${isWin ? '#15803d' : '#b91c1c'}; background: ${isWin ? 'rgba(21,128,61,0.1)' : 'rgba(185,28,28,0.1)'};">
               ${isWin ? '🎯' : '🛑'}
             </div>
-            <div class="step-name" style="color: ${isWin ? '#10b981' : '#f43f5e'};">${t.exit_reason}</div>
-            <div style="font-size: 0.65rem; color: #64748b;">${t.exit_date}</div>
+            <div class="step-name" style="color: ${isWin ? '#15803d' : '#b91c1c'}; font-weight: 800;">${t.exit_reason}</div>
+            <div style="font-size: 0.65rem; color: #78716c; font-weight: 600;">${t.exit_date}</div>
           </div>
         </div>
 

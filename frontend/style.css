@@ -3651,6 +3651,56 @@ input:focus, select:focus {
   color: #a8a29e !important;
 }
 
+/* Inspector Trade Milestone Timeline & Tabs */
+.inspect-timeline {
+  background: #ffffff !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
+  border-radius: 12px !important;
+  padding: 14px 20px !important;
+  margin-bottom: 16px !important;
+  box-shadow: 0 4px 16px rgba(70, 55, 35, 0.05) !important;
+}
+
+.timeline-connector {
+  background: rgba(168, 142, 110, 0.3) !important;
+}
+
+.timeline-step .step-name {
+  color: #78716c !important;
+  font-weight: 800 !important;
+}
+
+.step-circle {
+  background: rgba(217, 119, 6, 0.1) !important;
+  border: 1px solid rgba(217, 119, 6, 0.35) !important;
+  color: #92400e !important;
+}
+
+.step-circle.done {
+  background: #15803d !important;
+  border-color: #15803d !important;
+  color: #ffffff !important;
+}
+
+.term-pill {
+  color: #57534e !important;
+  font-weight: 700 !important;
+}
+
+.term-pill:hover {
+  color: #1c1917 !important;
+  background: rgba(255, 255, 255, 0.7) !important;
+}
+
+.term-pill.active {
+  background: #ffffff !important;
+  color: #92400e !important;
+  border: 1px solid rgba(180, 83, 9, 0.4) !important;
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.15) !important;
+  font-weight: 800 !important;
+}
+
+
 
 
 
