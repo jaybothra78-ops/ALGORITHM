@@ -239,16 +239,22 @@ class ScannerEngine:
                     continue
 
                 sig_row = knox_sigs.iloc[i]
+                c_day1 = float(df["Close"].iloc[i])
                 h_day1 = float(df["High"].iloc[i])
                 l_day1 = float(df["Low"].iloc[i])
 
+                o_day2 = float(df["Open"].iloc[i + 1])
                 c_day2 = float(df["Close"].iloc[i + 1])
                 h_day2 = float(df["High"].iloc[i + 1])
                 l_day2 = float(df["Low"].iloc[i + 1])
 
                 # BUY SEQUENCE:
-                day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-                if bool(sig_row.get("buy_signal", False)) and day2_breaks_high:
+                day2_is_green = c_day2 > o_day2
+                day2_opens_higher = o_day2 >= c_day1 * 0.995
+                day2_closes_higher = c_day2 > c_day1
+                day2_confirmed_buy = day2_is_green and day2_opens_higher and day2_closes_higher
+
+                if bool(sig_row.get("buy_signal", False)) and day2_confirmed_buy:
                     day2_low_stop = l_day2
                     for offset in range(2, len(df) - i):
                         idx_entry = i + offset
@@ -275,8 +281,12 @@ class ScannerEngine:
                             break
 
                 # SELL SEQUENCE:
-                day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-                if bool(sig_row.get("sell_signal", False)) and day2_breaks_low:
+                day2_is_red = c_day2 < o_day2
+                day2_opens_lower = o_day2 <= c_day1 * 1.005
+                day2_closes_lower = c_day2 < c_day1
+                day2_confirmed_sell = day2_is_red and day2_opens_lower and day2_closes_lower
+
+                if bool(sig_row.get("sell_signal", False)) and day2_confirmed_sell:
                     day2_high_stop = h_day2
                     for offset in range(2, len(df) - i):
                         idx_entry = i + offset

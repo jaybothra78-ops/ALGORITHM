@@ -135,13 +135,13 @@ def test_knoxville_crossing_entry():
     from services.strategies import confirmed_trades
     dates = pd.date_range("2026-01-01", periods=10, freq="D")
     
-    # Buy Sequence Test
+    # Buy Sequence Test: Day 5 is a Green candle opening & closing higher than Day 4
     ohlc = pd.DataFrame(
         {
-            "Open": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
-            "High": [101, 102, 103, 104, 105, 110, 108, 112, 115, 120],
-            "Low":  [99,  98,  97,  96,  95,  94,  96,  96,  96,  96],
-            "Close":[100, 100, 100, 100, 102, 107, 106, 111, 114, 119],
+            "Open": [100, 100, 100, 100, 100, 102.5, 100, 100, 100, 100],
+            "High": [101, 102, 103, 104, 105, 110,   108, 112, 115, 120],
+            "Low":  [99,  98,  97,  96,  95,  94,    96,  96,  96,  96],
+            "Close":[100, 100, 100, 100, 102, 107,   106, 111, 114, 119],
         },
         index=dates,
     )
@@ -159,13 +159,20 @@ def test_knoxville_crossing_entry():
     assert rows[0]["entry_price"] == 110.0  # Day 2 High
     assert rows[0]["stop_loss"] == 94.0     # Day 2 Low
 
-    # Sell Sequence Test
+    # Assert RED candle Day 2 is REJECTED (e.g. NIACL case: Close < Open)
+    red_ohlc = ohlc.copy()
+    red_ohlc.loc[dates[5], "Open"] = 108.0
+    red_ohlc.loc[dates[5], "Close"] = 103.0  # Red candle: Close < Open
+    red_rows = confirmed_trades(red_ohlc, signals)
+    assert len(red_rows) == 0  # Must be rejected!
+
+    # Sell Sequence Test: Day 5 is a Red candle opening & closing lower than Day 4
     sell_ohlc = pd.DataFrame(
         {
-            "Open": [100, 100, 100, 100, 100, 100, 100, 100, 100, 100],
-            "High": [101, 102, 103, 104, 105, 106, 104, 103, 102, 101],
-            "Low":  [99,  98,  97,  96,  95,  90,  92,  88,  85,  80],
-            "Close":[100, 100, 100, 100, 98,   93,  94,  89,  86,  81],
+            "Open": [100, 100, 100, 100, 100, 97.5, 100, 100, 100, 100],
+            "High": [101, 102, 103, 104, 105, 106,  104, 103, 102, 101],
+            "Low":  [99,  98,  97,  96,  95,  90,   92,  88,  85,  80],
+            "Close":[100, 100, 100, 100, 98,   93,   94,  89,  86,  81],
         },
         index=dates,
     )

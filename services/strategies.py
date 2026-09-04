@@ -61,16 +61,22 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
 
         rsi_val = round(float(signals.iloc[position]["rsi"]), 2) if "rsi" in signals.columns and pd.notna(signals.iloc[position]["rsi"]) else None
 
+        c_day1 = float(row_day1["Close"])
         h_day1 = float(row_day1["High"])
         l_day1 = float(row_day1["Low"])
 
+        o_day2 = float(row_day2["Open"])
         c_day2 = float(row_day2["Close"])
         h_day2 = float(row_day2["High"])
         l_day2 = float(row_day2["Low"])
 
-        # Bullish Sequence: Day 1 (Knox) -> Day 2 (Breaks High) -> Day 3+ (Crosses above Day 2 High)
-        day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-        if bool(signals.iloc[position]["buy_signal"]) and day2_breaks_high:
+        # Bullish Sequence: Day 1 (Knox) -> Day 2 (Green candle opening & closing higher than Day 1) -> Day 3+ (Crosses above Day 2 High)
+        day2_is_green = c_day2 > o_day2
+        day2_opens_higher = o_day2 >= c_day1 * 0.995
+        day2_closes_higher = c_day2 > c_day1
+        day2_confirmed_buy = day2_is_green and day2_opens_higher and day2_closes_higher
+
+        if bool(signals.iloc[position]["buy_signal"]) and day2_confirmed_buy:
             day2_low_stop = l_day2
             for offset in range(2, n - position):
                 idx_entry = position + offset
@@ -94,9 +100,13 @@ def confirmed_trades(ohlc: pd.DataFrame, signals: pd.DataFrame, max_lookback: in
                     })
                     break
 
-        # Bearish Sequence: Day 1 (Knox) -> Day 2 (Breaks Low) -> Day 3+ (Crosses below Day 2 Low)
-        day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-        if bool(signals.iloc[position]["sell_signal"]) and day2_breaks_low:
+        # Bearish Sequence: Day 1 (Knox) -> Day 2 (Red candle opening & closing lower than Day 1) -> Day 3+ (Crosses below Day 2 Low)
+        day2_is_red = c_day2 < o_day2
+        day2_opens_lower = o_day2 <= c_day1 * 1.005
+        day2_closes_lower = c_day2 < c_day1
+        day2_confirmed_sell = day2_is_red and day2_opens_lower and day2_closes_lower
+
+        if bool(signals.iloc[position]["sell_signal"]) and day2_confirmed_sell:
             day2_high_stop = h_day2
             for offset in range(2, n - position):
                 idx_entry = position + offset

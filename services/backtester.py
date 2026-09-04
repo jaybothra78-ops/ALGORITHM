@@ -182,14 +182,14 @@ class BacktesterEngine:
         
         Buy Sequence:
         - Day 1 (Signal): Bullish Knoxville Divergence formed.
-        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/above Day 1 high. Stop Loss is locked at Low[Day 2].
+        - Day 2 (Trading Signal Confirmation): Green candle (Close > Open) that opens and closes higher than Day 1. Stop Loss is locked at Low[Day 2].
         - Day 3+ (Crossing Entry): Whenever the stock crosses above Day 2's High price (High >= High[Day 2]), enter BUY.
           - If the day opens above Day 2 High, entry is at Open; otherwise at Day 2 High.
           - Setup is invalidated if price drops below Day 2 Stop Loss (Low <= Low[Day 2]) before crossing.
         
         Sell Sequence:
         - Day 1 (Signal): Bearish Knoxville Divergence formed.
-        - Day 2 (Trading Signal Confirmation): Candle breaks and closes at/below Day 1 low. Stop Loss is locked at High[Day 2].
+        - Day 2 (Trading Signal Confirmation): Red candle (Close < Open) that opens and closes lower than Day 1. Stop Loss is locked at High[Day 2].
         - Day 3+ (Crossing Entry): Whenever the stock crosses below Day 2's Low price (Low <= Low[Day 2]), enter SELL.
           - If the day opens below Day 2 Low, entry is at Open; otherwise at Day 2 Low.
           - Setup is invalidated if price rises above Day 2 Stop Loss (High >= High[Day 2]) before crossing.
@@ -201,16 +201,23 @@ class BacktesterEngine:
 
         while i < n - 3:
             row_sig = sigs.iloc[i]
+            c_day1 = float(df["Close"].iloc[i])
             h_day1 = float(df["High"].iloc[i])
             l_day1 = float(df["Low"].iloc[i])
 
+            o_day2 = float(df["Open"].iloc[i + 1])
             c_day2 = float(df["Close"].iloc[i + 1])
             h_day2 = float(df["High"].iloc[i + 1])
             l_day2 = float(df["Low"].iloc[i + 1])
 
             # BUY SEQUENCE:
-            day2_breaks_high = (h_day2 > h_day1) and (c_day2 >= h_day1 * 0.99)
-            if bool(row_sig["buy_signal"]) and day2_breaks_high:
+            # Day 2 Confirmation: Must be a Green Candle (Close > Open) opening & closing higher than Day 1
+            day2_is_green = c_day2 > o_day2
+            day2_opens_higher = o_day2 >= c_day1 * 0.995
+            day2_closes_higher = c_day2 > c_day1
+            day2_confirmed_buy = day2_is_green and day2_opens_higher and day2_closes_higher
+
+            if bool(row_sig["buy_signal"]) and day2_confirmed_buy:
                 day2_low_stop = l_day2
                 entry_found = False
                 for offset in range(2, n - i):
@@ -248,8 +255,13 @@ class BacktesterEngine:
                     continue
 
             # SELL SEQUENCE:
-            day2_breaks_low = (l_day2 < l_day1) and (c_day2 <= l_day1 * 1.01)
-            if bool(row_sig["sell_signal"]) and day2_breaks_low:
+            # Day 2 Confirmation: Must be a Red Candle (Close < Open) opening & closing lower than Day 1
+            day2_is_red = c_day2 < o_day2
+            day2_opens_lower = o_day2 <= c_day1 * 1.005
+            day2_closes_lower = c_day2 < c_day1
+            day2_confirmed_sell = day2_is_red and day2_opens_lower and day2_closes_lower
+
+            if bool(row_sig["sell_signal"]) and day2_confirmed_sell:
                 day2_high_stop = h_day2
                 entry_found = False
                 for offset in range(2, n - i):
