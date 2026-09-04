@@ -2359,39 +2359,39 @@ App.Backtester = {
 
         <!-- 3 Performance Metric Cards -->
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin-bottom: 16px;">
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">OUTCOME</div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.outcome}</div>
-            <div style="font-size: 0.72rem; color: #cbd5e1;">${t.exit_reason}</div>
+          <div style="background: #ffffff; border: 1px solid rgba(168, 142, 110, 0.28); border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);">
+            <div style="font-size: 0.68rem; color: #78716c; font-weight: 800; text-transform: uppercase;">OUTCOME</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: ${isWin ? '#15803d' : '#b91c1c'}; margin-top: 2px;">${t.outcome}</div>
+            <div style="font-size: 0.72rem; color: #57534e;">${t.exit_reason}</div>
           </div>
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">NET RETURN</div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: ${isWin ? '#10b981' : '#f43f5e'}; margin-top: 2px;">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
-            <div style="font-size: 0.72rem; color: #cbd5e1;">₹${(t.pnl_amount >= 0 ? '+' : '')}${t.pnl_amount.toFixed(2)} / share</div>
+          <div style="background: #ffffff; border: 1px solid rgba(168, 142, 110, 0.28); border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);">
+            <div style="font-size: 0.68rem; color: #78716c; font-weight: 800; text-transform: uppercase;">NET RETURN</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: ${isWin ? '#15803d' : '#b91c1c'}; margin-top: 2px;">${t.pnl_pct >= 0 ? '+' : ''}${t.pnl_pct.toFixed(2)}%</div>
+            <div style="font-size: 0.72rem; color: #57534e;">₹${(t.pnl_amount >= 0 ? '+' : '')}${t.pnl_amount.toFixed(2)} / share</div>
           </div>
-          <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 12px; text-align: center;">
-            <div style="font-size: 0.68rem; color: #94a3b8; text-transform: uppercase;">HOLDING TIME</div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">${t.holding_days} Days</div>
-            <div style="font-size: 0.72rem; color: #cbd5e1;">${t.entry_date} to ${t.exit_date}</div>
+          <div style="background: #ffffff; border: 1px solid rgba(168, 142, 110, 0.28); border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);">
+            <div style="font-size: 0.68rem; color: #78716c; font-weight: 800; text-transform: uppercase;">HOLDING TIME</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #92400e; margin-top: 2px;">${t.holding_days} Days</div>
+            <div style="font-size: 0.72rem; color: #57534e;">${t.entry_date} to ${t.exit_date}</div>
           </div>
         </div>
 
         <!-- Execution Levels Table -->
-        <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 10px; padding: 14px; margin-bottom: 16px;">
-          <h5 style="color: #cbd5e1; font-size: 0.82rem; margin-bottom: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Price Execution Levels</h5>
+        <div style="background: #ffffff; border: 1px solid rgba(168, 142, 110, 0.28); border-radius: 10px; padding: 14px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);">
+          <h5 style="color: #92400e; font-size: 0.82rem; margin-bottom: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.04em;">Price Execution Levels</h5>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.82rem;">
-            <div><span style="color: #94a3b8;">Entry Price:</span> <strong style="color: #fff;">₹${t.entry_price.toFixed(2)}</strong></div>
-            <div><span style="color: #94a3b8;">Exit Price:</span> <strong style="color: #fff;">₹${t.exit_price.toFixed(2)}</strong></div>
-            <div><span style="color: #94a3b8;">Target Level:</span> <strong style="color: #10b981;">₹${(t.target_price || 0).toFixed(2)}</strong></div>
-            <div><span style="color: #94a3b8;">Stop Loss Level:</span> <strong style="color: #f43f5e;">₹${(t.stop_loss_price || 0).toFixed(2)}</strong></div>
-            <div><span style="color: #94a3b8;">Signal Date:</span> <span style="color: #cbd5e1;">${t.signal_date}</span></div>
-            <div><span style="color: #94a3b8;">Confirmation:</span> <span style="color: #10b981;">✅ Verified Next Day</span></div>
+            <div><span style="color: #78716c; font-weight: 600;">Entry Price:</span> <strong style="color: #1c1917;">₹${t.entry_price.toFixed(2)}</strong></div>
+            <div><span style="color: #78716c; font-weight: 600;">Exit Price:</span> <strong style="color: #1c1917;">₹${t.exit_price.toFixed(2)}</strong></div>
+            <div><span style="color: #78716c; font-weight: 600;">Target Level:</span> <strong style="color: #15803d;">₹${(t.target_price || 0).toFixed(2)}</strong></div>
+            <div><span style="color: #78716c; font-weight: 600;">Stop Loss Level:</span> <strong style="color: #b91c1c;">₹${(t.stop_loss_price || 0).toFixed(2)}</strong></div>
+            <div><span style="color: #78716c; font-weight: 600;">Signal Date:</span> <span style="color: #44403c; font-weight: 600;">${t.signal_date}</span></div>
+            <div><span style="color: #78716c; font-weight: 600;">Confirmation:</span> <span style="color: #15803d; font-weight: 700;">✅ Verified Next Day</span></div>
           </div>
         </div>
 
         <!-- 1-Click Bridge Actions -->
         <div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px;">
-          <button type="button" class="btn-subtle" style="background: rgba(99, 102, 241, 0.2); border-color: #6366f1; color: #a5b4fc; font-weight: 700;" onclick="App.Backtester.switchInspectorTab('chart')">
+          <button type="button" class="btn-subtle" style="background: rgba(217, 119, 6, 0.12); border-color: rgba(217, 119, 6, 0.4); color: #92400e; font-weight: 800;" onclick="App.Backtester.switchInspectorTab('chart')">
             🕯️ View Exact Candle Chart
           </button>
           <button type="button" class="btn-subtle" onclick="App.Backtester.openTradingViewWithDate()">

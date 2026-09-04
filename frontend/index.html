@@ -11,7 +11,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=25.0">
+  <link rel="stylesheet" href="/static/style.css?v=26.0">
 
 
 
@@ -409,20 +409,21 @@
       margin-left: 16px;
     }
     .thought-box {
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 6px;
-      padding: 6px 10px;
+      background: #ffffff;
+      border: 1px solid rgba(168, 142, 110, 0.3);
+      border-radius: 8px;
+      padding: 8px 12px;
       margin-bottom: 8px;
       font-size: 0.74rem;
+      box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);
     }
     .thought-summary {
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 6px;
-      color: #a5b4fc;
-      font-weight: 600;
+      color: #92400e;
+      font-weight: 700;
       user-select: none;
     }
     .thought-list {
@@ -431,21 +432,21 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      color: #94a3b8;
+      color: #57534e;
       font-size: 0.73rem;
       line-height: 1.45;
     }
     .ai-answer-body {
-      color: #f1f5f9;
+      color: #1c1917;
       font-size: 0.84rem;
       line-height: 1.55;
     }
     .ai-ans-h5 {
       font-size: 0.88rem;
       font-weight: 700;
-      color: #38bdf8;
+      color: #92400e;
       margin: 0 0 6px 0;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      border-bottom: 1px solid rgba(168, 142, 110, 0.2);
       padding-bottom: 3px;
     }
     .ai-ans-bullet {
@@ -456,7 +457,7 @@
       font-size: 0.83rem;
     }
     .bullet-dot {
-      color: #6366f1;
+      color: #b45309;
       font-weight: 800;
       line-height: 1.3;
     }
@@ -464,21 +465,20 @@
       height: 6px;
     }
     .catalysts-card {
-      background: linear-gradient(135deg, rgba(16, 185, 129, 0.06) 0%, rgba(15, 23, 42, 0.75) 100%) !important;
-
-      border: 1px solid rgba(16, 185, 129, 0.28) !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+      background: linear-gradient(135deg, rgba(21, 128, 61, 0.06) 0%, #ffffff 100%) !important;
+      border: 1px solid rgba(21, 128, 61, 0.28) !important;
+      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
     }
     .risks-card {
-      background: linear-gradient(135deg, rgba(244, 63, 94, 0.06) 0%, rgba(15, 23, 42, 0.75) 100%) !important;
-      border: 1px solid rgba(244, 63, 94, 0.28) !important;
-      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25) !important;
+      background: linear-gradient(135deg, rgba(185, 28, 28, 0.06) 0%, #ffffff 100%) !important;
+      border: 1px solid rgba(185, 28, 28, 0.28) !important;
+      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
     }
     .catalysts-list li::before {
       content: "•";
       position: absolute;
       left: 2px;
-      color: #10b981;
+      color: #15803d;
       font-size: 1.2rem;
       line-height: 1;
       top: 1px;
@@ -487,12 +487,11 @@
       content: "•";
       position: absolute;
       left: 2px;
-      color: #f43f5e;
+      color: #b91c1c;
       font-size: 1.2rem;
       line-height: 1;
     }
     /* Strategy Tester KPI Ribbon Styles */
-
     .strategy-hero-banner {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -500,44 +499,44 @@
       margin-bottom: 20px;
     }
     .kpi-card {
-      background: linear-gradient(135deg, rgba(15, 23, 42, 0.9) 0%, rgba(30, 41, 59, 0.7) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      padding: 14px 16px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+      background: #ffffff !important;
+      border: 1px solid rgba(168, 142, 110, 0.28) !important;
+      border-radius: 12px !important;
+      padding: 14px 16px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: center !important;
+      box-shadow: 0 4px 16px rgba(70, 55, 35, 0.06) !important;
     }
     .kpi-label {
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #94a3b8;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
+      font-size: 0.68rem !important;
+      font-weight: 800 !important;
+      color: #78716c !important;
+      letter-spacing: 0.05em !important;
+      text-transform: uppercase !important;
     }
     .kpi-val {
-      font-size: 1.45rem;
-      font-weight: 800;
-      color: #fff;
-      margin: 4px 0 2px 0;
-      font-feature-settings: "tnum";
+      font-size: 1.45rem !important;
+      font-weight: 800 !important;
+      color: #1c1917 !important;
+      margin: 4px 0 2px 0 !important;
+      font-feature-settings: "tnum" !important;
     }
     .kpi-sub {
-      font-size: 0.72rem;
-      color: #64748b;
+      font-size: 0.72rem !important;
+      color: #a8a29e !important;
     }
 
     /* =========================================================
        STRATEGY TESTER MINIMAL AESTHETIC DESIGN SYSTEM
        ========================================================= */
     .tester-glass-card {
-      background: linear-gradient(180deg, rgba(17, 24, 39, 0.75) 0%, rgba(10, 15, 29, 0.88) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(255, 252, 247, 0.94);
+      border: 1px solid rgba(168, 142, 110, 0.28);
       border-radius: 14px;
       padding: 22px 24px;
       backdrop-filter: blur(20px);
-      box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      box-shadow: 0 10px 32px rgba(70, 55, 35, 0.08);
       margin-bottom: 22px;
     }
     .tester-header-row {
@@ -550,11 +549,11 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(99, 102, 241, 0.12);
-      border: 1px solid rgba(99, 102, 241, 0.28);
-      color: #a5b4fc;
+      background: rgba(217, 119, 6, 0.12);
+      border: 1px solid rgba(217, 119, 6, 0.28);
+      color: #92400e;
       font-size: 0.72rem;
-      font-weight: 700;
+      font-weight: 800;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       padding: 4px 10px;
@@ -564,13 +563,13 @@
     .tester-title {
       font-size: 1.35rem;
       font-weight: 800;
-      color: #f8fafc;
+      color: #1c1917;
       letter-spacing: -0.02em;
       margin: 0 0 6px 0;
     }
     .tester-desc {
       font-size: 0.84rem;
-      color: #94a3b8;
+      color: #57534e;
       max-width: 780px;
       line-height: 1.55;
       margin: 0;
@@ -585,21 +584,21 @@
       .tester-controls-bar { grid-template-columns: 1fr; }
     }
     .tester-input-box {
-      background: rgba(3, 7, 18, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: #ffffff;
+      border: 1px solid rgba(168, 142, 110, 0.35);
       border-radius: 10px;
       padding: 8px 12px;
       transition: all 0.2s ease;
     }
     .tester-input-box:focus-within {
-      border-color: #6366f1;
-      box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
+      border-color: #b45309;
+      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
     }
     .tester-input-box label {
       display: block;
       font-size: 0.68rem;
       font-weight: 700;
-      color: #64748b;
+      color: #78716c;
       letter-spacing: 0.05em;
       text-transform: uppercase;
       margin-bottom: 4px;
@@ -609,19 +608,19 @@
       width: 100%;
       background: transparent;
       border: none;
-      color: #f8fafc;
+      color: #1c1917;
       font-size: 0.88rem;
       font-weight: 600;
       outline: none;
     }
     .tester-input-box select option {
-      background: #0f172a;
-      color: #fff;
+      background: #ffffff;
+      color: #1c1917;
     }
     .tester-strategy-strip {
       display: flex;
-      background: rgba(3, 7, 18, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: rgba(238, 231, 220, 0.85);
+      border: 1px solid rgba(168, 142, 110, 0.25);
       border-radius: 10px;
       padding: 4px;
       gap: 6px;
@@ -632,9 +631,9 @@
       flex: 1;
       background: transparent;
       border: none;
-      color: #94a3b8;
+      color: #57534e;
       font-size: 0.8rem;
-      font-weight: 600;
+      font-weight: 700;
       padding: 9px 14px;
       border-radius: 8px;
       cursor: pointer;
@@ -647,13 +646,14 @@
       gap: 6px;
     }
     .strat-tab:hover {
-      color: #f8fafc;
-      background: rgba(255, 255, 255, 0.04);
+      color: #1c1917;
+      background: rgba(255, 255, 255, 0.6);
     }
     .strat-tab.active {
-      background: #4f46e5;
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.35);
+      background: #ffffff;
+      color: #92400e;
+      border: 1px solid rgba(180, 83, 9, 0.35);
+      box-shadow: 0 2px 8px rgba(180, 83, 9, 0.15);
     }
     .tester-params-strip {
       display: grid;
@@ -666,8 +666,8 @@
       .tester-params-strip { grid-template-columns: 1fr 1fr; }
     }
     .param-card {
-      background: rgba(3, 7, 18, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #ffffff;
+      border: 1px solid rgba(168, 142, 110, 0.3);
       border-radius: 10px;
       padding: 8px 12px;
       display: flex;
@@ -676,7 +676,7 @@
     .param-card label {
       font-size: 0.66rem;
       font-weight: 700;
-      color: #64748b;
+      color: #78716c;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       margin-bottom: 2px;
@@ -685,22 +685,22 @@
     .param-card select {
       background: transparent;
       border: none;
-      color: #f8fafc;
+      color: #1c1917;
       font-size: 0.95rem;
       font-weight: 700;
       outline: none;
       width: 100%;
     }
     .btn-run-quant {
-      background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
-      border: none;
+      background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
+      border: 1px solid rgba(180, 83, 9, 0.4);
       color: #ffffff;
       font-size: 0.88rem;
       font-weight: 700;
       padding: 12px 18px;
       border-radius: 10px;
       cursor: pointer;
-      box-shadow: 0 4px 16px rgba(79, 70, 229, 0.4);
+      box-shadow: 0 4px 16px rgba(180, 83, 9, 0.25);
       transition: all 0.2s ease;
       height: 100%;
       min-height: 48px;
@@ -711,7 +711,7 @@
     }
     .btn-run-quant:hover {
       transform: translateY(-1px);
-      box-shadow: 0 6px 22px rgba(79, 70, 229, 0.55);
+      box-shadow: 0 6px 22px rgba(180, 83, 9, 0.4);
     }
     .btn-run-quant:active {
       transform: translateY(0);
@@ -722,30 +722,30 @@
       gap: 8px;
       flex-wrap: wrap;
       padding-top: 12px;
-      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      border-top: 1px solid rgba(168, 142, 110, 0.2);
     }
     .quick-tag-label {
       font-size: 0.72rem;
       font-weight: 700;
-      color: #6366f1;
+      color: #92400e;
       text-transform: uppercase;
       letter-spacing: 0.05em;
     }
     .quick-tag-pill {
-      background: rgba(255, 255, 255, 0.04);
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      color: #cbd5e1;
+      background: rgba(238, 231, 220, 0.85);
+      border: 1px solid rgba(168, 142, 110, 0.25);
+      color: #57534e;
       font-size: 0.74rem;
-      font-weight: 600;
+      font-weight: 700;
       padding: 4px 10px;
       border-radius: 9999px;
       cursor: pointer;
       transition: all 0.15s ease;
     }
     .quick-tag-pill:hover {
-      background: rgba(99, 102, 241, 0.15);
-      border-color: rgba(99, 102, 241, 0.4);
-      color: #ffffff;
+      background: #ffffff;
+      border-color: rgba(180, 83, 9, 0.4);
+      color: #92400e;
       transform: translateY(-1px);
     }
 
@@ -757,13 +757,13 @@
       margin-bottom: 22px;
     }
     .kpi-tile-minimal {
-      background: linear-gradient(180deg, rgba(15, 23, 42, 0.7) 0%, rgba(10, 15, 29, 0.85) 100%);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #ffffff;
+      border: 1px solid rgba(168, 142, 110, 0.28);
       border-radius: 12px;
       padding: 14px 16px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+      box-shadow: 0 4px 14px rgba(70, 55, 35, 0.06);
     }
     .kpi-tile-minimal::before {
       content: '';
@@ -772,13 +772,13 @@
       left: 0;
       right: 0;
       height: 2px;
-      background: linear-gradient(90deg, #6366f1, transparent);
-      opacity: 0.6;
+      background: linear-gradient(90deg, #b45309, transparent);
+      opacity: 0.8;
     }
     .kpi-tile-minimal .tile-title {
       font-size: 0.66rem;
-      font-weight: 700;
-      color: #94a3b8;
+      font-weight: 800;
+      color: #78716c;
       letter-spacing: 0.06em;
       text-transform: uppercase;
       margin-bottom: 4px;
@@ -786,37 +786,38 @@
     .kpi-tile-minimal .tile-number {
       font-size: 1.55rem;
       font-weight: 800;
-      color: #f8fafc;
+      color: #1c1917;
       letter-spacing: -0.02em;
       line-height: 1.2;
       font-variant-numeric: tabular-nums;
     }
     .kpi-tile-minimal .tile-subtitle {
       font-size: 0.72rem;
-      color: #64748b;
+      color: #a8a29e;
       margin-top: 4px;
     }
 
     /* Refined Trade Ledger Card */
     .trade-card-minimal {
-      background: rgba(15, 23, 42, 0.55);
-      border: 1px solid rgba(255, 255, 255, 0.06);
+      background: #ffffff;
+      border: 1px solid rgba(168, 142, 110, 0.25);
       border-radius: 10px;
       padding: 12px 14px;
       margin-bottom: 8px;
       cursor: pointer;
       transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
       position: relative;
+      box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);
     }
     .trade-card-minimal:hover {
-      background: rgba(30, 41, 59, 0.5);
-      border-color: rgba(255, 255, 255, 0.14);
+      background: #faf6f0;
+      border-color: rgba(180, 83, 9, 0.35);
       transform: translateX(2px);
     }
     .trade-card-minimal.selected {
-      background: rgba(99, 102, 241, 0.09) !important;
-      border-color: #6366f1 !important;
-      box-shadow: 0 0 16px rgba(99, 102, 241, 0.2);
+      background: rgba(254, 243, 199, 0.5) !important;
+      border-color: #b45309 !important;
+      box-shadow: 0 0 16px rgba(180, 83, 9, 0.18);
     }
     .trade-card-minimal.selected::before {
       content: '';
@@ -825,7 +826,7 @@
       top: 0;
       bottom: 0;
       width: 3px;
-      background: #6366f1;
+      background: #b45309;
       border-top-left-radius: 10px;
       border-bottom-left-radius: 10px;
     }
@@ -838,23 +839,23 @@
     .tc-sym {
       font-size: 0.95rem;
       font-weight: 800;
-      color: #f8fafc;
+      color: #1c1917;
     }
     .tc-direction-buy {
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      color: #34d399;
+      background: rgba(21, 128, 61, 0.12);
+      border: 1px solid rgba(21, 128, 61, 0.25);
+      color: #15803d;
       font-size: 0.65rem;
-      font-weight: 700;
+      font-weight: 800;
       padding: 2px 7px;
       border-radius: 4px;
     }
     .tc-direction-sell {
-      background: rgba(244, 63, 94, 0.12);
-      border: 1px solid rgba(244, 63, 94, 0.25);
-      color: #fb7185;
+      background: rgba(185, 28, 28, 0.12);
+      border: 1px solid rgba(185, 28, 28, 0.25);
+      color: #b91c1c;
       font-size: 0.65rem;
-      font-weight: 700;
+      font-weight: 800;
       padding: 2px 7px;
       border-radius: 4px;
     }
@@ -1885,9 +1886,9 @@
         </div>
 
         <!-- Secondary Row: Strategy Pills + Inline Numeric Parameters -->
-        <div class="cmd-secondary-row" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255, 255, 255, 0.08); flex-wrap: wrap;">
+        <div class="cmd-secondary-row" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(168, 142, 110, 0.2); flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em;">Strategy:</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: #78716c; text-transform: uppercase; letter-spacing: 0.04em;">Strategy:</span>
             <div class="pill-group" id="backtest-strategy-group">
               <button type="button" class="pill active" data-strategy="RB_KnoxDiv">⚡ Knoxville (Confirmed)</button>
               <button type="button" class="pill" data-strategy="RSI">🟢 Dual RSI (&lt;30 / &gt;70)</button>
@@ -1897,23 +1898,23 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-              <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Target:</span>
-              <input type="number" id="backtest-target-pct" value="5.0" step="0.5" min="0.5" max="50" style="width: 48px; background: transparent; border: none; color: #fff; font-weight: 700; text-align: center; outline: none; font-size: 0.88rem;">
-              <span style="color: #64748b; font-size: 0.76rem;">%</span>
+            <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(168, 142, 110, 0.35); box-shadow: 0 2px 6px rgba(70, 55, 35, 0.04);">
+              <span style="font-size: 0.74rem; color: #78716c; font-weight: 700;">Target:</span>
+              <input type="number" id="backtest-target-pct" value="5.0" step="0.5" min="0.5" max="50" style="width: 48px; background: transparent; border: none; color: #1c1917; font-weight: 800; text-align: center; outline: none; font-size: 0.88rem;">
+              <span style="color: #a8a29e; font-size: 0.76rem; font-weight: 700;">%</span>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-              <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Stop Loss:</span>
-              <input type="number" id="backtest-stoploss-pct" value="3.0" step="0.5" min="0.5" max="30" style="width: 48px; background: transparent; border: none; color: #fff; font-weight: 700; text-align: center; outline: none; font-size: 0.88rem;">
-              <span style="color: #64748b; font-size: 0.76rem;">%</span>
+            <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(168, 142, 110, 0.35); box-shadow: 0 2px 6px rgba(70, 55, 35, 0.04);">
+              <span style="font-size: 0.74rem; color: #78716c; font-weight: 700;">Stop Loss:</span>
+              <input type="number" id="backtest-stoploss-pct" value="3.0" step="0.5" min="0.5" max="30" style="width: 48px; background: transparent; border: none; color: #1c1917; font-weight: 800; text-align: center; outline: none; font-size: 0.88rem;">
+              <span style="color: #a8a29e; font-size: 0.76rem; font-weight: 700;">%</span>
             </div>
 
-            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-              <select id="backtest-direction-select" style="background: transparent; border: none; color: #fff; font-size: 0.76rem; font-weight: 600; outline: none; cursor: pointer;">
-                <option value="" style="background: #0f172a;">Both ⇅</option>
-                <option value="buy" style="background: #0f172a;">Long Only 🟢</option>
-                <option value="sell" style="background: #0f172a;">Short Only 🔴</option>
+            <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; padding: 5px 12px; border-radius: 8px; border: 1px solid rgba(168, 142, 110, 0.35); box-shadow: 0 2px 6px rgba(70, 55, 35, 0.04);">
+              <select id="backtest-direction-select" style="background: transparent; border: none; color: #1c1917; font-size: 0.76rem; font-weight: 700; outline: none; cursor: pointer;">
+                <option value="" style="background: #ffffff; color: #1c1917;">Both ⇅</option>
+                <option value="buy" style="background: #ffffff; color: #15803d;">Long Only 🟢</option>
+                <option value="sell" style="background: #ffffff; color: #b91c1c;">Short Only 🔴</option>
               </select>
             </div>
           </div>
@@ -1921,9 +1922,9 @@
 
 
         <!-- Time Period & Date Range Selection Row -->
-        <div class="cmd-period-row" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(255, 255, 255, 0.06); flex-wrap: wrap;">
+        <div class="cmd-period-row" style="display: flex; justify-content: space-between; align-items: center; gap: 14px; margin-top: 12px; padding-top: 12px; border-top: 1px dashed rgba(168, 142, 110, 0.25); flex-wrap: wrap;">
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-size: 0.74rem; font-weight: 700; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.04em;">Time Horizon:</span>
+            <span style="font-size: 0.74rem; font-weight: 800; color: #78716c; text-transform: uppercase; letter-spacing: 0.04em;">Time Horizon:</span>
             <div class="pill-group" id="backtest-period-group">
               <button type="button" class="pill" data-period="3mo">3M</button>
               <button type="button" class="pill" data-period="6mo">6M</button>
@@ -1936,14 +1937,14 @@
           </div>
 
           <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
-            <span style="font-size: 0.74rem; color: #94a3b8; font-weight: 600;">Custom Date Range:</span>
-            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-              <span style="font-size: 0.70rem; color: #64748b;">From</span>
-              <input type="date" id="backtest-start-date" style="background: transparent; border: none; color: #fff; font-size: 0.76rem; outline: none; cursor: pointer; color-scheme: dark;">
+            <span style="font-size: 0.74rem; color: #78716c; font-weight: 700;">Custom Date Range:</span>
+            <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(168, 142, 110, 0.35); box-shadow: 0 2px 6px rgba(70, 55, 35, 0.04);">
+              <span style="font-size: 0.70rem; color: #78716c; font-weight: 700;">From</span>
+              <input type="date" id="backtest-start-date" style="background: transparent; border: none; color: #1c1917; font-size: 0.76rem; outline: none; cursor: pointer; color-scheme: light; font-weight: 700;">
             </div>
-            <div style="display: flex; align-items: center; gap: 6px; background: rgba(15, 23, 42, 0.6); padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
-              <span style="font-size: 0.70rem; color: #64748b;">To</span>
-              <input type="date" id="backtest-end-date" style="background: transparent; border: none; color: #fff; font-size: 0.76rem; outline: none; cursor: pointer; color-scheme: dark;">
+            <div style="display: flex; align-items: center; gap: 6px; background: #ffffff; padding: 4px 10px; border-radius: 8px; border: 1px solid rgba(168, 142, 110, 0.35); box-shadow: 0 2px 6px rgba(70, 55, 35, 0.04);">
+              <span style="font-size: 0.70rem; color: #78716c; font-weight: 700;">To</span>
+              <input type="date" id="backtest-end-date" style="background: transparent; border: none; color: #1c1917; font-size: 0.76rem; outline: none; cursor: pointer; color-scheme: light; font-weight: 700;">
             </div>
             <button type="button" class="btn-subtle" style="padding: 4px 8px; font-size: 0.72rem;" onclick="App.Backtester.clearDateRange()">Reset</button>
           </div>
@@ -2078,41 +2079,38 @@
 
             <!-- Inspector Tab 3: Strategy Rules & Mechanics -->
             <div id="bt-pane-rules" class="term-tab-pane" style="display: none; padding: 16px;">
-              <div class="strategy-rules-card" style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 16px; line-height: 1.6;">
-                <h4 style="color: #818cf8; margin-bottom: 8px;">⚡ Rob Booker Knoxville Divergence Rules</h4>
-                <p style="color: #cbd5e1; font-size: 0.85rem; margin-bottom: 12px;">
+              <div class="strategy-rules-card" style="background: #ffffff; border: 1px solid rgba(168, 142, 110, 0.28); border-radius: 12px; padding: 18px 20px; line-height: 1.65; box-shadow: 0 4px 16px rgba(70, 55, 35, 0.05);">
+                <h4 style="color: #92400e; margin-bottom: 8px; font-weight: 800;">⚡ Rob Booker Knoxville Divergence Rules</h4>
+                <p style="color: #44403c; font-size: 0.85rem; margin-bottom: 12px;">
                   Knoxville Divergence detects exhaustion points where price makes a new high/low, but Momentum oscillator diverges.
                 </p>
-                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
                   <li><strong>Buy Signal:</strong> Bullish Knoxville divergence line triggers on daily chart.</li>
-                  <li><strong>Buy Confirmation:</strong> The next-day candle must be a <strong>Green Candle</strong> (<code style="color: #10b981;">Close[t+1] &gt; Open[t+1]</code>) and close higher than the signal day closing price (<code style="color: #38bdf8;">Close[t+1] &gt; Close[t]</code>). Entry opens upon confirmation!</li>
-                  <li><strong>Predetermined Stop Loss (Long):</strong> Stop Loss is locked at the <strong>lowest price of the signal day</strong> when Knoxville was formed (<code style="color: #f43f5e;">Low[t]</code>).</li>
+                  <li><strong>Buy Confirmation:</strong> The next-day candle must be a <strong>Green Candle</strong> (<code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">Close[t+1] &gt; Open[t+1]</code>) and close higher than the signal day closing price (<code style="color: #0369a1; background: rgba(3,105,161,0.08); padding: 2px 6px; border-radius: 4px;">Close[t+1] &gt; Close[t]</code>). Entry opens upon confirmation!</li>
+                  <li><strong>Predetermined Stop Loss (Long):</strong> Stop Loss is locked at the <strong>lowest price of the signal day</strong> when Knoxville was formed (<code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">Low[t]</code>).</li>
                   <li><strong>Sell Signal:</strong> Bearish Knoxville divergence line triggers on daily chart.</li>
-                  <li><strong>Sell Confirmation:</strong> The next-day candle must be a <strong>Red Candle</strong> (<code style="color: #f43f5e;">Close[t+1] &lt; Open[t+1]</code>) and close lower than the signal day closing price (<code style="color: #38bdf8;">Close[t+1] &lt; Close[t]</code>). Entry opens upon confirmation!</li>
-                  <li><strong>Predetermined Stop Loss (Short):</strong> Stop Loss is locked at the <strong>highest price of the signal day</strong> when Knoxville was formed (<code style="color: #f43f5e;">High[t]</code>).</li>
-
+                  <li><strong>Sell Confirmation:</strong> The next-day candle must be a <strong>Red Candle</strong> (<code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">Close[t+1] &lt; Open[t+1]</code>) and close lower than the signal day closing price (<code style="color: #0369a1; background: rgba(3,105,161,0.08); padding: 2px 6px; border-radius: 4px;">Close[t+1] &lt; Close[t]</code>). Entry opens upon confirmation!</li>
+                  <li><strong>Predetermined Stop Loss (Short):</strong> Stop Loss is locked at the <strong>highest price of the signal day</strong> when Knoxville was formed (<code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">High[t]</code>).</li>
                 </ul>
 
-
-                <h4 style="color: #10b981; margin-bottom: 8px;">🟢 Dual RSI Extreme Rules</h4>
-                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                <h4 style="color: #15803d; margin-bottom: 8px; font-weight: 800;">🟢 Dual RSI Extreme Rules</h4>
+                <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
                   <li><strong>Buy Signal:</strong> Both 14-period RSI and 14-period RSI-SMA drop below <strong>30.0</strong> (Extreme Oversold).</li>
                   <li><strong>Sell Signal:</strong> Both 14-period RSI and 14-period RSI-SMA rise above <strong>70.0</strong> (Extreme Overbought).</li>
                 </ul>
 
-                <h4 style="color: #f59e0b; margin-bottom: 8px;">📈 200 SMA Touch / Crossover Rules</h4>
-                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                <h4 style="color: #b45309; margin-bottom: 8px; font-weight: 800;">📈 200 SMA Touch / Crossover Rules</h4>
+                <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
                   <li><strong>Bullish Crossover:</strong> Daily price crosses from below the 200-day Simple Moving Average to close above it.</li>
                   <li><strong>Bearish Crossover:</strong> Daily price crosses from above the 200-day SMA to close below it.</li>
                 </ul>
 
-                <h4 style="color: #f43f5e; margin-bottom: 8px;">🎯 Exit &amp; Risk Controls</h4>
-                <ul style="color: #94a3b8; font-size: 0.82rem; margin-left: 18px;">
+                <h4 style="color: #b91c1c; margin-bottom: 8px; font-weight: 800;">🎯 Exit &amp; Risk Controls</h4>
+                <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px;">
                   <li><strong>Target Exit:</strong> Position automatically closes when price reaches the configured Target % gain.</li>
                   <li><strong>Stop Loss Exit:</strong> Position automatically closes when price touches the Stop Loss threshold (or predetermined signal candle Low/High for Knoxville).</li>
                   <li><strong>Strict Resolution:</strong> Positions run continuously until either Target or Stop Loss is reached (no arbitrary time cutoffs).</li>
                 </ul>
-
               </div>
             </div>
 
@@ -2140,7 +2138,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=44.0"></script>
+  <script src="/static/app.js?v=45.0"></script>
 
 
 

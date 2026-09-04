@@ -3239,10 +3239,11 @@ body {
 }
 
 .nav-tab.active {
-  background: #1c1917 !important;
-  border: 1px solid #1c1917 !important;
-  color: #faf5ee !important;
-  box-shadow: 0 3px 12px rgba(28, 25, 23, 0.25) !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(180, 83, 9, 0.45) !important;
+  color: #92400e !important;
+  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.18), 0 1px 3px rgba(70, 55, 35, 0.08) !important;
+  font-weight: 800 !important;
 }
 
 /* Warm Ivory Surface Cards & Workspaces */
@@ -3410,6 +3411,186 @@ input:focus, select:focus {
 .table-container::-webkit-scrollbar-thumb:hover {
   background: rgba(180, 83, 9, 0.5) !important;
 }
+
+/* =========================================================
+   WARM BEIGE PAPER TRADING & STRATEGY TESTER OVERRIDES
+   ========================================================= */
+.paper-kpi-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
+  box-shadow: 0 4px 16px rgba(70, 55, 35, 0.06) !important;
+  color: #1c1917 !important;
+}
+
+.paper-kpi-card.equity-card {
+  background: linear-gradient(135deg, #fffdfa 0%, #fbf4ea 100%) !important;
+  border: 1px solid rgba(180, 83, 9, 0.38) !important;
+  box-shadow: 0 6px 20px rgba(180, 83, 9, 0.12), 0 2px 6px rgba(70, 55, 35, 0.05) !important;
+}
+
+.kpi-main-val {
+  color: #1c1917 !important;
+}
+
+.paper-order-card {
+  background: rgba(255, 252, 247, 0.95) !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
+  box-shadow: 0 10px 32px rgba(70, 55, 35, 0.08) !important;
+  color: #1c1917 !important;
+}
+
+.order-card-title {
+  color: #1c1917 !important;
+}
+
+.instrument-pill-group,
+.side-selector-pill-group,
+.option-type-toggle-group {
+  background: rgba(235, 227, 214, 0.85) !important;
+  border: 1px solid rgba(168, 142, 110, 0.3) !important;
+  border-radius: 9px !important;
+}
+
+.inst-pill,
+.opt-type-pill {
+  color: #57534e !important;
+}
+
+.inst-pill.active {
+  background: #ffffff !important;
+  color: #92400e !important;
+  border: 1px solid rgba(180, 83, 9, 0.35) !important;
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.14) !important;
+}
+
+.side-pill {
+  color: #57534e !important;
+}
+
+.side-pill.buy-pill.active {
+  background: #15803d !important;
+  color: #ffffff !important;
+  border: 1px solid #166534 !important;
+  box-shadow: 0 2px 10px rgba(21, 128, 61, 0.25) !important;
+}
+
+.side-pill.sell-pill.active {
+  background: #b91c1c !important;
+  color: #ffffff !important;
+  border: 1px solid #991b1b !important;
+  box-shadow: 0 2px 10px rgba(185, 28, 28, 0.25) !important;
+}
+
+.feed-source-ribbon {
+  background: rgba(245, 239, 230, 0.95) !important;
+  border: 1px solid rgba(168, 142, 110, 0.25) !important;
+  color: #57534e !important;
+}
+
+.feed-source-left {
+  color: #57534e !important;
+}
+
+.feed-source-left strong {
+  color: #1c1917 !important;
+}
+
+.zd-tab-btn {
+  background: rgba(238, 231, 220, 0.7) !important;
+  border: 1px solid rgba(168, 142, 110, 0.25) !important;
+  color: #57534e !important;
+}
+
+.zd-tab-btn.active {
+  background: #ffffff !important;
+  border-color: rgba(180, 83, 9, 0.4) !important;
+  color: #92400e !important;
+  box-shadow: 0 2px 6px rgba(180, 83, 9, 0.12) !important;
+}
+
+.zd-info-banner {
+  background: rgba(254, 243, 199, 0.6) !important;
+  border: 1px solid rgba(217, 119, 6, 0.3) !important;
+  color: #78350f !important;
+}
+
+.zd-info-banner strong {
+  color: #92400e !important;
+}
+
+.zd-info-banner code {
+  background: #ffffff !important;
+  border: 1px solid rgba(168, 142, 110, 0.3) !important;
+  color: #1c1917 !important;
+}
+
+.options-params-bar {
+  background: rgba(245, 239, 230, 0.92) !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
+}
+
+.paper-subtab {
+  background: rgba(235, 227, 214, 0.85) !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
+  color: #57534e !important;
+}
+
+.paper-subtab:hover {
+  background: #ffffff !important;
+  color: #1c1917 !important;
+}
+
+.paper-subtab.active {
+  background: #ffffff !important;
+  border-color: rgba(180, 83, 9, 0.45) !important;
+  color: #92400e !important;
+  box-shadow: 0 2px 10px rgba(180, 83, 9, 0.15) !important;
+}
+
+.subtab-count-badge {
+  background: rgba(180, 83, 9, 0.12) !important;
+  color: #92400e !important;
+}
+
+.btn-qty-chip, .btn-pct-chip {
+  background: rgba(238, 231, 220, 0.9) !important;
+  border: 1px solid rgba(168, 142, 110, 0.25) !important;
+  color: #57534e !important;
+}
+
+.btn-qty-chip:hover, .btn-pct-chip:hover {
+  background: #ffffff !important;
+  color: #92400e !important;
+  border-color: rgba(180, 83, 9, 0.35) !important;
+}
+
+/* Strategy Hero & KPI Performance Ribbon */
+.strategy-hero-banner .kpi-card,
+.kpi-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(168, 142, 110, 0.28) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 4px 16px rgba(70, 55, 35, 0.06) !important;
+  color: #1c1917 !important;
+}
+
+.strategy-hero-banner .kpi-label,
+.kpi-label {
+  color: #78716c !important;
+  font-weight: 800 !important;
+}
+
+.strategy-hero-banner .kpi-val,
+.kpi-val {
+  color: #1c1917 !important;
+  font-weight: 800 !important;
+}
+
+.strategy-hero-banner .kpi-sub,
+.kpi-sub {
+  color: #a8a29e !important;
+}
+
 
 
 
