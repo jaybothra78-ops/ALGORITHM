@@ -3195,14 +3195,20 @@ body {
   width: 32px !important;
   height: 32px !important;
   border-radius: 8px !important;
-  background: #1c1917 !important;
-  border: 1px solid rgba(180, 83, 9, 0.35) !important;
-  box-shadow: 0 2px 8px rgba(28, 25, 23, 0.16) !important;
-  color: #f59e0b !important;
+  background: #ffffff !important;
+  border: 1px solid rgba(180, 83, 9, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(70, 55, 35, 0.08) !important;
+  color: #b45309 !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
   font-size: 0.95rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.brand-badge-icon:hover {
+  border-color: #b45309 !important;
+  box-shadow: 0 3px 12px rgba(180, 83, 9, 0.2) !important;
 }
 
 .brand-text {
