@@ -2732,29 +2732,30 @@ App.Backtester = {
 
     pane.innerHTML = `
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 16px;">
-        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 0.68rem; color: #94a3b8;">AVG WIN TRADE</div>
-          <div style="font-size: 1.1rem; font-weight: 800; color: #10b981; margin-top: 2px;">+${(summary.avg_win_pct || 0).toFixed(2)}%</div>
+        <div style="background: rgba(255, 252, 247, 0.95); border: 1px solid rgba(168, 142, 110, 0.25); border-radius: 8px; padding: 12px; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: #78716c;">AVG WIN TRADE</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #15803d; margin-top: 2px;">+${(summary.avg_win_pct || 0).toFixed(2)}%</div>
         </div>
-        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 0.68rem; color: #94a3b8;">AVG LOSS TRADE</div>
-          <div style="font-size: 1.1rem; font-weight: 800; color: #f43f5e; margin-top: 2px;">${(summary.avg_loss_pct || 0).toFixed(2)}%</div>
+        <div style="background: rgba(255, 252, 247, 0.95); border: 1px solid rgba(168, 142, 110, 0.25); border-radius: 8px; padding: 12px; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: #78716c;">AVG LOSS TRADE</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #b91c1c; margin-top: 2px;">${(summary.avg_loss_pct || 0).toFixed(2)}%</div>
         </div>
-        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 0.68rem; color: #94a3b8;">PAYOFF RATIO</div>
-          <div style="font-size: 1.1rem; font-weight: 800; color: #38bdf8; margin-top: 2px;">${(Math.abs((summary.avg_win_pct || 1) / (summary.avg_loss_pct || -1))).toFixed(2)}</div>
+        <div style="background: rgba(255, 252, 247, 0.95); border: 1px solid rgba(168, 142, 110, 0.25); border-radius: 8px; padding: 12px; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: #78716c;">PAYOFF RATIO</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #b45309; margin-top: 2px;">${(Math.abs((summary.avg_win_pct || 1) / (summary.avg_loss_pct || -1))).toFixed(2)}</div>
         </div>
-        <div style="background: rgba(15, 23, 42, 0.7); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 12px;">
-          <div style="font-size: 0.68rem; color: #94a3b8;">WIN/LOSS SPLIT</div>
-          <div style="font-size: 1.1rem; font-weight: 800; color: #cbd5e1; margin-top: 2px;">${summary.winning_trades || 0} / ${summary.losing_trades || 0}</div>
+        <div style="background: rgba(255, 252, 247, 0.95); border: 1px solid rgba(168, 142, 110, 0.25); border-radius: 8px; padding: 12px; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);">
+          <div style="font-size: 0.68rem; font-weight: 700; color: #78716c;">WIN/LOSS SPLIT</div>
+          <div style="font-size: 1.1rem; font-weight: 800; color: #1c1917; margin-top: 2px;">${summary.winning_trades || 0} / ${summary.losing_trades || 0}</div>
         </div>
       </div>
-      <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 8px; padding: 14px; font-size: 0.82rem; color: #cbd5e1; line-height: 1.5;">
-        <strong style="color: #fff;">Quantitative Strategy Summary:</strong><br>
+      <div style="background: rgba(255, 252, 247, 0.95); border: 1px solid rgba(168, 142, 110, 0.25); border-radius: 8px; padding: 14px; font-size: 0.82rem; color: #292524; line-height: 1.6; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);">
+        <strong style="color: #1c1917; font-size: 0.88rem;">Quantitative Strategy Summary:</strong><br>
         Over the backtested historical window, this strategy executed <strong>${summary.total_trades || 0}</strong> simulated trades with a <strong>${(summary.win_rate_pct || 0).toFixed(1)}% win rate</strong> and profit factor of <strong>${(summary.profit_factor || 0).toFixed(2)}</strong>. Cumulative return resulted in <strong>${(summary.net_return_pct || 0).toFixed(1)}%</strong> with maximum peak-to-trough drawdown of <strong>${(summary.max_drawdown_pct || 0).toFixed(1)}%</strong>.
       </div>
     `;
   },
+
 
   renderEmptyDiagnostic() {
     const diagView = document.querySelector('#bt-selected-trade-view');
