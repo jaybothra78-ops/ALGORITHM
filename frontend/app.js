@@ -2493,43 +2493,59 @@ App.Backtester = {
         this._candlestickSeries = null;
       }
 
-      // Initialize Lightweight Chart
+      // Initialize Lightweight Chart (Warm Ivory / Sandstone Editorial Theme)
       const chart = LightweightCharts.createChart(container, {
         width: container.clientWidth || 700,
         height: 420,
         layout: {
-          background: { color: '#161311' },
-          textColor: '#b8aca0',
+          background: { color: '#ffffff' },
+          textColor: '#57534e',
           fontSize: 11,
-          fontFamily: 'system-ui, -apple-system, sans-serif',
+          fontFamily: 'Plus Jakarta Sans, system-ui, -apple-system, sans-serif',
         },
         grid: {
-          vertLines: { color: 'rgba(235, 220, 195, 0.06)' },
-          horzLines: { color: 'rgba(235, 220, 195, 0.06)' },
+          vertLines: { color: 'rgba(168, 142, 110, 0.12)' },
+          horzLines: { color: 'rgba(168, 142, 110, 0.12)' },
         },
         crosshair: {
           mode: LightweightCharts.CrosshairMode.Normal,
+          vertLine: {
+            color: 'rgba(180, 83, 9, 0.35)',
+            width: 1,
+            style: LightweightCharts.LineStyle.Dashed,
+            labelBackgroundColor: '#1c1917',
+          },
+          horzLine: {
+            color: 'rgba(180, 83, 9, 0.35)',
+            width: 1,
+            style: LightweightCharts.LineStyle.Dashed,
+            labelBackgroundColor: '#1c1917',
+          },
         },
         rightPriceScale: {
-          borderColor: 'rgba(168, 142, 110, 0.25)',
+          borderColor: 'rgba(168, 142, 110, 0.28)',
+          textColor: '#57534e',
         },
         timeScale: {
-          borderColor: 'rgba(168, 142, 110, 0.25)',
+          borderColor: 'rgba(168, 142, 110, 0.28)',
+          textColor: '#57534e',
           timeVisible: true,
           secondsVisible: false,
         },
-
       });
 
       this._chartInstance = chart;
 
       // Add Candlestick Series
       const candleSeries = chart.addCandlestickSeries({
-        upColor: '#10b981',
-        downColor: '#f43f5e',
-        borderVisible: false,
-        wickUpColor: '#10b981',
-        wickDownColor: '#f43f5e',
+        upColor: '#15803d',
+        downColor: '#b91c1c',
+        borderVisible: true,
+        borderColor: '#15803d',
+        borderUpColor: '#15803d',
+        borderDownColor: '#b91c1c',
+        wickUpColor: '#15803d',
+        wickDownColor: '#b91c1c',
       });
       this._candlestickSeries = candleSeries;
 
@@ -2543,7 +2559,7 @@ App.Backtester = {
           markers.push({
             time: t.entry_date,
             position: isBuy ? 'belowBar' : 'aboveBar',
-            color: '#10b981',
+            color: '#15803d',
             shape: isBuy ? 'arrowUp' : 'arrowDown',
             text: `ENTRY ₹${t.entry_price.toFixed(2)} (${t.strategy})`,
           });
@@ -2553,7 +2569,7 @@ App.Backtester = {
           markers.push({
             time: t.signal_date,
             position: isBuy ? 'belowBar' : 'aboveBar',
-            color: '#818cf8',
+            color: '#b45309',
             shape: isBuy ? 'arrowUp' : 'arrowDown',
             text: `SIGNAL (${t.strategy})`,
           });
@@ -2562,7 +2578,7 @@ App.Backtester = {
           markers.push({
             time: t.entry_date,
             position: isBuy ? 'belowBar' : 'aboveBar',
-            color: '#10b981',
+            color: '#15803d',
             shape: isBuy ? 'arrowUp' : 'arrowDown',
             text: `ENTRY ₹${t.entry_price.toFixed(2)}`,
           });
@@ -2575,7 +2591,7 @@ App.Backtester = {
         markers.push({
           time: t.exit_date,
           position: isBuy ? 'aboveBar' : 'belowBar',
-          color: isWin ? '#10b981' : '#f43f5e',
+          color: isWin ? '#15803d' : '#b91c1c',
           shape: isBuy ? 'arrowDown' : 'arrowUp',
           text: `EXIT ₹${t.exit_price.toFixed(2)} (${t.exit_reason})`,
         });
@@ -2590,11 +2606,11 @@ App.Backtester = {
       if (t.target_price) {
         candleSeries.createPriceLine({
           price: t.target_price,
-          color: '#10b981',
+          color: '#15803d',
           lineWidth: 2,
           lineStyle: LightweightCharts.LineStyle.Dashed,
           axisLabelVisible: true,
-          title: `TARGET Level (₹${t.target_price.toFixed(2)})`,
+          title: `TARGET (₹${t.target_price.toFixed(2)})`,
         });
       }
 
@@ -2602,7 +2618,7 @@ App.Backtester = {
       if (t.stop_loss_price) {
         candleSeries.createPriceLine({
           price: t.stop_loss_price,
-          color: '#f43f5e',
+          color: '#b91c1c',
           lineWidth: 2,
           lineStyle: LightweightCharts.LineStyle.Dashed,
           axisLabelVisible: true,
@@ -2614,11 +2630,11 @@ App.Backtester = {
       if (t.entry_price) {
         candleSeries.createPriceLine({
           price: t.entry_price,
-          color: '#38bdf8',
+          color: '#b45309',
           lineWidth: 1,
           lineStyle: LightweightCharts.LineStyle.Dotted,
           axisLabelVisible: true,
-          title: `ENTRY LEVEL (₹${t.entry_price.toFixed(2)})`,
+          title: `ENTRY (₹${t.entry_price.toFixed(2)})`,
         });
       }
 
