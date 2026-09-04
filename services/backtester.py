@@ -424,35 +424,19 @@ class BacktesterEngine:
 
                 cur_pnl_pct = ((entry_price - cur_close) / entry_price) * 100.0
 
-            # 3. Smart Time-Based Exits:
-            # A) Profitable Trade Exit (12-15 Days):
-            # If held for 12+ trading sessions and the trade is profitable (cur_pnl_pct > 0), take profit
+            # 3. Profitable Trade Time Exit (12-15 Days):
+            # If held for 12+ trading sessions and the trade is profitable (cur_pnl_pct > 0), lock in profit
             if holding_days >= 12 and cur_pnl_pct > 0.0:
                 exit_idx = cur_idx
                 exit_price = cur_close
                 exit_reason = ExitReason.TIME_EXIT_PROFIT
                 break
 
-            # B) Minimal Loss / Stalled Trade Exit (15-18 Days):
-            # If held for 15+ trading sessions and trade is at minimal loss (cur_pnl_pct <= 0.0), cut stalled trade
-            if holding_days >= 15 and cur_pnl_pct <= 0.0:
-                exit_idx = cur_idx
-                exit_price = cur_close
-                exit_reason = ExitReason.TIME_EXIT_LOSS
-                break
-
-            # C) Maximum Holding Window Timeout (18 sessions default cap)
-            if holding_days >= 18:
-                exit_idx = cur_idx
-                exit_price = cur_close
-                exit_reason = ExitReason.TIME_EXIT
-                break
-
-            # If reached end of dataset without hitting target, stop loss, or time exits
+            # If reached max holding days (when configured) or end of dataset
             if cur_idx == max_idx:
                 exit_idx = cur_idx
                 exit_price = cur_close
-                exit_reason = ExitReason.OPEN_POSITION
+                exit_reason = ExitReason.TIME_EXIT if max_holding_days else ExitReason.OPEN_POSITION
 
 
         # If trade could not step forward (e.g. at latest candle)

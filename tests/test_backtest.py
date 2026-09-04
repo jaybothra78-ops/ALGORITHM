@@ -99,15 +99,20 @@ def test_simulate_trade_time_exit_profitable():
     assert trade.pnl_pct > 0
 
 
-def test_simulate_trade_time_exit_stalled_loss():
+def test_simulate_trade_no_loss_time_exit():
     df = _dummy_ohlc(50)
     entry_price = float(df["Close"].iloc[5])
-    # Keep prices slightly down (-0.8%) between days 6 and 21 (15 days), within stop loss (2%)
-    for day_idx in range(6, 22):
+    # Keep prices slightly down (-0.8%) between days 6 and 22, then rally to 5% target on day 23
+    for day_idx in range(6, 23):
         df.loc[df.index[day_idx], "High"] = entry_price * 0.998
         df.loc[df.index[day_idx], "Low"] = entry_price * 0.990
         df.loc[df.index[day_idx], "Close"] = entry_price * 0.992
         df.loc[df.index[day_idx], "Open"] = entry_price * 0.995
+
+    # Day 23 hits target
+    df.loc[df.index[23], "High"] = entry_price * 1.06
+    df.loc[df.index[23], "Low"] = entry_price * 0.995
+    df.loc[df.index[23], "Close"] = entry_price * 1.055
 
     trade, _ = BacktesterEngine._simulate_trade(
         symbol="TEST",
@@ -121,10 +126,9 @@ def test_simulate_trade_time_exit_stalled_loss():
     )
 
     assert trade is not None
-    assert trade.outcome == "LOSS"
-    assert trade.exit_reason == "Time Exit (Stalled Loss)"
-    assert trade.holding_days == 15
-    assert trade.pnl_pct <= 0
+    assert trade.outcome == "WIN"
+    assert trade.exit_reason == "Target Hit"
+    assert trade.holding_days == 18
 
 
 

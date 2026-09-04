@@ -2119,9 +2119,8 @@
                 <h4 style="color: #b91c1c; margin-bottom: 8px; font-weight: 800;">🎯 Exit &amp; Risk Controls</h4>
                 <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px;">
                   <li><strong>Target Exit:</strong> Position automatically closes when price reaches the configured Target % gain.</li>
-                  <li><strong>Stop Loss Exit:</strong> Position automatically closes when price touches the Stop Loss threshold (or predetermined signal candle Low/High for Knoxville).</li>
-                  <li><strong>Time Exit (12–15 Days Profitable):</strong> If held for 12–15 trading sessions and the trade is in positive profit (<code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">PnL &gt; 0%</code>), exit immediately to lock in profits.</li>
-                  <li><strong>Time Exit (15–18 Days Minimal Loss / Stalled):</strong> If held for 15–18 trading sessions with minimal loss or stagnant price action (<code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">PnL &le; 0%</code>), close the position to prevent tied-up capital.</li>
+                  <li><strong>Stop Loss Exit:</strong> Position automatically closes when price touches the Stop Loss threshold (or predetermined signal candle Low/High for Knoxville). No premature selling in minor loss.</li>
+                  <li><strong>Time Exit (12–15 Days Profitable):</strong> If held for 12–15 trading sessions and the trade is in positive profit (<code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">PnL &gt; 0%</code>), exit to lock in profits.</li>
                 </ul>
               </div>
             </div>
