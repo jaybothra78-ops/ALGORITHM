@@ -1212,7 +1212,7 @@ select:focus, input:focus, textarea:focus {
 .news-empty-placeholder h3 {
   font-size: 1.25rem;
   font-weight: 800;
-  color: #fff;
+  color: #1c1917;
 }
 
 .news-empty-placeholder p {
@@ -1224,23 +1224,23 @@ select:focus, input:focus, textarea:focus {
 
 /* Deep Analysis Loading State */
 .news-loading-card {
-  background: linear-gradient(135deg, rgba(13, 18, 31, 0.95) 0%, rgba(18, 25, 41, 0.98) 100%);
-  border: 1px solid rgba(56, 189, 248, 0.4);
+  background: linear-gradient(135deg, #fffdfa 0%, #fbf4ea 100%);
+  border: 1px solid rgba(168, 142, 110, 0.35);
   border-radius: var(--radius-lg);
-  padding: 40px 24px;
+  padding: 44px 28px;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
   gap: 12px;
-  box-shadow: var(--shadow-lg), var(--shadow-glow);
+  box-shadow: 0 8px 30px rgba(70, 55, 35, 0.08);
 }
 
 .loading-spinner-ring {
   width: 48px;
   height: 48px;
-  border: 3px solid rgba(56, 189, 248, 0.15);
-  border-top-color: var(--accent-cyan);
+  border: 3px solid rgba(180, 83, 9, 0.18);
+  border-top-color: #b45309;
   border-radius: 50%;
   animation: spin 0.85s linear infinite;
   margin-bottom: 8px;
@@ -1251,20 +1251,25 @@ select:focus, input:focus, textarea:focus {
 .loading-stage-title {
   font-size: 1.2rem;
   font-weight: 800;
-  color: #fff;
+  color: #1c1917;
+  letter-spacing: -0.01em;
+  margin: 0;
 }
 
 .loading-stage-sub {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
+  font-size: 0.88rem;
+  color: #57534e;
   max-width: 480px;
+  font-weight: 500;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .loading-steps-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
+  gap: 10px;
+  margin-top: 18px;
   width: 100%;
   max-width: 480px;
   text-align: left;
@@ -1273,28 +1278,50 @@ select:focus, input:focus, textarea:focus {
 .loading-step {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 0.82rem;
-  padding: 8px 12px;
+  gap: 12px;
+  font-size: 0.84rem;
+  padding: 10px 16px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid var(--border-subtle);
-  color: var(--text-muted);
+  background: #ffffff;
+  border: 1px solid rgba(168, 142, 110, 0.25);
+  color: #57534e;
+  box-shadow: 0 1px 4px rgba(70, 55, 35, 0.04);
   transition: all 0.25s ease;
 }
 
-.loading-step.active {
-  background: var(--accent-cyan-soft);
-  border-color: rgba(56, 189, 248, 0.4);
-  color: var(--accent-cyan);
-  font-weight: 600;
-  transform: translateX(4px);
+.loading-step .step-icon {
+  font-size: 1.05rem;
+  flex-shrink: 0;
 }
 
-.loading-step.done {
-  background: var(--emerald-soft);
-  border-color: var(--emerald-border);
-  color: var(--emerald);
+.loading-step .step-text {
+  color: #44403c;
+  font-weight: 500;
+}
+
+.loading-step.active {
+  background: rgba(180, 83, 9, 0.08);
+  border-color: rgba(180, 83, 9, 0.45);
+  transform: translateX(4px);
+  box-shadow: 0 2px 8px rgba(180, 83, 9, 0.12);
+}
+
+.loading-step.active .step-text {
+  color: #92400e;
+  font-weight: 700;
+}
+
+.loading-step.done,
+.loading-step.completed {
+  background: rgba(21, 128, 61, 0.08);
+  border-color: rgba(21, 128, 61, 0.35);
+  transform: none;
+}
+
+.loading-step.done .step-text,
+.loading-step.completed .step-text {
+  color: #15803d;
+  font-weight: 600;
 }
 
 /* AI Synthesis Hero Banner */
@@ -1633,9 +1660,9 @@ select:focus, input:focus, textarea:focus {
 }
 
 .feed-title {
-  font-size: 0.92rem;
+  font-size: 0.95rem;
   font-weight: 800;
-  color: #fff;
+  color: #1c1917;
 }
 
 .feed-count-badge {
@@ -1652,23 +1679,22 @@ select:focus, input:focus, textarea:focus {
 }
 
 .news-article-card {
-  background: var(--surface-glass);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid var(--border-glass);
+  background: #ffffff;
+  border: 1px solid rgba(168, 142, 110, 0.28);
   border-radius: var(--radius-md);
   padding: 16px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: 12px;
-  transition: transform 0.15s ease, border-color 0.15s ease;
+  box-shadow: 0 2px 10px rgba(70, 55, 35, 0.05);
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
 .news-article-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: var(--shadow-md);
+  border-color: rgba(180, 83, 9, 0.35);
+  box-shadow: 0 6px 18px rgba(70, 55, 35, 0.09);
 }
 
 .article-meta-row {
@@ -1681,7 +1707,7 @@ select:focus, input:focus, textarea:focus {
 
 .article-publisher {
   font-weight: 700;
-  color: var(--accent-cyan);
+  color: #b45309;
 }
 
 .article-date {
@@ -1690,17 +1716,17 @@ select:focus, input:focus, textarea:focus {
 }
 
 .article-title {
-  font-size: 0.86rem;
+  font-size: 0.88rem;
   font-weight: 700;
-  color: #f8fafc;
+  color: #1c1917;
   line-height: 1.4;
   margin-bottom: 6px;
 }
 
 .article-snippet {
-  font-size: 0.78rem;
+  font-size: 0.80rem;
   line-height: 1.45;
-  color: var(--text-secondary);
+  color: #57534e;
 }
 
 .article-link {

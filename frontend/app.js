@@ -628,7 +628,7 @@ App.News = {
 
     if (placeholder) placeholder.style.display = 'none';
     if (contentCard) contentCard.style.display = 'none';
-    if (loadingCard) loadingCard.style.display = 'block';
+    if (loadingCard) loadingCard.style.display = 'flex';
 
     // Start progress animation
     this.animateLoadingSteps();
