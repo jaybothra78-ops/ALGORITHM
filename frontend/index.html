@@ -1902,6 +1902,7 @@
             <span style="font-size: 0.74rem; font-weight: 800; color: #78716c; text-transform: uppercase; letter-spacing: 0.04em;">Strategy:</span>
             <div class="pill-group" id="backtest-strategy-group">
               <button type="button" class="pill active" data-strategy="RB_KnoxDiv">⚡ Knoxville (Confirmed)</button>
+              <button type="button" class="pill" data-strategy="30MIN_ANALYSIS">⏱️ 30min Analysis</button>
               <button type="button" class="pill" data-strategy="RSI">🟢 Dual RSI (&lt;30 / &gt;70)</button>
               <button type="button" class="pill" data-strategy="SMA_200">📈 200 SMA</button>
               <button type="button" class="pill" data-strategy="ALL">🔥 All Combined</button>
@@ -2104,6 +2105,18 @@
                   <li><strong>Sell Entry (Day 3+ Crossing):</strong> Whenever price crosses below Day 2's Low (<code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">Low &le; Low[Day 2]</code>), SELL the stock immediately. (Invalidated if price rises above Day 2 Stop Loss before crossing).</li>
                 </ul>
 
+                <h4 style="color: #0369a1; margin-bottom: 8px; font-weight: 800;">⏱️ 30min Analysis (Intraday Opening Range Breakout)</h4>
+                <p style="color: #44403c; font-size: 0.85rem; margin-bottom: 12px;">
+                  30-minute interval intraday breakout strategy aligned to Indian market opening at 09:15 AM IST.
+                </p>
+                <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
+                  <li><strong>Setup Candle (09:15–09:45):</strong> Market opens at 09:15 AM. The strategy waits 30 minutes for the opening candle to form, establishing the session's <code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">ORB High</code> and <code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">ORB Low</code>.</li>
+                  <li><strong>Buy Breakout (09:45 onwards):</strong> Whenever any subsequent candle breaks above ORB High (<code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">High &ge; ORB High</code>), enter <strong>BUY</strong> immediately.</li>
+                  <li><strong>Sell Breakdown (09:45 onwards):</strong> Whenever any subsequent candle breaks below ORB Low (<code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">Low &le; ORB Low</code>), enter <strong>SELL</strong> immediately.</li>
+                  <li><strong>Optimized Target &amp; Stop Loss:</strong> Data analysis shows tight targets yield the highest win rates (~66%–79%). Default Target is <code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">0.5%</code> and Stop Loss is <code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">0.8%</code>.</li>
+                  <li><strong>Intraday Square-off:</strong> Positions are held strictly intraday. If neither target nor stop loss is triggered during the session, positions automatically square off at market close (15:15/15:30 EOD).</li>
+                </ul>
+
                 <h4 style="color: #15803d; margin-bottom: 8px; font-weight: 800;">🟢 Dual RSI Extreme Rules</h4>
                 <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
                   <li><strong>Buy Signal:</strong> Both 14-period RSI and 14-period RSI-SMA drop below <strong>30.0</strong> (Extreme Oversold).</li>
@@ -2143,7 +2156,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=52.0"></script>
+  <script src="/static/app.js?v=53.0"></script>
 
 
 

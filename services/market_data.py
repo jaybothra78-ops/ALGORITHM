@@ -16,6 +16,10 @@ class MarketDataProvider:
         "ohlc_data": {},
         "ohlc_timestamp": 0.0,
     }
+    _INTRADAY_CACHE: dict[str, Any] = {
+        "ohlc_data": {},
+        "ohlc_timestamp": 0.0,
+    }
 
     @staticmethod
     def normalize_ticker(symbol: str) -> str:
@@ -208,6 +212,151 @@ class MarketDataProvider:
             logger.error(f"Failed to download OHLC data: {exc}")
 
         cached = cls._CACHE.get("ohlc_data", {})
+        if symbols:
+            return {s: cached[s] for s in symbols if s in cached}
+        return cached
+
+    @classmethod
+    def load_intraday_disk_cache(cls) -> bool:
+        """Load 30m intraday OHLC cache from disk if available."""
+        import pickle
+        p = settings.DISK_INTRADAY_30M_CACHE_PATH
+        if not p.exists():
+            return False
+        try:
+            now = time.time()
+            mtime = p.stat().st_mtime
+            if now - mtime < settings.CACHE_TTL_SECONDS:
+                with open(p, "rb") as f:
+                    data = pickle.load(f)
+                if isinstance(data, dict) and data:
+                    cls._INTRADAY_CACHE["ohlc_data"] = data
+                    cls._INTRADAY_CACHE["ohlc_timestamp"] = mtime
+                    logger.info(f"Loaded {len(data)} cached 30m intraday symbols from disk ({p.name}).")
+                    return True
+        except Exception as exc:
+            logger.warning(f"Could not load intraday disk cache: {exc}")
+        return False
+
+    @classmethod
+    def save_intraday_disk_cache(cls, data: dict[str, pd.DataFrame]) -> None:
+        """Save 30m intraday cache to disk atomically."""
+        import os
+        import pickle
+        p = settings.DISK_INTRADAY_30M_CACHE_PATH
+        tmp_path = p.with_suffix(".tmp")
+        try:
+            p.parent.mkdir(parents=True, exist_ok=True)
+            with open(tmp_path, "wb") as f:
+                pickle.dump(data, f, protocol=pickle.HIGHEST_PROTOCOL)
+            os.replace(tmp_path, p)
+            logger.debug(f"Saved {len(data)} 30m intraday symbols to disk cache at {p.name}.")
+        except Exception as exc:
+            if tmp_path.exists():
+                tmp_path.unlink(missing_ok=True)
+            logger.warning(f"Could not save intraday disk cache: {exc}")
+
+    @classmethod
+    def get_intraday_30m_data(
+        cls, symbols: list[str], period: str = "60d", force_refresh: bool = False
+    ) -> dict[str, pd.DataFrame]:
+        """Fetch or return cached 30-minute OHLC candles starting cleanly at 09:15 AM IST."""
+        now = time.time()
+        p_clean = period.lower().strip() or "60d"
+
+        if not cls._INTRADAY_CACHE.get("ohlc_data"):
+            cls.load_intraday_disk_cache()
+
+        cached: dict[str, pd.DataFrame] = cls._INTRADAY_CACHE.get("ohlc_data", {})
+
+        if force_refresh:
+            missing_symbols = [s for s in symbols if s.upper() not in cls.INVALID_SYMBOLS]
+        else:
+            missing_symbols = [
+                s for s in symbols
+                if s.upper() not in cls.INVALID_SYMBOLS and (s not in cached or cached[s].empty or len(cached[s]) < 10)
+            ]
+
+        if not missing_symbols and cached:
+            if symbols:
+                return {s: cached[s] for s in symbols if s in cached}
+            return cached
+
+        if not missing_symbols and not symbols:
+            return cached
+
+        valid_symbols = missing_symbols
+        if not valid_symbols:
+            return {s: cached[s] for s in symbols if s in cached}
+
+        ticker_map = {cls.normalize_ticker(s): s for s in valid_symbols}
+        tickers_list = list(ticker_map.keys())
+
+        logger.info(f"Fetching 30m intraday data for {len(tickers_list)} tickers ({p_clean}) from Yahoo Finance...")
+        try:
+            raw_data = yf.download(
+                tickers_list,
+                period=p_clean,
+                interval="15m",
+                auto_adjust=False,
+                group_by="ticker",
+                threads=True,
+                progress=False,
+            )
+
+            new_results: dict[str, pd.DataFrame] = {}
+            for ticker, sym in ticker_map.items():
+                try:
+                    if isinstance(raw_data.columns, pd.MultiIndex):
+                        lvl0 = set(raw_data.columns.get_level_values(0))
+                        lvl1 = set(raw_data.columns.get_level_values(1))
+                        if ticker in lvl0:
+                            df = raw_data[ticker].copy()
+                        elif ticker in lvl1:
+                            df = raw_data.xs(ticker, level=1, axis=1).copy()
+                        else:
+                            continue
+                    else:
+                        df = raw_data.copy()
+
+                    if isinstance(df.columns, pd.MultiIndex):
+                        df.columns = df.columns.get_level_values(0)
+
+                    if df.empty or len(df) < 4:
+                        continue
+
+                    # Localize / convert timezone to Asia/Kolkata
+                    if df.index.tz is None:
+                        df.index = df.index.tz_localize("UTC").tz_convert("Asia/Kolkata")
+                    else:
+                        df.index = df.index.tz_convert("Asia/Kolkata")
+
+                    # Resample to 30m candles starting at 09:15 AM
+                    df30 = df.resample("30min", offset="15min").agg({
+                        "Open": "first",
+                        "High": "max",
+                        "Low": "min",
+                        "Close": "last",
+                        "Volume": "sum",
+                    }).dropna()
+
+                    df30 = df30.dropna(subset=["Open", "High", "Low", "Close"])
+                    if len(df30) >= 3:
+                        new_results[sym] = df30
+                except Exception as exc:
+                    logger.debug(f"Failed to process 30m intraday for {sym}: {exc}")
+                    continue
+
+            if "ohlc_data" not in cls._INTRADAY_CACHE:
+                cls._INTRADAY_CACHE["ohlc_data"] = {}
+            cls._INTRADAY_CACHE["ohlc_data"].update(new_results)
+            cls._INTRADAY_CACHE["ohlc_timestamp"] = now
+            cls.save_intraday_disk_cache(cls._INTRADAY_CACHE["ohlc_data"])
+            logger.info(f"Intraday 30m cache updated with {len(new_results)} symbols (total {len(cls._INTRADAY_CACHE['ohlc_data'])}).")
+        except Exception as exc:
+            logger.error(f"Failed to download 30m intraday data: {exc}")
+
+        cached = cls._INTRADAY_CACHE.get("ohlc_data", {})
         if symbols:
             return {s: cached[s] for s in symbols if s in cached}
         return cached

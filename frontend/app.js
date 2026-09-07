@@ -1988,9 +1988,22 @@ App.Backtester = {
     // Strategy selector pills
     document.querySelectorAll('#backtest-strategy-group .pill').forEach(btn => {
       btn.addEventListener('click', () => {
+        const prevStrat = this._activeStrategy;
         document.querySelectorAll('#backtest-strategy-group .pill').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
         this._activeStrategy = btn.dataset.strategy || 'RB_KnoxDiv';
+
+        const tgtInput = document.querySelector('#backtest-target-pct');
+        const slInput = document.querySelector('#backtest-stoploss-pct');
+
+        if (this._activeStrategy === '30MIN_ANALYSIS') {
+          if (tgtInput && (tgtInput.value === '5.0' || tgtInput.value === '5')) tgtInput.value = '0.5';
+          if (slInput && (slInput.value === '3.0' || slInput.value === '3' || slInput.value === '2.0')) slInput.value = '0.8';
+        } else if (prevStrat === '30MIN_ANALYSIS') {
+          if (tgtInput && tgtInput.value === '0.5') tgtInput.value = '5.0';
+          if (slInput && slInput.value === '0.8') slInput.value = '3.0';
+        }
+
         this.runBacktest();
       });
     });
@@ -2348,6 +2361,7 @@ App.Backtester = {
 
     const isWin = t.outcome === 'WIN';
     const isBuy = t.signal_type.toLowerCase() === 'buy';
+    const is30m = t.strategy && (t.strategy.includes('30min') || t.strategy.toUpperCase().includes('30M'));
 
     if (diagView) {
       diagView.innerHTML = `
@@ -2361,8 +2375,8 @@ App.Backtester = {
           <div class="timeline-connector"></div>
           <div class="timeline-step">
             <div class="step-circle done">✓</div>
-            <div class="step-name">Confirmed</div>
-            <div style="font-size: 0.65rem; color: #78716c; font-weight: 600;">Next Day</div>
+            <div class="step-name">${is30m ? 'ORB Range' : 'Confirmed'}</div>
+            <div style="font-size: 0.65rem; color: #78716c; font-weight: 600;">${is30m ? '09:15-09:45' : 'Next Day'}</div>
           </div>
           <div class="timeline-connector"></div>
           <div class="timeline-step">
@@ -2394,7 +2408,7 @@ App.Backtester = {
           </div>
           <div style="background: #ffffff; border: 1px solid rgba(168, 142, 110, 0.28); border-radius: 10px; padding: 12px; text-align: center; box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);">
             <div style="font-size: 0.68rem; color: #78716c; font-weight: 800; text-transform: uppercase;">HOLDING TIME</div>
-            <div style="font-size: 1.15rem; font-weight: 800; color: #92400e; margin-top: 2px;">${t.holding_days} Days</div>
+            <div style="font-size: 1.15rem; font-weight: 800; color: #92400e; margin-top: 2px;">${is30m ? `${t.holding_days} Candles` : `${t.holding_days} Days`}</div>
             <div style="font-size: 0.72rem; color: #57534e;">${t.entry_date} to ${t.exit_date}</div>
           </div>
         </div>
@@ -2479,16 +2493,17 @@ App.Backtester = {
     try {
       if (!this._ohlcCache) this._ohlcCache = {};
 
-      const period = this._activePeriod || '1y';
-      const cacheKey = `${t.symbol}_${period}`;
+      const is30m = t.strategy && (t.strategy.includes('30min') || t.strategy.toUpperCase().includes('30M'));
+      const period = is30m ? '60d' : (this._activePeriod || '1y');
+      const interval = is30m ? '30m' : '1d';
+      const cacheKey = `${t.symbol}_${period}_${interval}`;
       let candles = this._ohlcCache[cacheKey];
       if (!candles) {
-        const res = await fetch(`/market/ohlc/${t.symbol}?period=${period}`);
+        const res = await fetch(`/market/ohlc/${t.symbol}?period=${period}&interval=${interval}`);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         candles = await res.json();
         this._ohlcCache[cacheKey] = candles;
       }
-
 
       this._currentCandles = candles;
 
@@ -2568,13 +2583,30 @@ App.Backtester = {
 
       candleSeries.setData(candles);
 
-      // Add Markers on Exact Trade Candles (ensuring unique timestamps per series)
+      // Helper to match trade datetime strings with candle time (number or string)
+      const findCandleTime = (dtStr) => {
+        if (!dtStr || !candles || !candles.length) return null;
+        const exact = candles.find(c => c.time === dtStr);
+        if (exact) return exact.time;
+        const byDt = candles.find(c => c.datetime && (c.datetime === dtStr || c.datetime.startsWith(dtStr) || dtStr.startsWith(c.datetime)));
+        if (byDt) return byDt.time;
+        const datePrefix = dtStr.substring(0, 10);
+        const byDate = candles.find(c => (typeof c.time === 'string' && c.time.startsWith(datePrefix)) || (c.datetime && c.datetime.startsWith(datePrefix)));
+        if (byDate) return byDate.time;
+        return null;
+      };
+
+      const entryMarkerTime = findCandleTime(t.entry_date);
+      const signalMarkerTime = findCandleTime(t.signal_date);
+      const exitMarkerTime = findCandleTime(t.exit_date);
+
+      // Add Markers on Exact Trade Candles
       const markers = [];
 
-      if (t.signal_date === t.entry_date) {
-        if (t.entry_date) {
+      if (signalMarkerTime === entryMarkerTime) {
+        if (entryMarkerTime != null) {
           markers.push({
-            time: t.entry_date,
+            time: entryMarkerTime,
             position: isBuy ? 'belowBar' : 'aboveBar',
             color: '#15803d',
             shape: isBuy ? 'arrowUp' : 'arrowDown',
@@ -2582,18 +2614,18 @@ App.Backtester = {
           });
         }
       } else {
-        if (t.signal_date) {
+        if (signalMarkerTime != null) {
           markers.push({
-            time: t.signal_date,
+            time: signalMarkerTime,
             position: isBuy ? 'belowBar' : 'aboveBar',
             color: '#b45309',
             shape: isBuy ? 'arrowUp' : 'arrowDown',
             text: `SIGNAL (${t.strategy})`,
           });
         }
-        if (t.entry_date) {
+        if (entryMarkerTime != null) {
           markers.push({
-            time: t.entry_date,
+            time: entryMarkerTime,
             position: isBuy ? 'belowBar' : 'aboveBar',
             color: '#15803d',
             shape: isBuy ? 'arrowUp' : 'arrowDown',
@@ -2603,10 +2635,10 @@ App.Backtester = {
       }
 
       // Exit Candle Marker
-      if (t.exit_date && t.exit_date !== t.entry_date) {
+      if (exitMarkerTime != null && exitMarkerTime !== entryMarkerTime) {
         const isWin = t.outcome === 'WIN';
         markers.push({
-          time: t.exit_date,
+          time: exitMarkerTime,
           position: isBuy ? 'aboveBar' : 'belowBar',
           color: isWin ? '#15803d' : '#b91c1c',
           shape: isBuy ? 'arrowDown' : 'arrowUp',
@@ -2617,7 +2649,6 @@ App.Backtester = {
       // Sort markers chronologically (required by Lightweight Charts)
       markers.sort((a, b) => (a.time > b.time ? 1 : -1));
       candleSeries.setMarkers(markers);
-
 
       // Add Target Level Price Line
       if (t.target_price) {
@@ -2680,15 +2711,24 @@ App.Backtester = {
     }
   },
 
-
   centerChartOnTrade() {
     const trades = this._currentTrades || [];
     const t = trades[this._selectedTradeIndex];
     if (!t || !this._chartInstance || !this._currentCandles || !this._currentCandles.length) return;
 
     const candles = this._currentCandles;
-    const entryIdx = candles.findIndex(c => c.time === t.entry_date);
-    const exitIdx = candles.findIndex(c => c.time === t.exit_date);
+    const findCandleIdx = (dtStr) => {
+      if (!dtStr) return -1;
+      let idx = candles.findIndex(c => c.time === dtStr);
+      if (idx >= 0) return idx;
+      idx = candles.findIndex(c => c.datetime && (c.datetime === dtStr || c.datetime.startsWith(dtStr) || dtStr.startsWith(c.datetime)));
+      if (idx >= 0) return idx;
+      const datePrefix = dtStr.substring(0, 10);
+      return candles.findIndex(c => (typeof c.time === 'string' && c.time.startsWith(datePrefix)) || (c.datetime && c.datetime.startsWith(datePrefix)));
+    };
+
+    const entryIdx = findCandleIdx(t.entry_date);
+    const exitIdx = findCandleIdx(t.exit_date);
 
     const refIdx = entryIdx >= 0 ? entryIdx : (exitIdx >= 0 ? exitIdx : candles.length - 1);
     const fromIdx = Math.max(0, refIdx - 20);
@@ -2714,15 +2754,19 @@ App.Backtester = {
     if (!t) return;
 
     // Copy exact entry date to clipboard
-    if (navigator.clipboard && t.entry_date) {
-      navigator.clipboard.writeText(t.entry_date).catch(() => {});
+    const dateStr = t.entry_date ? t.entry_date.substring(0, 10) : '';
+    if (navigator.clipboard && dateStr) {
+      navigator.clipboard.writeText(dateStr).catch(() => {});
     }
 
-    // Create a toast notification
-    this.showToast(`📋 Trade Date (${t.entry_date}) copied! In TradingView, press Alt + G and Enter to jump directly to this exact candle.`);
+    const is30m = t.strategy && (t.strategy.includes('30min') || t.strategy.toUpperCase().includes('30M'));
+    const tvInterval = is30m ? '30' : 'D';
 
-    // Open TradingView chart
-    const tvUrl = `https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}&interval=D`;
+    // Create a toast notification
+    this.showToast(`📋 Trade Date (${dateStr}) copied! In TradingView, press Alt + G and Enter to jump directly to this exact candle.`);
+
+    // Open TradingView chart with appropriate interval
+    const tvUrl = `https://in.tradingview.com/chart/?symbol=NSE:${t.symbol}&interval=${tvInterval}`;
     window.open(tvUrl, '_blank', 'noopener,noreferrer');
   },
 

@@ -55,30 +55,41 @@ class BacktesterEngine:
                 all_symbols = list(universe.keys())
                 universe_label = "All Universes"
 
-            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols, period=request.period or "1y")
-
-
-
-        all_trades: list[BacktestTrade] = []
         strategy_filter = request.strategy.upper()
+        all_trades: list[BacktestTrade] = []
 
-        for symbol in all_symbols:
-            if symbol not in ohlc_data:
-                continue
+        is_30m = strategy_filter in ("30MIN_ANALYSIS", "30MIN ANALYSIS", "ORB_30M")
+        is_all = strategy_filter == "ALL"
 
-            df = ohlc_data[symbol]
-            if len(df) < 50:
-                continue
+        # 1. 30min Analysis Simulation (Intraday ORB 30m)
+        if is_30m or is_all:
+            intraday_data = MarketDataProvider.get_intraday_30m_data(all_symbols, period="60d")
+            for symbol in all_symbols:
+                if symbol in intraday_data:
+                    df_30m = intraday_data[symbol]
+                    if len(df_30m) >= 10:
+                        all_trades.extend(cls._backtest_30m_analysis(symbol, df_30m, request))
 
-            # Run simulations per requested strategy
-            if strategy_filter in ("RSI", "ALL"):
-                all_trades.extend(cls._backtest_rsi(symbol, df, request))
+        # 2. Daily Swing Strategies Simulation (Knoxville, RSI, 200 SMA)
+        if not is_30m:
+            ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols, period=request.period or "1y")
+            for symbol in all_symbols:
+                if symbol not in ohlc_data:
+                    continue
 
-            if strategy_filter in ("RB_KNOXDIV", "KNOXVILLE", "ALL"):
-                all_trades.extend(cls._backtest_knoxville(symbol, df, request))
+                df = ohlc_data[symbol]
+                if len(df) < 50:
+                    continue
 
-            if strategy_filter in ("SMA_200", "200MA", "ALL"):
-                all_trades.extend(cls._backtest_ma200(symbol, df, request))
+                # Run simulations per requested strategy
+                if strategy_filter in ("RSI", "ALL"):
+                    all_trades.extend(cls._backtest_rsi(symbol, df, request))
+
+                if strategy_filter in ("RB_KNOXDIV", "KNOXVILLE", "ALL"):
+                    all_trades.extend(cls._backtest_knoxville(symbol, df, request))
+
+                if strategy_filter in ("SMA_200", "200MA", "ALL"):
+                    all_trades.extend(cls._backtest_ma200(symbol, df, request))
 
         # Determine effective start date from requested time horizon or explicit start_date
         period_days_map = {
@@ -102,9 +113,9 @@ class BacktesterEngine:
 
         # Filter by effective date range
         if effective_start:
-            all_trades = [t for t in all_trades if t.signal_date >= effective_start or t.entry_date >= effective_start]
+            all_trades = [t for t in all_trades if t.signal_date[:10] >= effective_start or t.entry_date[:10] >= effective_start]
         if request.end_date:
-            all_trades = [t for t in all_trades if t.entry_date <= request.end_date]
+            all_trades = [t for t in all_trades if t.entry_date[:10] <= request.end_date]
 
 
         # Filter by signal_type if requested (buy vs sell)
@@ -349,6 +360,152 @@ class BacktesterEngine:
                     i = max(i + 1, exit_idx + 1)
                     continue
             i += 1
+
+        return trades
+
+    @classmethod
+    def _backtest_30m_analysis(
+        cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
+    ) -> list[BacktestTrade]:
+        """Simulate 30min Analysis (Opening Range Breakout - ORB 30m):
+        
+        Rules:
+        - Timeframe: 30-minute intervals aligned to Indian market opening (09:15 AM IST).
+        - Setup Candle (09:15 to 09:45): Record High (orb_high) and Low (orb_low).
+        - Subsequent Candles (09:45 onwards):
+          - BUY Breakout: High >= orb_high.
+            Entry price = max(orb_high, Open of breakout candle).
+            Target = Entry * (1 + target_pct/100). (Default: 0.5%)
+            Stop Loss = Entry * (1 - stop_loss_pct/100). (Default: 0.8%)
+          - SELL Breakdown: Low <= orb_low.
+            Entry price = min(orb_low, Open of breakout candle).
+            Target = Entry * (1 - target_pct/100). (Default: 0.5%)
+            Stop Loss = Entry * (1 + stop_loss_pct/100). (Default: 0.8%)
+        - Intraday Exits:
+          - Target Hit or Stop Loss Hit evaluated per candle.
+          - If neither hit by end of the day, square off at the close of the final candle (Time Exit / EOD).
+        """
+        trades: list[BacktestTrade] = []
+        if df.empty or len(df) < 5:
+            return trades
+
+        target_pct = 0.5 if (req.target_pct is None or req.target_pct == 5.0) else req.target_pct
+        stop_loss_pct = 0.8 if (req.stop_loss_pct is None or req.stop_loss_pct == 2.0 or req.stop_loss_pct == 3.0) else req.stop_loss_pct
+
+        # Group candles by trading day (DatetimeIndex in Asia/Kolkata)
+        days = df.groupby(df.index.date)
+
+        for trade_date, day_df in days:
+            if len(day_df) < 2:
+                continue
+
+            # First 30m candle (09:15 - 09:45)
+            c0 = day_df.iloc[0]
+            orb_high = float(c0["High"])
+            orb_low = float(c0["Low"])
+            signal_dt_str = day_df.index[0].strftime("%Y-%m-%d %H:%M")
+
+            trade_taken = False
+            n_day = len(day_df)
+
+            for j in range(1, n_day):
+                if trade_taken:
+                    break
+
+                c_curr = day_df.iloc[j]
+                c_open = float(c_curr["Open"])
+                c_high = float(c_curr["High"])
+                c_low = float(c_curr["Low"])
+                entry_dt_str = day_df.index[j].strftime("%Y-%m-%d %H:%M")
+
+                is_buy = False
+                is_sell = False
+
+                if c_high >= orb_high:
+                    is_buy = True
+                    entry_price = c_open if c_open >= orb_high else orb_high
+                elif c_low <= orb_low:
+                    is_sell = True
+                    entry_price = c_open if c_open <= orb_low else orb_low
+
+                if not (is_buy or is_sell):
+                    continue
+
+                trade_taken = True
+                signal_type = "buy" if is_buy else "sell"
+
+                if is_buy:
+                    target_price = entry_price * (1.0 + target_pct / 100.0)
+                    stop_price = entry_price * (1.0 - stop_loss_pct / 100.0)
+                else:
+                    target_price = entry_price * (1.0 - target_pct / 100.0)
+                    stop_price = entry_price * (1.0 + stop_loss_pct / 100.0)
+
+                exit_price = entry_price
+                exit_reason = ExitReason.OPEN_POSITION
+                exit_dt_str = entry_dt_str
+                holding_candles = 1
+
+                for k in range(j, n_day):
+                    bar = day_df.iloc[k]
+                    b_open = float(bar["Open"])
+                    b_high = float(bar["High"])
+                    b_low = float(bar["Low"])
+                    b_close = float(bar["Close"])
+                    b_dt_str = day_df.index[k].strftime("%Y-%m-%d %H:%M")
+                    holding_candles = (k - j) + 1
+
+                    if is_buy:
+                        if b_low <= stop_price:
+                            exit_price = min(stop_price, b_open)
+                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            exit_dt_str = b_dt_str
+                            break
+                        elif b_high >= target_price:
+                            exit_price = max(target_price, b_open)
+                            exit_reason = ExitReason.TARGET_HIT
+                            exit_dt_str = b_dt_str
+                            break
+                    else:  # sell
+                        if b_high >= stop_price:
+                            exit_price = max(stop_price, b_open)
+                            exit_reason = ExitReason.STOP_LOSS_HIT
+                            exit_dt_str = b_dt_str
+                            break
+                        elif b_low <= target_price:
+                            exit_price = min(target_price, b_open)
+                            exit_reason = ExitReason.TARGET_HIT
+                            exit_dt_str = b_dt_str
+                            break
+
+                    # End-of-day market square-off on final candle
+                    if k == n_day - 1:
+                        exit_price = b_close
+                        exit_reason = ExitReason.TIME_EXIT
+                        exit_dt_str = b_dt_str
+
+                pnl_amount = exit_price - entry_price if is_buy else entry_price - exit_price
+                pnl_pct = (pnl_amount / entry_price) * 100.0
+                outcome = "WIN" if pnl_pct > 0 else "LOSS"
+
+                t = BacktestTrade(
+                    symbol=symbol,
+                    strategy="30min Analysis",
+                    signal_type=signal_type,
+                    signal_date=signal_dt_str,
+                    entry_date=entry_dt_str,
+                    entry_price=round(entry_price, 2),
+                    exit_date=exit_dt_str,
+                    exit_price=round(exit_price, 2),
+                    pnl_pct=round(pnl_pct, 2),
+                    pnl_amount=round(pnl_amount, 2),
+                    target_price=round(target_price, 2),
+                    stop_loss_price=round(stop_price, 2),
+                    exit_reason=exit_reason.value,
+                    holding_days=holding_candles,
+                    outcome=outcome,
+                )
+                trades.append(t)
 
         return trades
 

@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     FALLBACK_PATH: Path = BASE_DIR / "config" / "universe_fallback.json"
     CUSTOM_WATCHLISTS_PATH: Path = BASE_DIR / "config" / "custom_watchlists.json"
     DISK_CACHE_PATH: Path = BASE_DIR / "config" / "ohlc_cache.pkl"
+    DISK_INTRADAY_30M_CACHE_PATH: Path = BASE_DIR / "config" / "intraday_30m_cache.pkl"
 
     # Market data settings
     DATA_PERIOD: str = "1y"
