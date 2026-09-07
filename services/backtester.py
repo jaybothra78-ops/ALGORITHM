@@ -16,7 +16,12 @@ from models.backtest import (
     BacktestTrade,
     ExitReason,
 )
-from services.indicators import ma200_signals, rb_knox_divergence, rsi_signals
+from services.indicators import (
+    connors_rsi2_signals,
+    ma200_signals,
+    rb_knox_divergence,
+    rsi_signals,
+)
 from services.market_data import MarketDataProvider
 from services.universe import load_universe
 
@@ -55,41 +60,33 @@ class BacktesterEngine:
                 all_symbols = list(universe.keys())
                 universe_label = "All Universes"
 
-        strategy_filter = request.strategy.upper()
-        all_trades: list[BacktestTrade] = []
-
-        is_30m = strategy_filter in ("30MIN_ANALYSIS", "30MIN ANALYSIS", "ORB_30M")
-        is_all = strategy_filter == "ALL"
-
-        # 1. 30min Analysis Simulation (Intraday ORB 30m)
-        if is_30m or is_all:
-            intraday_data = MarketDataProvider.get_intraday_30m_data(all_symbols, period="60d")
-            for symbol in all_symbols:
-                if symbol in intraday_data:
-                    df_30m = intraday_data[symbol]
-                    if len(df_30m) >= 10:
-                        all_trades.extend(cls._backtest_30m_analysis(symbol, df_30m, request))
-
-        # 2. Daily Swing Strategies Simulation (Knoxville, RSI, 200 SMA)
-        if not is_30m:
             ohlc_data = MarketDataProvider.get_universe_ohlc(all_symbols, period=request.period or "1y")
-            for symbol in all_symbols:
-                if symbol not in ohlc_data:
-                    continue
 
-                df = ohlc_data[symbol]
-                if len(df) < 50:
-                    continue
 
-                # Run simulations per requested strategy
-                if strategy_filter in ("RSI", "ALL"):
-                    all_trades.extend(cls._backtest_rsi(symbol, df, request))
 
-                if strategy_filter in ("RB_KNOXDIV", "KNOXVILLE", "ALL"):
-                    all_trades.extend(cls._backtest_knoxville(symbol, df, request))
+        all_trades: list[BacktestTrade] = []
+        strategy_filter = request.strategy.upper()
 
-                if strategy_filter in ("SMA_200", "200MA", "ALL"):
-                    all_trades.extend(cls._backtest_ma200(symbol, df, request))
+        for symbol in all_symbols:
+            if symbol not in ohlc_data:
+                continue
+
+            df = ohlc_data[symbol]
+            if len(df) < 50:
+                continue
+
+            # Run simulations per requested strategy
+            if strategy_filter in ("RSI", "ALL"):
+                all_trades.extend(cls._backtest_rsi(symbol, df, request))
+
+            if strategy_filter in ("RB_KNOXDIV", "KNOXVILLE", "ALL"):
+                all_trades.extend(cls._backtest_knoxville(symbol, df, request))
+
+            if strategy_filter in ("SMA_200", "200MA", "ALL"):
+                all_trades.extend(cls._backtest_ma200(symbol, df, request))
+
+            if strategy_filter in ("CONNORS_RSI2", "CRSI2", "RSI2", "ALL"):
+                all_trades.extend(cls._backtest_connors_rsi2(symbol, df, request))
 
         # Determine effective start date from requested time horizon or explicit start_date
         period_days_map = {
@@ -113,9 +110,9 @@ class BacktesterEngine:
 
         # Filter by effective date range
         if effective_start:
-            all_trades = [t for t in all_trades if t.signal_date[:10] >= effective_start or t.entry_date[:10] >= effective_start]
+            all_trades = [t for t in all_trades if t.signal_date >= effective_start or t.entry_date >= effective_start]
         if request.end_date:
-            all_trades = [t for t in all_trades if t.entry_date[:10] <= request.end_date]
+            all_trades = [t for t in all_trades if t.entry_date <= request.end_date]
 
 
         # Filter by signal_type if requested (buy vs sell)
@@ -364,148 +361,115 @@ class BacktesterEngine:
         return trades
 
     @classmethod
-    def _backtest_30m_analysis(
+    def _backtest_connors_rsi2(
         cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
     ) -> list[BacktestTrade]:
-        """Simulate 30min Analysis (Opening Range Breakout - ORB 30m):
+        """Simulate Larry Connors RSI(2) Mean Reversion Strategy:
         
-        Rules:
-        - Timeframe: 30-minute intervals aligned to Indian market opening (09:15 AM IST).
-        - Setup Candle (09:15 to 09:45): Record High (orb_high) and Low (orb_low).
-        - Subsequent Candles (09:45 onwards):
-          - BUY Breakout: High >= orb_high.
-            Entry price = max(orb_high, Open of breakout candle).
-            Target = Entry * (1 + target_pct/100). (Default: 0.5%)
-            Stop Loss = Entry * (1 - stop_loss_pct/100). (Default: 0.8%)
-          - SELL Breakdown: Low <= orb_low.
-            Entry price = min(orb_low, Open of breakout candle).
-            Target = Entry * (1 - target_pct/100). (Default: 0.5%)
-            Stop Loss = Entry * (1 + stop_loss_pct/100). (Default: 0.8%)
-        - Intraday Exits:
-          - Target Hit or Stop Loss Hit evaluated per candle.
-          - If neither hit by end of the day, square off at the close of the final candle (Time Exit / EOD).
+        Long Setup:
+        - Long-Term Trend Filter: Close > SMA(200).
+        - Short-Term Panic Dip: 2-period RSI < 5.0 (extreme oversold).
+        - Entry: Market Open of following candle.
+        - Exit Conditions:
+          1. Mean Reversion Snapback: Close > 5 SMA (Connors' classical exit).
+          2. Target Hit: Intraday High touches Target % (default 4.0% or req.target_pct).
+          3. Stop Loss: Intraday Low touches Stop Loss % (default 5.0% or req.stop_loss_pct).
+          4. Time Stop: Held for max 10 trading sessions.
         """
         trades: list[BacktestTrade] = []
-        if df.empty or len(df) < 5:
+        if len(df) < 205:
             return trades
 
-        target_pct = 0.5 if (req.target_pct is None or req.target_pct == 5.0) else req.target_pct
-        stop_loss_pct = 0.8 if (req.stop_loss_pct is None or req.stop_loss_pct == 2.0 or req.stop_loss_pct == 3.0) else req.stop_loss_pct
+        sigs = connors_rsi2_signals(df, rsi_period=2, rsi_thresh=5.0)
+        n = len(df)
+        i = 200
 
-        # Group candles by trading day (DatetimeIndex in Asia/Kolkata)
-        days = df.groupby(df.index.date)
+        target_pct = req.target_pct if req.target_pct is not None and req.target_pct > 0 else 4.0
+        stop_loss_pct = req.stop_loss_pct if req.stop_loss_pct is not None and req.stop_loss_pct > 0 else 5.0
+        max_holding_days = req.max_holding_days if req.max_holding_days is not None and req.max_holding_days > 0 else 10
 
-        for trade_date, day_df in days:
-            if len(day_df) < 2:
-                continue
-
-            # First 30m candle (09:15 - 09:45)
-            c0 = day_df.iloc[0]
-            orb_high = float(c0["High"])
-            orb_low = float(c0["Low"])
-            signal_dt_str = day_df.index[0].strftime("%Y-%m-%d %H:%M")
-
-            trade_taken = False
-            n_day = len(day_df)
-
-            for j in range(1, n_day):
-                if trade_taken:
-                    break
-
-                c_curr = day_df.iloc[j]
-                c_open = float(c_curr["Open"])
-                c_high = float(c_curr["High"])
-                c_low = float(c_curr["Low"])
-                entry_dt_str = day_df.index[j].strftime("%Y-%m-%d %H:%M")
-
-                is_buy = False
-                is_sell = False
-
-                if c_high >= orb_high:
-                    is_buy = True
-                    entry_price = c_open if c_open >= orb_high else orb_high
-                elif c_low <= orb_low:
-                    is_sell = True
-                    entry_price = c_open if c_open <= orb_low else orb_low
-
-                if not (is_buy or is_sell):
+        while i < n - 1:
+            row_sig = sigs.iloc[i]
+            # Buy signal on bar i
+            if bool(row_sig["buy_signal"]):
+                entry_idx = i + 1
+                entry_date = df.index[entry_idx].date().isoformat()
+                signal_date = df.index[i].date().isoformat()
+                entry_price = float(df["Open"].iloc[entry_idx])
+                if entry_price <= 0:
+                    i += 1
                     continue
 
-                trade_taken = True
-                signal_type = "buy" if is_buy else "sell"
+                target_price = entry_price * (1.0 + target_pct / 100.0)
+                stop_price = entry_price * (1.0 - stop_loss_pct / 100.0)
 
-                if is_buy:
-                    target_price = entry_price * (1.0 + target_pct / 100.0)
-                    stop_price = entry_price * (1.0 - stop_loss_pct / 100.0)
-                else:
-                    target_price = entry_price * (1.0 - target_pct / 100.0)
-                    stop_price = entry_price * (1.0 + stop_loss_pct / 100.0)
-
+                exit_idx = entry_idx
                 exit_price = entry_price
                 exit_reason = ExitReason.OPEN_POSITION
-                exit_dt_str = entry_dt_str
-                holding_candles = 1
+                max_idx = min(entry_idx + max_holding_days, n - 1)
 
-                for k in range(j, n_day):
-                    bar = day_df.iloc[k]
-                    b_open = float(bar["Open"])
-                    b_high = float(bar["High"])
-                    b_low = float(bar["Low"])
-                    b_close = float(bar["Close"])
-                    b_dt_str = day_df.index[k].strftime("%Y-%m-%d %H:%M")
-                    holding_candles = (k - j) + 1
+                for cur_idx in range(entry_idx, max_idx + 1):
+                    cur_high = float(df["High"].iloc[cur_idx])
+                    cur_low = float(df["Low"].iloc[cur_idx])
+                    cur_close = float(df["Close"].iloc[cur_idx])
+                    cur_open = float(df["Open"].iloc[cur_idx])
+                    sma5_val = float(sigs["sma5"].iloc[cur_idx]) if pd.notna(sigs["sma5"].iloc[cur_idx]) else 0.0
 
-                    if is_buy:
-                        if b_low <= stop_price:
-                            exit_price = min(stop_price, b_open)
-                            exit_reason = ExitReason.STOP_LOSS_HIT
-                            exit_dt_str = b_dt_str
-                            break
-                        elif b_high >= target_price:
-                            exit_price = max(target_price, b_open)
-                            exit_reason = ExitReason.TARGET_HIT
-                            exit_dt_str = b_dt_str
-                            break
-                    else:  # sell
-                        if b_high >= stop_price:
-                            exit_price = max(stop_price, b_open)
-                            exit_reason = ExitReason.STOP_LOSS_HIT
-                            exit_dt_str = b_dt_str
-                            break
-                        elif b_low <= target_price:
-                            exit_price = min(target_price, b_open)
-                            exit_reason = ExitReason.TARGET_HIT
-                            exit_dt_str = b_dt_str
-                            break
+                    # 1. Stop loss check
+                    if cur_low <= stop_price:
+                        exit_idx = cur_idx
+                        exit_price = min(stop_price, cur_open)
+                        exit_reason = ExitReason.STOP_LOSS_HIT
+                        break
 
-                    # End-of-day market square-off on final candle
-                    if k == n_day - 1:
-                        exit_price = b_close
+                    # 2. Target check
+                    if cur_high >= target_price:
+                        exit_idx = cur_idx
+                        exit_price = max(target_price, cur_open)
+                        exit_reason = ExitReason.TARGET_HIT
+                        break
+
+                    # 3. Connors 5-day SMA mean reversion exit (on day 1+)
+                    if cur_idx > entry_idx and cur_close > sma5_val:
+                        exit_idx = cur_idx
+                        exit_price = cur_close
+                        exit_reason = ExitReason.SMA5_EXIT
+                        break
+
+                    # 4. Max holding days or end of dataset reached
+                    if cur_idx == max_idx:
+                        exit_idx = cur_idx
+                        exit_price = cur_close
                         exit_reason = ExitReason.TIME_EXIT
-                        exit_dt_str = b_dt_str
+                        break
 
-                pnl_amount = exit_price - entry_price if is_buy else entry_price - exit_price
-                pnl_pct = (pnl_amount / entry_price) * 100.0
-                outcome = "WIN" if pnl_pct > 0 else "LOSS"
+                pnl_amount = exit_price - entry_price
+                pnl_pct = round((pnl_amount / entry_price) * 100.0, 2)
+                pnl_amount = round(pnl_amount, 2)
+                holding_days = max(1, exit_idx - entry_idx)
 
-                t = BacktestTrade(
+                trade = BacktestTrade(
                     symbol=symbol,
-                    strategy="30min Analysis",
-                    signal_type=signal_type,
-                    signal_date=signal_dt_str,
-                    entry_date=entry_dt_str,
+                    strategy="CONNORS_RSI2",
+                    signal_type="buy",
+                    signal_date=signal_date,
+                    entry_date=df.index[entry_idx].date().isoformat(),
                     entry_price=round(entry_price, 2),
-                    exit_date=exit_dt_str,
+                    exit_date=df.index[exit_idx].date().isoformat(),
                     exit_price=round(exit_price, 2),
-                    pnl_pct=round(pnl_pct, 2),
-                    pnl_amount=round(pnl_amount, 2),
+                    pnl_pct=pnl_pct,
+                    pnl_amount=pnl_amount,
                     target_price=round(target_price, 2),
                     stop_loss_price=round(stop_price, 2),
                     exit_reason=exit_reason.value,
-                    holding_days=holding_candles,
-                    outcome=outcome,
+                    holding_days=holding_days,
+                    outcome="WIN" if pnl_pct > 0 else "LOSS",
                 )
-                trades.append(t)
+                trades.append(trade)
+                i = max(i + 1, exit_idx + 1)
+                continue
+
+            i += 1
 
         return trades
 

@@ -232,3 +232,33 @@ def test_backtest_single_symbol_and_dates():
         data = resp.json()
         assert data["summary"]["universe"] == "TVSMOTOR (Single Stock)"
 
+
+def test_backtest_connors_rsi2():
+    df = _dummy_ohlc(250)
+    df["Close"] = np.linspace(100, 200, 250)
+    df["Open"] = df["Close"] - 1.0
+    df["High"] = df["Close"] + 1.0
+    df["Low"] = df["Close"] - 2.0
+    # Create an oversold dip on day 210
+    df.loc[df.index[209], ["Open", "Close", "High", "Low"]] = [170, 160, 171, 159]
+    df.loc[df.index[210], ["Open", "Close", "High", "Low"]] = [159, 150, 160, 149]
+
+    req = BacktestRequest(strategy="CONNORS_RSI2", target_pct=4.0, stop_loss_pct=5.0)
+    trades = BacktesterEngine._backtest_connors_rsi2("TEST", df, req)
+    assert isinstance(trades, list)
+
+
+def test_backtest_connors_rsi2_api():
+    with TestClient(app) as c:
+        payload = {
+            "strategy": "CONNORS_RSI2",
+            "target_pct": 4.0,
+            "stop_loss_pct": 5.0,
+        }
+        resp = c.post("/backtest/run", json=payload)
+        assert resp.status_code == 200
+        data = resp.json()
+        assert "summary" in data
+        assert "trades" in data
+
+

@@ -94,13 +94,25 @@ def get_lookback_screener(
         items = res_dict.get("items", [])
         oversold = sum(1 for it in items if it.get("primary_type") in ("oversold", "buy") or (it.get("rsi") is not None and it["rsi"] <= 30))
         overbought = sum(1 for it in items if it.get("primary_type") in ("overbought", "sell") or (it.get("rsi") is not None and it["rsi"] >= 70))
-        knoxville = sum(1 for it in items if any(r.get("category") == "Strategy_Signal" or "knox" in r.get("tag", "").lower() for r in it.get("reasons", [])))
+        knoxville = sum(1 for it in items if any((r.get("category") == "Strategy_Signal" and r.get("strategy") == "RB_KnoxDiv") or "knox" in r.get("text", "").lower() for r in it.get("reasons", [])))
+        crsi2 = sum(1 for it in items if any(r.get("strategy") == "CONNORS_RSI2" or "connors" in r.get("text", "").lower() for r in it.get("reasons", [])))
 
         signals_list = []
         for it in items:
             reasons = it.get("reasons", [])
-            is_knox = any(r.get("category") == "Strategy_Signal" or "knox" in r.get("tag", "").lower() for r in reasons)
-            is_ma200 = any(r.get("category") == "MA200" or "200" in r.get("tag", "") for r in reasons)
+            is_knox = any((r.get("category") == "Strategy_Signal" and r.get("strategy") == "RB_KnoxDiv") or "knox" in r.get("text", "").lower() for r in reasons)
+            is_ma200 = any(r.get("category") == "MA200" or "200" in r.get("text", "") for r in reasons)
+            is_crsi2 = any(r.get("strategy") == "CONNORS_RSI2" or "connors" in r.get("text", "").lower() for r in reasons)
+
+            if is_crsi2:
+                strat_label = "Connors RSI(2)"
+            elif is_knox:
+                strat_label = "Knoxville"
+            elif is_ma200:
+                strat_label = "200SMA"
+            else:
+                strat_label = "RSI"
+
             signals_list.append({
                 "symbol": it["symbol"],
                 "universe": it.get("index_membership", ""),
@@ -108,11 +120,13 @@ def get_lookback_screener(
                 "close_price": it.get("current_price", 0.0),
                 "rsi": it.get("rsi"),
                 "rsi_ma": it.get("rsi_ma"),
+                "rsi2": it.get("rsi2"),
                 "sma_200": it.get("sma_200"),
                 "is_knox_divergence": is_knox,
                 "is_touching_200sma": is_ma200,
-                "scan_date": it.get("signal_date") or datetime.date.today().isoformat(),
-                "strategy": "Knoxville" if is_knox else ("200SMA" if is_ma200 else "RSI"),
+                "is_crsi2": is_crsi2,
+                "scan_date": it.get("signal_date") or date.today().isoformat(),
+                "strategy": strat_label,
                 "reason_summary": it.get("reason_summary", ""),
             })
 
@@ -122,6 +136,7 @@ def get_lookback_screener(
             "oversold_count": oversold,
             "overbought_count": overbought,
             "knoxville_count": knoxville,
+            "crsi2_count": crsi2,
             "signals": signals_list,
         }
     except Exception as exc:
@@ -223,51 +238,29 @@ def run_backtest_endpoint(
 @router.get("/market/ohlc/{symbol}", response_model=list[dict[str, Any]])
 def get_symbol_ohlc(
     symbol: str,
-    period: str = Query("1y", description="Time period window (3mo, 6mo, 1y, 2y, 3y, 5y, max, or 60d for intraday)"),
-    interval: str = Query("1d", description="Candle interval: 1d (daily) or 30m (30-minute intraday)"),
+    period: str = Query("1y", description="Time period window (3mo, 6mo, 1y, 2y, 3y, 5y, max)"),
 ) -> list[dict[str, Any]]:
-    """Return historical OHLC candles (daily or 30-minute interval) for candlestick chart rendering."""
+    """Return historical daily OHLC candles for candlestick chart rendering."""
     s_clean = symbol.strip().upper()
     try:
         from services.market_data import MarketDataProvider
+        ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean], period=period)
+        if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
+            raise HTTPException(404, f"No OHLC history available for {s_clean}")
 
-        if interval == "30m":
-            ohlc_dict = MarketDataProvider.get_intraday_30m_data([s_clean], period="60d")
-            if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
-                raise HTTPException(404, f"No 30-minute intraday OHLC history available for {s_clean}")
 
-            df = ohlc_dict[s_clean]
-            candles = []
-            for idx, row in df.iterrows():
-                ts_sec = int(idx.timestamp())
-                dt_str = idx.strftime("%Y-%m-%d %H:%M") if hasattr(idx, "strftime") else str(idx)[:16]
-                candles.append({
-                    "time": ts_sec,
-                    "datetime": dt_str,
-                    "open": round(float(row["Open"]), 2),
-                    "high": round(float(row["High"]), 2),
-                    "low": round(float(row["Low"]), 2),
-                    "close": round(float(row["Close"]), 2),
-                })
-            return candles
-        else:
-            ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean], period=period)
-            if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
-                raise HTTPException(404, f"No OHLC history available for {s_clean}")
-
-            df = ohlc_dict[s_clean]
-            candles = []
-            for idx, row in df.iterrows():
-                date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
-                candles.append({
-                    "time": date_str,
-                    "datetime": date_str,
-                    "open": round(float(row["Open"]), 2),
-                    "high": round(float(row["High"]), 2),
-                    "low": round(float(row["Low"]), 2),
-                    "close": round(float(row["Close"]), 2),
-                })
-            return candles
+        df = ohlc_dict[s_clean]
+        candles = []
+        for idx, row in df.iterrows():
+            date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
+            candles.append({
+                "time": date_str,
+                "open": round(float(row["Open"]), 2),
+                "high": round(float(row["High"]), 2),
+                "low": round(float(row["Low"]), 2),
+                "close": round(float(row["Close"]), 2),
+            })
+        return candles
     except HTTPException:
         raise
     except Exception as exc:

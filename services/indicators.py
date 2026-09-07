@@ -172,3 +172,35 @@ def ma200_signals(
         index=ohlc.index,
     )
 
+
+def connors_rsi2_signals(
+    ohlc: pd.DataFrame,
+    rsi_period: int = 2,
+    rsi_thresh: float = 5.0,
+    trend_period: int = 200,
+    exit_ma_period: int = 5,
+) -> pd.DataFrame:
+    """Larry Connors RSI(2) Mean Reversion Strategy Signals:
+    - Long-Term Trend Filter: Close > SMA(200)
+    - Short-Term Panic Dip: RSI(2) < rsi_thresh (default 5.0)
+    - Mean Reversion Exit Marker: Close > SMA(5)
+    """
+    close = ohlc["Close"]
+    rsi2 = calculate_rsi(close, length=rsi_period)
+    sma200 = calculate_sma(close, length=trend_period)
+    sma5 = calculate_sma(close, length=exit_ma_period)
+
+    buy_signal = (close > sma200) & (rsi2 < rsi_thresh)
+    sell_signal = (close < sma200) & (rsi2 > (100.0 - rsi_thresh))
+
+    return pd.DataFrame(
+        {
+            "rsi2": rsi2,
+            "sma200": sma200,
+            "sma5": sma5,
+            "buy_signal": buy_signal.fillna(False),
+            "sell_signal": sell_signal.fillna(False),
+        },
+        index=ohlc.index,
+    )
+
