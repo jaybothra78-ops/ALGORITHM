@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=34.0">
+  <link rel="stylesheet" href="/static/style.css?v=35.0">
 
 
 
@@ -467,32 +467,228 @@
     .ai-ans-gap {
       height: 6px;
     }
+    /* News Hero Banner (Warm Beige Executive Theme) */
+    .news-hero-banner {
+      background: rgba(255, 252, 247, 0.96) !important;
+      border: 1px solid rgba(168, 142, 110, 0.28) !important;
+      border-radius: 14px !important;
+      padding: 22px 26px !important;
+      display: flex !important;
+      justify-content: space-between !important;
+      align-items: center !important;
+      gap: 24px !important;
+      flex-wrap: wrap !important;
+      box-shadow: 0 8px 30px rgba(70, 55, 35, 0.07) !important;
+      margin-bottom: 18px !important;
+    }
+    .ticker-name {
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 1.6rem !important;
+      font-weight: 800 !important;
+      color: #92400e !important;
+      letter-spacing: -0.5px !important;
+    }
+    .company-sub {
+      font-size: 0.88rem !important;
+      font-weight: 600 !important;
+      color: #78716c !important;
+    }
+    .exchange-tag {
+      background: rgba(21, 128, 61, 0.1) !important;
+      color: #15803d !important;
+      border: 1px solid rgba(21, 128, 61, 0.3) !important;
+      font-size: 0.72rem !important;
+      font-weight: 800 !important;
+      padding: 2px 8px !important;
+      border-radius: 4px !important;
+      letter-spacing: 0.05em !important;
+    }
+    .hero-summary-text {
+      font-size: 0.92rem !important;
+      line-height: 1.65 !important;
+      color: #292524 !important;
+      font-weight: 500 !important;
+      margin: 4px 0 0 0 !important;
+    }
+    .sentiment-meter-box {
+      background: #ffffff !important;
+      border: 1px solid rgba(168, 142, 110, 0.28) !important;
+      border-radius: 12px !important;
+      padding: 16px 20px !important;
+      box-shadow: 0 4px 14px rgba(70, 55, 35, 0.05) !important;
+      min-width: 240px !important;
+    }
+    .meter-label {
+      font-size: 0.72rem !important;
+      font-weight: 800 !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.05em !important;
+      color: #78716c !important;
+    }
+    .score-label-row {
+      display: flex !important;
+      justify-content: space-between !important;
+      font-size: 0.75rem !important;
+      font-weight: 700 !important;
+      color: #78716c !important;
+      margin-bottom: 6px !important;
+    }
+    .score-label-row strong {
+      color: #1c1917 !important;
+    }
+    .score-track {
+      background: #e7e5e4 !important;
+      border-radius: 6px !important;
+      height: 8px !important;
+      overflow: hidden !important;
+    }
+    .hero-link-btn.screener-btn {
+      background: rgba(180, 83, 9, 0.08) !important;
+      color: #92400e !important;
+      border: 1px solid rgba(180, 83, 9, 0.32) !important;
+      font-size: 0.76rem !important;
+      font-weight: 700 !important;
+      padding: 6px 14px !important;
+      border-radius: 6px !important;
+      text-decoration: none !important;
+      transition: all 0.15s ease !important;
+    }
+    .hero-link-btn.screener-btn:hover {
+      background: rgba(180, 83, 9, 0.16) !important;
+      border-color: #92400e !important;
+    }
+    .hero-link-btn.tv-btn {
+      background: #ffffff !important;
+      color: #44403c !important;
+      border: 1px solid rgba(168, 142, 110, 0.35) !important;
+      font-size: 0.76rem !important;
+      font-weight: 700 !important;
+      padding: 6px 14px !important;
+      border-radius: 6px !important;
+      text-decoration: none !important;
+      transition: all 0.15s ease !important;
+    }
+    .hero-link-btn.tv-btn:hover {
+      background: #f5efe6 !important;
+      color: #1c1917 !important;
+      border-color: #b45309 !important;
+    }
+
+    /* Catalysts Card */
     .catalysts-card {
-      background: linear-gradient(135deg, rgba(21, 128, 61, 0.06) 0%, #ffffff 100%) !important;
-      border: 1px solid rgba(21, 128, 61, 0.28) !important;
+      background: linear-gradient(135deg, rgba(21, 128, 61, 0.07) 0%, #ffffff 100%) !important;
+      border: 1px solid rgba(21, 128, 61, 0.3) !important;
+      border-radius: 12px !important;
+      padding: 18px 20px !important;
       box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
     }
-    .risks-card {
-      background: linear-gradient(135deg, rgba(185, 28, 28, 0.06) 0%, #ffffff 100%) !important;
-      border: 1px solid rgba(185, 28, 28, 0.28) !important;
-      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
+    .catalysts-card .breakdown-header {
+      border-bottom: 1px solid rgba(21, 128, 61, 0.2) !important;
+      padding-bottom: 10px !important;
+      margin-bottom: 12px !important;
+    }
+    .catalysts-card .breakdown-header h4 {
+      color: #15803d !important;
+      font-size: 0.95rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.02em !important;
+      margin: 0 !important;
+    }
+    .catalysts-list li {
+      color: #1c1917 !important;
+      font-size: 0.86rem !important;
+      line-height: 1.6 !important;
+      font-weight: 600 !important;
+      padding-left: 20px !important;
+      position: relative !important;
     }
     .catalysts-list li::before {
       content: "•";
       position: absolute;
       left: 2px;
-      color: #15803d;
-      font-size: 1.2rem;
+      color: #15803d !important;
+      font-size: 1.3rem !important;
       line-height: 1;
-      top: 1px;
+      top: 0;
+      font-weight: 900 !important;
+    }
+
+    /* Risks Card */
+    .risks-card {
+      background: linear-gradient(135deg, rgba(185, 28, 28, 0.07) 0%, #ffffff 100%) !important;
+      border: 1px solid rgba(185, 28, 28, 0.3) !important;
+      border-radius: 12px !important;
+      padding: 18px 20px !important;
+      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
+    }
+    .risks-card .breakdown-header {
+      border-bottom: 1px solid rgba(185, 28, 28, 0.2) !important;
+      padding-bottom: 10px !important;
+      margin-bottom: 12px !important;
+    }
+    .risks-card .breakdown-header h4 {
+      color: #b91c1c !important;
+      font-size: 0.95rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.02em !important;
+      margin: 0 !important;
+    }
+    .risks-list li {
+      color: #1c1917 !important;
+      font-size: 0.86rem !important;
+      line-height: 1.6 !important;
+      font-weight: 600 !important;
+      padding-left: 20px !important;
+      position: relative !important;
     }
     .risks-list li::before {
       content: "•";
       position: absolute;
       left: 2px;
-      color: #b91c1c;
-      font-size: 1.2rem;
+      color: #b91c1c !important;
+      font-size: 1.3rem !important;
       line-height: 1;
+      top: 0;
+      font-weight: 900 !important;
+    }
+
+    /* Technical & Fundamental Correlation Card */
+    .technical-correlation-card {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.07) 0%, #ffffff 100%) !important;
+      border: 1px solid rgba(124, 58, 237, 0.3) !important;
+      border-radius: 12px !important;
+      padding: 18px 22px !important;
+      margin-top: 14px !important;
+      margin-bottom: 18px !important;
+      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
+      display: flex !important;
+      flex-direction: column !important;
+      gap: 8px !important;
+    }
+    .tc-header {
+      display: flex !important;
+      align-items: center !important;
+      gap: 8px !important;
+      border-bottom: 1px solid rgba(124, 58, 237, 0.18) !important;
+      padding-bottom: 8px !important;
+      margin-bottom: 4px !important;
+    }
+    .tc-header h4 {
+      color: #6d28d9 !important;
+      font-size: 0.92rem !important;
+      font-weight: 800 !important;
+      letter-spacing: 0.02em !important;
+      margin: 0 !important;
+    }
+    .tc-icon {
+      font-size: 1.1rem !important;
+    }
+    .tc-text {
+      color: #292524 !important;
+      font-size: 0.88rem !important;
+      line-height: 1.65 !important;
+      font-weight: 600 !important;
+      margin: 0 !important;
     }
     /* Strategy Tester KPI Ribbon Styles */
     .strategy-hero-banner {
@@ -2158,7 +2354,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=52.0"></script>
+  <script src="/static/app.js?v=53.0"></script>
 
 
 

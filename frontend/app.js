@@ -674,7 +674,14 @@ App.News = {
     const scoreFill = document.querySelector('#ai-score-fill');
 
     if (tickerEl) tickerEl.textContent = data.symbol;
-    if (companyEl) companyEl.textContent = `${data.company_name || data.symbol} (NSE)`;
+    if (companyEl) {
+      let comp = (data.company_name || '').replace(/\s*\(NSE\)\s*/gi, '').trim();
+      if (!comp || comp.toUpperCase() === data.symbol.toUpperCase()) {
+        companyEl.textContent = 'NSE';
+      } else {
+        companyEl.textContent = comp;
+      }
+    }
     if (screenerLink) screenerLink.href = `https://www.screener.in/company/${encodeURIComponent(data.symbol)}/consolidated/`;
     if (tvLink) tvLink.href = `https://in.tradingview.com/chart/?symbol=NSE:${encodeURIComponent(data.symbol)}`;
     if (execSummary) execSummary.textContent = data.executive_summary;

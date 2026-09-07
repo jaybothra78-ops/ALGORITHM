@@ -238,29 +238,51 @@ def run_backtest_endpoint(
 @router.get("/market/ohlc/{symbol}", response_model=list[dict[str, Any]])
 def get_symbol_ohlc(
     symbol: str,
-    period: str = Query("1y", description="Time period window (3mo, 6mo, 1y, 2y, 3y, 5y, max)"),
+    period: str = Query("1y", description="Time period window (3mo, 6mo, 1y, 2y, 3y, 5y, max, or 60d for intraday)"),
+    interval: str = Query("1d", description="Candle interval: 1d (daily) or 30m (30-minute intraday)"),
 ) -> list[dict[str, Any]]:
-    """Return historical daily OHLC candles for candlestick chart rendering."""
+    """Return historical OHLC candles (daily or 30-minute interval) for candlestick chart rendering."""
     s_clean = symbol.strip().upper()
     try:
         from services.market_data import MarketDataProvider
-        ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean], period=period)
-        if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
-            raise HTTPException(404, f"No OHLC history available for {s_clean}")
 
+        if interval == "30m":
+            ohlc_dict = MarketDataProvider.get_intraday_30m_data([s_clean], period="60d")
+            if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
+                raise HTTPException(404, f"No 30-minute intraday OHLC history available for {s_clean}")
 
-        df = ohlc_dict[s_clean]
-        candles = []
-        for idx, row in df.iterrows():
-            date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
-            candles.append({
-                "time": date_str,
-                "open": round(float(row["Open"]), 2),
-                "high": round(float(row["High"]), 2),
-                "low": round(float(row["Low"]), 2),
-                "close": round(float(row["Close"]), 2),
-            })
-        return candles
+            df = ohlc_dict[s_clean]
+            candles = []
+            for idx, row in df.iterrows():
+                ts_sec = int(idx.timestamp())
+                dt_str = idx.strftime("%Y-%m-%d %H:%M") if hasattr(idx, "strftime") else str(idx)[:16]
+                candles.append({
+                    "time": ts_sec,
+                    "datetime": dt_str,
+                    "open": round(float(row["Open"]), 2),
+                    "high": round(float(row["High"]), 2),
+                    "low": round(float(row["Low"]), 2),
+                    "close": round(float(row["Close"]), 2),
+                })
+            return candles
+        else:
+            ohlc_dict = MarketDataProvider.get_universe_ohlc([s_clean], period=period)
+            if s_clean not in ohlc_dict or ohlc_dict[s_clean].empty:
+                raise HTTPException(404, f"No OHLC history available for {s_clean}")
+
+            df = ohlc_dict[s_clean]
+            candles = []
+            for idx, row in df.iterrows():
+                date_str = idx.strftime("%Y-%m-%d") if hasattr(idx, "strftime") else str(idx)[:10]
+                candles.append({
+                    "time": date_str,
+                    "datetime": date_str,
+                    "open": round(float(row["Open"]), 2),
+                    "high": round(float(row["High"]), 2),
+                    "low": round(float(row["Low"]), 2),
+                    "close": round(float(row["Close"]), 2),
+                })
+            return candles
     except HTTPException:
         raise
     except Exception as exc:

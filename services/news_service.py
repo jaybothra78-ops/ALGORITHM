@@ -224,9 +224,27 @@ class NewsService:
             f"favorable risk-reward confirmation for trend continuation."
         )
 
+        # Attempt to discover natural company name from headlines
+        discovered_name = None
+        for a in articles:
+            m = re.search(r"['\"]?([A-Za-z0-9\s&.,\-]+?)['\"]?\s*\((?:NSE|BSE):" + re.escape(symbol), a.title, re.IGNORECASE)
+            if m:
+                cand = m.group(1).strip(" '\"")
+                if len(cand) > 3 and not cand.isupper():
+                    discovered_name = cand
+                    break
+            m2 = re.search(r"^([A-Za-z0-9\s&.,\-]+?)\s+(?:Share Price|Shares|Stock)\b", a.title, re.IGNORECASE)
+            if m2:
+                cand = m2.group(1).strip(" '\"")
+                if len(cand) > 3 and not cand.isupper() and symbol not in cand.upper():
+                    discovered_name = cand
+                    break
+
+        final_company_name = discovered_name if discovered_name else symbol
+
         return NewsAnalysisResponse(
             symbol=symbol,
-            company_name=f"{symbol} (NSE)",
+            company_name=final_company_name,
             sentiment=verdict,
             sentiment_score=score,
             analysis_engine="Institutional Financial NLP Engine",
