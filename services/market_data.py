@@ -68,7 +68,7 @@ class MarketDataProvider:
 
     INVALID_SYMBOLS: set[str] = {
         "NIFTY", "BANKNIFTY", "SENSEX", "INDIAVIX", "CNX500", "CNXMIDCAP", 
-        "CNXSMALLCAP", "RUDRAECO", "RAJESH", "TATAMOTORS", "KUBERJI", "ASMTEC", 
+        "CNXSMALLCAP", "RUDRAECO", "RAJESH", "KUBERJI", "ASMTEC", 
         "GUJGASLTD", "ANTHEM", "ACUTAAS"
     }
 

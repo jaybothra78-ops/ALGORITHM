@@ -17,7 +17,6 @@ from models.backtest import (
     ExitReason,
 )
 from services.indicators import (
-    connors_rsi2_signals,
     ma200_signals,
     rb_knox_divergence,
     rsi_signals,
@@ -95,9 +94,6 @@ class BacktesterEngine:
 
                 if strategy_filter in ("SMA_200", "200MA", "ALL"):
                     all_trades.extend(cls._backtest_ma200(symbol, df, request))
-
-                if strategy_filter in ("CONNORS_RSI2", "CRSI2", "RSI2", "ALL"):
-                    all_trades.extend(cls._backtest_connors_rsi2(symbol, df, request))
 
         # Determine effective start date from requested time horizon or explicit start_date
         period_days_map = {
@@ -514,119 +510,6 @@ class BacktesterEngine:
                     outcome=outcome,
                 )
                 trades.append(t)
-
-        return trades
-
-    @classmethod
-    def _backtest_connors_rsi2(
-        cls, symbol: str, df: pd.DataFrame, req: BacktestRequest
-    ) -> list[BacktestTrade]:
-        """Simulate Larry Connors RSI(2) Mean Reversion Strategy:
-        
-        Long Setup:
-        - Long-Term Trend Filter: Close > SMA(200).
-        - Short-Term Panic Dip: 2-period RSI < 5.0 (extreme oversold).
-        - Entry: Market Open of following candle.
-        - Exit Conditions:
-          1. Mean Reversion Snapback: Close > 5 SMA (Connors' classical exit).
-          2. Target Hit: Intraday High touches Target % (default 4.0% or req.target_pct).
-          3. Stop Loss: Intraday Low touches Stop Loss % (default 5.0% or req.stop_loss_pct).
-          4. Time Stop: Held for max 10 trading sessions.
-        """
-        trades: list[BacktestTrade] = []
-        if len(df) < 205:
-            return trades
-
-        sigs = connors_rsi2_signals(df, rsi_period=2, rsi_thresh=5.0)
-        n = len(df)
-        i = 200
-
-        target_pct = req.target_pct if req.target_pct is not None and req.target_pct > 0 else 4.0
-        stop_loss_pct = req.stop_loss_pct if req.stop_loss_pct is not None and req.stop_loss_pct > 0 else 5.0
-        max_holding_days = req.max_holding_days if req.max_holding_days is not None and req.max_holding_days > 0 else 10
-
-        while i < n - 1:
-            row_sig = sigs.iloc[i]
-            # Buy signal on bar i
-            if bool(row_sig["buy_signal"]):
-                entry_idx = i + 1
-                entry_date = df.index[entry_idx].date().isoformat()
-                signal_date = df.index[i].date().isoformat()
-                entry_price = float(df["Open"].iloc[entry_idx])
-                if entry_price <= 0:
-                    i += 1
-                    continue
-
-                target_price = entry_price * (1.0 + target_pct / 100.0)
-                stop_price = entry_price * (1.0 - stop_loss_pct / 100.0)
-
-                exit_idx = entry_idx
-                exit_price = entry_price
-                exit_reason = ExitReason.OPEN_POSITION
-                max_idx = min(entry_idx + max_holding_days, n - 1)
-
-                for cur_idx in range(entry_idx, max_idx + 1):
-                    cur_high = float(df["High"].iloc[cur_idx])
-                    cur_low = float(df["Low"].iloc[cur_idx])
-                    cur_close = float(df["Close"].iloc[cur_idx])
-                    cur_open = float(df["Open"].iloc[cur_idx])
-                    sma5_val = float(sigs["sma5"].iloc[cur_idx]) if pd.notna(sigs["sma5"].iloc[cur_idx]) else 0.0
-
-                    # 1. Stop loss check
-                    if cur_low <= stop_price:
-                        exit_idx = cur_idx
-                        exit_price = min(stop_price, cur_open)
-                        exit_reason = ExitReason.STOP_LOSS_HIT
-                        break
-
-                    # 2. Target check
-                    if cur_high >= target_price:
-                        exit_idx = cur_idx
-                        exit_price = max(target_price, cur_open)
-                        exit_reason = ExitReason.TARGET_HIT
-                        break
-
-                    # 3. Connors 5-day SMA mean reversion exit (on day 1+)
-                    if cur_idx > entry_idx and cur_close > sma5_val:
-                        exit_idx = cur_idx
-                        exit_price = cur_close
-                        exit_reason = ExitReason.SMA5_EXIT
-                        break
-
-                    # 4. Max holding days or end of dataset reached
-                    if cur_idx == max_idx:
-                        exit_idx = cur_idx
-                        exit_price = cur_close
-                        exit_reason = ExitReason.TIME_EXIT
-                        break
-
-                pnl_amount = exit_price - entry_price
-                pnl_pct = round((pnl_amount / entry_price) * 100.0, 2)
-                pnl_amount = round(pnl_amount, 2)
-                holding_days = max(1, exit_idx - entry_idx)
-
-                trade = BacktestTrade(
-                    symbol=symbol,
-                    strategy="CONNORS_RSI2",
-                    signal_type="buy",
-                    signal_date=signal_date,
-                    entry_date=df.index[entry_idx].date().isoformat(),
-                    entry_price=round(entry_price, 2),
-                    exit_date=df.index[exit_idx].date().isoformat(),
-                    exit_price=round(exit_price, 2),
-                    pnl_pct=pnl_pct,
-                    pnl_amount=pnl_amount,
-                    target_price=round(target_price, 2),
-                    stop_loss_price=round(stop_price, 2),
-                    exit_reason=exit_reason.value,
-                    holding_days=holding_days,
-                    outcome="WIN" if pnl_pct > 0 else "LOSS",
-                )
-                trades.append(trade)
-                i = max(i + 1, exit_idx + 1)
-                continue
-
-            i += 1
 
         return trades
 

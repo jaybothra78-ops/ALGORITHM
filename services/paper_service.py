@@ -29,8 +29,8 @@ class PaperTradingService:
         import yfinance as yf
         clean_sym = symbol.strip().upper()
         
-        # Handle index ticker mapping for Yahoo Finance
-        if clean_sym == "NIFTY" or clean_sym == "NIFTY50":
+        # Handle index ticker and demerged mapping for Yahoo Finance
+        if clean_sym in ("NIFTY", "NIFTY50"):
             ticker_candidates = ["^NSEI", "NIFTYBEES.NS"]
         elif clean_sym == "BANKNIFTY":
             ticker_candidates = ["^NSEBANK", "BANKBEES.NS"]
@@ -38,6 +38,8 @@ class PaperTradingService:
             ticker_candidates = ["NIFTY_FIN_SERVICE.NS", "^CNXFIN"]
         elif clean_sym == "SENSEX":
             ticker_candidates = ["^BSESN"]
+        elif clean_sym == "TATAMOTORS":
+            ticker_candidates = ["TMPV.NS", "TMCV.NS", "TATAMOTORS.NS"]
         else:
             ticker_candidates = [
                 f"{clean_sym}.NS",
@@ -51,29 +53,38 @@ class PaperTradingService:
                 price = None
                 prev_close = None
 
-                # 1. Fast real-time quote metadata
+                # 1. Fast real-time quote metadata (< 1s)
                 if hasattr(t, "fast_info") and t.fast_info:
-                    price = t.fast_info.get("lastPrice") or t.fast_info.get("regularMarketPrice")
-                    prev_close = t.fast_info.get("previousClose") or t.fast_info.get("regularMarketPreviousClose")
+                    try:
+                        price = getattr(t.fast_info, "last_price", None) or t.fast_info.get("lastPrice") or t.fast_info.get("regularMarketPrice")
+                        prev_close = getattr(t.fast_info, "previous_close", None) or t.fast_info.get("previousClose") or t.fast_info.get("regularMarketPreviousClose")
+                    except Exception:
+                        pass
 
                 # 2. 1-minute intraday tick fallback
                 if not price or price <= 0:
-                    hist_1m = t.history(period="1d", interval="1m")
-                    if not hist_1m.empty:
-                        price = float(hist_1m["Close"].iloc[-1])
-                        prev_close = float(hist_1m["Open"].iloc[0])
+                    try:
+                        hist_1m = t.history(period="1d", interval="1m")
+                        if not hist_1m.empty:
+                            price = float(hist_1m["Close"].iloc[-1])
+                            prev_close = float(hist_1m["Open"].iloc[0])
+                    except Exception:
+                        pass
 
                 # 3. 5-day daily close fallback
                 if not price or price <= 0:
-                    hist_5d = t.history(period="5d")
-                    if not hist_5d.empty:
-                        price = float(hist_5d["Close"].iloc[-1])
-                        prev_close = float(hist_5d["Close"].iloc[-2]) if len(hist_5d) > 1 else price
+                    try:
+                        hist_5d = t.history(period="5d")
+                        if not hist_5d.empty:
+                            price = float(hist_5d["Close"].iloc[-1])
+                            prev_close = float(hist_5d["Close"].iloc[-2]) if len(hist_5d) > 1 else price
+                    except Exception:
+                        pass
 
                 if price and price > 0:
                     prev_close = prev_close or price
-                    change = round(price - prev_close, 2)
-                    change_pct = round((change / prev_close) * 100.0, 2) if prev_close > 0 else 0.0
+                    change = round(float(price - prev_close), 2)
+                    change_pct = round(float((change / prev_close) * 100.0), 2) if prev_close > 0 else 0.0
 
                     return {
                         "symbol": clean_sym,
@@ -88,23 +99,45 @@ class PaperTradingService:
             except Exception:
                 continue
 
-        # Fallback to universe cache if network fails
-        data_map = MarketDataProvider.get_universe_ohlc([clean_sym])
-        if clean_sym in data_map and not data_map[clean_sym].empty:
-            p = float(data_map[clean_sym]["Close"].iloc[-1])
+        # Fallback to local universe cache if network fails
+        cached = MarketDataProvider._CACHE.get("ohlc_data", {})
+        if clean_sym in cached and not cached[clean_sym].empty:
+            df_c = cached[clean_sym]
+            p = float(df_c["Close"].iloc[-1])
+            prev_p = float(df_c["Close"].iloc[-2]) if len(df_c) > 1 else p
+            change = round(p - prev_p, 2)
+            change_pct = round((change / prev_p) * 100.0, 2) if prev_p > 0 else 0.0
             return {
                 "symbol": clean_sym,
                 "ticker": f"{clean_sym}.NS",
                 "ltp": round(p, 2),
-                "previous_close": round(p, 2),
-                "change": 0.0,
-                "change_pct": 0.0,
+                "previous_close": round(prev_p, 2),
+                "change": change,
+                "change_pct": change_pct,
+                "source": "Cached Daily Close",
+                "timestamp": time.time(),
+            }
+
+        data_map = MarketDataProvider.get_universe_ohlc([clean_sym])
+        if clean_sym in data_map and not data_map[clean_sym].empty:
+            df_c = data_map[clean_sym]
+            p = float(df_c["Close"].iloc[-1])
+            prev_p = float(df_c["Close"].iloc[-2]) if len(df_c) > 1 else p
+            change = round(p - prev_p, 2)
+            change_pct = round((change / prev_p) * 100.0, 2) if prev_p > 0 else 0.0
+            return {
+                "symbol": clean_sym,
+                "ticker": f"{clean_sym}.NS",
+                "ltp": round(p, 2),
+                "previous_close": round(prev_p, 2),
+                "change": change,
+                "change_pct": change_pct,
                 "source": "Cached Daily Close",
                 "timestamp": time.time(),
             }
 
         # Default fallback for index if offline
-        default_p = 25000.0 if clean_sym == "NIFTY" else (51500.0 if clean_sym == "BANKNIFTY" else 100.0)
+        default_p = 25000.0 if clean_sym in ("NIFTY", "NIFTY50") else (51500.0 if clean_sym == "BANKNIFTY" else 100.0)
         return {
             "symbol": clean_sym,
             "ticker": f"{clean_sym}.NS",

@@ -95,18 +95,14 @@ def get_lookback_screener(
         oversold = sum(1 for it in items if it.get("primary_type") in ("oversold", "buy") or (it.get("rsi") is not None and it["rsi"] <= 30))
         overbought = sum(1 for it in items if it.get("primary_type") in ("overbought", "sell") or (it.get("rsi") is not None and it["rsi"] >= 70))
         knoxville = sum(1 for it in items if any((r.get("category") == "Strategy_Signal" and r.get("strategy") == "RB_KnoxDiv") or "knox" in r.get("text", "").lower() for r in it.get("reasons", [])))
-        crsi2 = sum(1 for it in items if any(r.get("strategy") == "CONNORS_RSI2" or "connors" in r.get("text", "").lower() for r in it.get("reasons", [])))
 
         signals_list = []
         for it in items:
             reasons = it.get("reasons", [])
             is_knox = any((r.get("category") == "Strategy_Signal" and r.get("strategy") == "RB_KnoxDiv") or "knox" in r.get("text", "").lower() for r in reasons)
             is_ma200 = any(r.get("category") == "MA200" or "200" in r.get("text", "") for r in reasons)
-            is_crsi2 = any(r.get("strategy") == "CONNORS_RSI2" or "connors" in r.get("text", "").lower() for r in reasons)
 
-            if is_crsi2:
-                strat_label = "Connors RSI(2)"
-            elif is_knox:
+            if is_knox:
                 strat_label = "Knoxville"
             elif is_ma200:
                 strat_label = "200SMA"
@@ -120,11 +116,9 @@ def get_lookback_screener(
                 "close_price": it.get("current_price", 0.0),
                 "rsi": it.get("rsi"),
                 "rsi_ma": it.get("rsi_ma"),
-                "rsi2": it.get("rsi2"),
                 "sma_200": it.get("sma_200"),
                 "is_knox_divergence": is_knox,
                 "is_touching_200sma": is_ma200,
-                "is_crsi2": is_crsi2,
                 "scan_date": it.get("signal_date") or date.today().isoformat(),
                 "strategy": strat_label,
                 "reason_summary": it.get("reason_summary", ""),
@@ -136,7 +130,6 @@ def get_lookback_screener(
             "oversold_count": oversold,
             "overbought_count": overbought,
             "knoxville_count": knoxville,
-            "crsi2_count": crsi2,
             "signals": signals_list,
         }
     except Exception as exc:

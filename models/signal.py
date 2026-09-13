@@ -18,7 +18,6 @@ class StrategyType(str, Enum):
     RSI = "RSI"
     RB_KNOXDIV = "RB_KnoxDiv"
     SMA_200 = "SMA_200"
-    CONNORS_RSI2 = "CONNORS_RSI2"
     ALL = "ALL"
 
 
@@ -51,7 +50,6 @@ class LookbackItem(BaseModel):
     current_price: float = Field(..., description="Latest available closing price")
     rsi: float | None = Field(default=None, description="Latest RSI (14) value")
     rsi_ma: float | None = Field(default=None, description="Latest RSI Moving Average value")
-    rsi2: float | None = Field(default=None, description="Latest RSI (2) value")
     sma_200: float | None = Field(default=None, description="Latest 200-day Simple Moving Average")
     primary_type: str = Field(..., description="Primary classification: buy, sell, oversold, overbought, neutral")
     signal_date: str | None = Field(default=None, description="Most recent trigger date")

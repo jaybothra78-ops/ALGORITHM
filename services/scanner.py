@@ -9,9 +9,9 @@ from core.config import settings
 from core.logging import logger
 from db.repository import SignalRepository
 from models.signal import LookbackItem, LookbackResponse, ReasonTag, ScanResponse
-from services.indicators import connors_rsi2_signals, ma200_signals, rb_knox_divergence, rsi_signals
+from services.indicators import ma200_signals, rb_knox_divergence, rsi_signals
 from services.market_data import MarketDataProvider
-from services.strategies import confirmed_trades, connors_rsi2_trades, ma200_trades, rsi_trades
+from services.strategies import confirmed_trades, ma200_trades, rsi_trades
 from services.universe import load_universe
 
 
@@ -30,7 +30,7 @@ class ScannerEngine:
         scan_date_str = date.today().isoformat()
         inserted = 0
         errors: list[dict[str, Any]] = []
-        strategies = ["RSI", "RB_KnoxDiv", "SMA_200", "CONNORS_RSI2"] if strategy_name.upper() in ("ALL", "*", "") else [strategy_name]
+        strategies = ["RSI", "RB_KnoxDiv", "SMA_200"] if strategy_name.upper() in ("ALL", "*", "") else [strategy_name]
 
         all_symbols = list(universe.keys())
         ohlc_by_symbol = MarketDataProvider.get_universe_ohlc(all_symbols)
@@ -54,9 +54,6 @@ class ScannerEngine:
                     elif strat.upper() in ("SMA_200", "200MA", "MA200"):
                         signals = ma200_signals(ohlc)
                         trades = ma200_trades(ohlc, signals, max_lookback=2)
-                    elif strat.upper() in ("CONNORS_RSI2", "CRSI2", "RSI2"):
-                        signals = connors_rsi2_signals(ohlc)
-                        trades = connors_rsi2_trades(ohlc, signals, max_lookback=2)
                     else:
                         continue
 
@@ -141,8 +138,6 @@ class ScannerEngine:
                     elif sf in ("signals_only", "all_signals") and not any(r.category == "Strategy_Signal" for r in item.reasons):
                         continue
                     elif sf in ("knoxville", "knox", "rb_knoxdiv", "knox_div") and not any(r.category == "Strategy_Signal" and r.strategy == "RB_KnoxDiv" for r in item.reasons):
-                        continue
-                    elif sf in ("crsi2", "connors_rsi2", "connors", "rsi2") and not any(r.strategy == "CONNORS_RSI2" for r in item.reasons):
                         continue
                     elif sf in ("ma200", "200ma", "ma_200") and not any(r.category == "MA200" for r in item.reasons):
                         continue
@@ -386,49 +381,6 @@ class ScannerEngine:
         except Exception:
             pass
 
-        # 4. Check Larry Connors RSI(2) in Lookback Window
-        latest_rsi2 = None
-        try:
-            crsi_sigs = connors_rsi2_signals(df, rsi_period=2, rsi_thresh=5.0)
-            if len(crsi_sigs) > 0 and pd.notna(crsi_sigs["rsi2"].iloc[-1]):
-                latest_rsi2 = round(float(crsi_sigs["rsi2"].iloc[-1]), 2)
-
-            for idx in window_df.index:
-                dt_str = idx.date().isoformat()
-                if idx in crsi_sigs.index:
-                    row_crsi = crsi_sigs.loc[idx]
-                    r2_val = float(row_crsi["rsi2"]) if pd.notna(row_crsi["rsi2"]) else None
-                    s200_val = float(row_crsi["sma200"]) if pd.notna(row_crsi["sma200"]) else None
-
-                    if bool(row_crsi.get("buy_signal", False)):
-                        is_flagged = True
-                        if primary_type == "neutral":
-                            primary_type = "buy"
-                        most_recent_signal_date = dt_str
-                        reasons.append(ReasonTag(
-                            category="Strategy_Signal",
-                            strategy="CONNORS_RSI2",
-                            type="buy",
-                            text=f"Connors RSI(2) Dip: RSI(2)={r2_val:.1f} < 5 & Above 200 SMA (₹{s200_val:.2f}) on {dt_str}",
-                            date=dt_str,
-                            entry_price=float(df.loc[idx, "Close"]),
-                        ))
-                    elif bool(row_crsi.get("sell_signal", False)):
-                        is_flagged = True
-                        if primary_type == "neutral":
-                            primary_type = "sell"
-                        most_recent_signal_date = dt_str
-                        reasons.append(ReasonTag(
-                            category="Strategy_Signal",
-                            strategy="CONNORS_RSI2",
-                            type="sell",
-                            text=f"Connors RSI(2) Surge: RSI(2)={r2_val:.1f} > 95 & Below 200 SMA (₹{s200_val:.2f}) on {dt_str}",
-                            date=dt_str,
-                            entry_price=float(df.loc[idx, "Close"]),
-                        ))
-        except Exception:
-            pass
-
         if not is_flagged:
             if not include_neutral:
                 return None
@@ -446,7 +398,6 @@ class ScannerEngine:
             status="active",
             current_price=round(latest_close, 2),
             rsi=latest_rsi,
-            rsi2=latest_rsi2,
             sma_200=latest_sma200,
             primary_type=primary_type,
             signal_date=most_recent_signal_date,

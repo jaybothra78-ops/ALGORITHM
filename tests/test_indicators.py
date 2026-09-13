@@ -57,15 +57,3 @@ def test_ma200_signals():
     assert len(sigs) == 250
 
 
-def test_connors_rsi2_signals():
-    from services.indicators import connors_rsi2_signals
-    df = _dummy_ohlc(250)
-    sigs = connors_rsi2_signals(df, rsi_period=2, rsi_thresh=5.0)
-    assert "rsi2" in sigs.columns
-    assert "sma200" in sigs.columns
-    assert "sma5" in sigs.columns
-    assert "buy_signal" in sigs.columns
-    assert "sell_signal" in sigs.columns
-    assert len(sigs) == 250
-
-

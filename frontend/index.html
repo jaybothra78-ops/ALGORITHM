@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=36.0">
+  <link rel="stylesheet" href="/static/style.css?v=37.0">
 
 
 
@@ -1517,7 +1517,6 @@
           <button type="button" class="pill strat-pill" data-filter="oversold">🟢 Dual &lt; 30</button>
           <button type="button" class="pill strat-pill" data-filter="overbought">🔴 Dual &gt; 70</button>
           <button type="button" class="pill strat-pill" data-filter="signals_only">⚡ Knoxville</button>
-          <button type="button" class="pill strat-pill" data-filter="crsi2">🎯 Connors RSI(2)</button>
           <button type="button" class="pill strat-pill" data-filter="ma200">📈 200 MA</button>
         </div>
 
@@ -1573,7 +1572,6 @@
           <div class="stat-pill"><span class="stat-dot dot-green"></span> <span class="stat-label">Dual &lt; 30</span> <strong id="metric-oversold" class="text-green">—</strong></div>
           <div class="stat-pill"><span class="stat-dot dot-red"></span> <span class="stat-label">Dual &gt; 70</span> <strong id="metric-overbought" class="text-red">—</strong></div>
           <div class="stat-pill"><span class="stat-dot dot-purple"></span> <span class="stat-label">Knoxville</span> <strong id="metric-signals" class="text-purple">—</strong></div>
-          <div class="stat-pill"><span class="stat-dot dot-amber" style="background: #f59e0b;"></span> <span class="stat-label">Connors RSI(2)</span> <strong id="metric-crsi2" style="color: #d97706;">—</strong></div>
           <div class="stat-pill"><span class="stat-dot dot-blue"></span> <span class="stat-label">200 MA</span> <strong id="metric-ma200" class="text-blue">—</strong></div>
         </div>
         <div class="status-msg" id="status"><span class="live-pulse"></span> Ready</div>
@@ -2090,7 +2088,6 @@
             <div class="select-wrapper">
               <select id="paper-strategy-select">
                 <option value="Knoxville Divergence" selected>Knoxville Divergence</option>
-                <option value="Connors RSI(2) Dip">Connors RSI(2) Dip</option>
                 <option value="Dual RSI Oversold">Dual RSI Oversold</option>
                 <option value="Options Directional Breakout">Options Directional Breakout</option>
                 <option value="200 SMA Support Touch">200 SMA Support Touch</option>
@@ -2240,7 +2237,6 @@
             <span style="font-size: 0.74rem; font-weight: 800; color: #78716c; text-transform: uppercase; letter-spacing: 0.04em;">Strategy:</span>
             <div class="pill-group" id="backtest-strategy-group">
               <button type="button" class="pill active" data-strategy="RB_KnoxDiv">⚡ Knoxville (Confirmed)</button>
-              <button type="button" class="pill" data-strategy="CONNORS_RSI2">🎯 Connors RSI(2)</button>
               <button type="button" class="pill" data-strategy="RSI">🟢 Dual RSI (&lt;30 / &gt;70)</button>
               <button type="button" class="pill" data-strategy="SMA_200">📈 200 SMA</button>
               <button type="button" class="pill" data-strategy="ALL">🔥 All Combined</button>
@@ -2455,17 +2451,6 @@
                   <li><strong>Bearish Crossover:</strong> Daily price crosses from above the 200-day SMA to close below it.</li>
                 </ul>
 
-                <h4 style="color: #d97706; margin-bottom: 8px; font-weight: 800;">🎯 Larry Connors RSI(2) Mean Reversion Rules</h4>
-                <p style="color: #44403c; font-size: 0.85rem; margin-bottom: 10px;">
-                  Quantitatively proven high-win-rate (66–70%) swing system exploiting irrational capitulation dips during secular bull trends.
-                </p>
-                <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px; margin-bottom: 16px;">
-                  <li><strong>Trend Filter:</strong> Daily <code style="color: #0369a1; background: rgba(3,105,161,0.08); padding: 2px 6px; border-radius: 4px;">Close &gt; 200 SMA</code> ensures entries only occur in institutional uptrends.</li>
-                  <li><strong>Panic Dip Trigger:</strong> 2-period RSI drops below <code style="color: #b91c1c; background: rgba(185,28,28,0.08); padding: 2px 6px; border-radius: 4px;">5.0</code> (extreme oversold flush).</li>
-                  <li><strong>Buy Execution:</strong> Enter long at Market Open on the immediate next session.</li>
-                  <li><strong>Mean Reversion Snapback Exit:</strong> Daily <code style="color: #15803d; background: rgba(21,128,61,0.08); padding: 2px 6px; border-radius: 4px;">Close &gt; 5 SMA</code> signals mean reversion completion. Also includes intraday +4% Target, 5% Stop Loss, and 10-day time exit.</li>
-                </ul>
-
                 <h4 style="color: #b91c1c; margin-bottom: 8px; font-weight: 800;">🎯 Exit &amp; Risk Controls</h4>
                 <ul style="color: #57534e; font-size: 0.82rem; margin-left: 18px;">
                   <li><strong>Target Exit:</strong> Position automatically closes when price reaches the configured Target % gain.</li>
@@ -2493,7 +2478,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=54.0"></script>
+  <script src="/static/app.js?v=55.0"></script>
 
 
 

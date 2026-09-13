@@ -253,14 +253,12 @@ App.Screener = {
       const price = s.close_price != null ? s.close_price : (s.current_price != null ? s.current_price : 0);
       const sigType = (s.signal_type || s.primary_type || 'neutral').toLowerCase();
       const universe = s.universe || s.index_membership || 'NSE';
-      const strat = s.strategy || (s.is_crsi2 ? 'Connors RSI(2)' : (s.is_knox_divergence ? 'Knoxville' : 'RSI'));
+      const strat = s.strategy || (s.is_knox_divergence ? 'Knoxville' : 'RSI');
       const dateVal = s.scan_date || s.signal_date || 'Today';
 
       const rsiVal = s.rsi != null ? Number(s.rsi).toFixed(1) : '—';
       const rsiCls = s.rsi != null && s.rsi <= 30 ? 'oversold' : (s.rsi != null && s.rsi >= 70 ? 'overbought' : '');
-      const knoxTag = s.is_crsi2
-        ? '<span class="badge-crsi2" style="background: rgba(217,119,6,0.12); color: #b45309; border: 1px solid rgba(217,119,6,0.4); padding: 2px 8px; border-radius: 4px; font-weight: 800; font-size: 0.72rem; letter-spacing: 0.03em;">🎯 CONNORS RSI(2)</span>'
-        : (s.is_knox_divergence ? '<span class="badge-knox">⚡ KNOXVILLE</span>' : '—');
+      const knoxTag = s.is_knox_divergence ? '<span class="badge-knox">⚡ KNOXVILLE</span>' : '—';
       const ma200Tag = s.is_touching_200sma ? '<span class="badge-ma200">📈 200 SMA</span>' : '—';
 
       return `<tr>
@@ -304,14 +302,12 @@ App.Screener = {
     const oversoldEl = document.querySelector('#metric-oversold');
     const overboughtEl = document.querySelector('#metric-overbought');
     const knoxEl = document.querySelector('#metric-signals') || document.querySelector('#metric-knoxville');
-    const crsi2El = document.querySelector('#metric-crsi2');
 
     if (totalEl) totalEl.textContent = data.total_signals != null ? data.total_signals : (data.total_scanned || 0);
     if (flaggedEl) flaggedEl.textContent = data.total_flagged != null ? data.total_flagged : (data.signals ? data.signals.length : 0);
     if (oversoldEl) oversoldEl.textContent = data.oversold_count || 0;
     if (overboughtEl) overboughtEl.textContent = data.overbought_count || 0;
     if (knoxEl) knoxEl.textContent = data.knoxville_count || 0;
-    if (crsi2El) crsi2El.textContent = data.crsi2_count || 0;
   },
 
   initWatchlistImporter() {
