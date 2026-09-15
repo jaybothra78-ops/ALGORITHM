@@ -229,12 +229,12 @@ class PaperTradingService:
 
 
     @classmethod
-    def place_order(cls, request: PaperOrderRequest) -> dict[str, Any]:
-        """Place a new paper order (Equity or Options) and deduct capital."""
+    def place_order(cls, request: PaperOrderRequest, user_id: int = 1) -> dict[str, Any]:
+        """Place a new paper order (Equity or Options) and deduct capital for the specific user."""
         symbol = request.symbol.strip().upper()
         inst_type = request.instrument_type.value if hasattr(request.instrument_type, "value") else str(request.instrument_type)
         
-        account = PaperRepository.get_account()
+        account = PaperRepository.get_account(user_id=user_id)
         cash = account["cash_balance"]
 
         if inst_type == "OPTION":
@@ -280,9 +280,9 @@ class PaperTradingService:
                 "notes": request.notes or "",
             }
 
-            trade_id = PaperRepository.create_trade(trade_data)
+            trade_id = PaperRepository.create_trade(trade_data, user_id=user_id)
             new_cash = cash - order_cost
-            PaperRepository.update_cash_balance(new_cash)
+            PaperRepository.update_cash_balance(new_cash, user_id=user_id)
 
             return {
                 "success": True,
@@ -336,9 +336,9 @@ class PaperTradingService:
                 "notes": request.notes or "",
             }
 
-            trade_id = PaperRepository.create_trade(trade_data)
+            trade_id = PaperRepository.create_trade(trade_data, user_id=user_id)
             new_cash = cash - order_cost
-            PaperRepository.update_cash_balance(new_cash)
+            PaperRepository.update_cash_balance(new_cash, user_id=user_id)
 
             return {
                 "success": True,
@@ -355,9 +355,9 @@ class PaperTradingService:
             }
 
     @classmethod
-    def close_position(cls, request: PaperCloseRequest) -> dict[str, Any]:
+    def close_position(cls, request: PaperCloseRequest, user_id: int = 1) -> dict[str, Any]:
         """Close an active position (Equity or Option) and credit capital back with P&L."""
-        pos = PaperRepository.get_position(request.position_id)
+        pos = PaperRepository.get_position(request.position_id, user_id=user_id)
         if not pos:
             raise ValueError(f"Open position #{request.position_id} not found")
 
@@ -394,11 +394,12 @@ class PaperTradingService:
             exit_reason=request.exit_reason or "Manual Close",
             pnl_amount=round(pnl_amount, 2),
             pnl_pct=round(pnl_pct, 2),
+            user_id=user_id,
         )
 
-        account = PaperRepository.get_account()
+        account = PaperRepository.get_account(user_id=user_id)
         new_cash = max(0.0, account["cash_balance"] + return_cash)
-        PaperRepository.update_cash_balance(new_cash)
+        PaperRepository.update_cash_balance(new_cash, user_id=user_id)
 
         return {
             "success": success,
@@ -412,9 +413,9 @@ class PaperTradingService:
         }
 
     @classmethod
-    def modify_order(cls, request: PaperModifyRequest) -> dict[str, Any]:
+    def modify_order(cls, request: PaperModifyRequest, user_id: int = 1) -> dict[str, Any]:
         """Modify an active open paper trade (Target, Stop Loss, Quantity/Contracts, Notes)."""
-        pos = PaperRepository.get_position(request.position_id)
+        pos = PaperRepository.get_position(request.position_id, user_id=user_id)
         if not pos:
             raise ValueError(f"Open position #{request.position_id} not found")
 
@@ -443,7 +444,7 @@ class PaperTradingService:
                 new_qty = request.quantity
                 new_contracts = new_qty
 
-        account = PaperRepository.get_account()
+        account = PaperRepository.get_account(user_id=user_id)
         cash = account["cash_balance"]
 
         if new_qty != old_qty:
@@ -461,7 +462,7 @@ class PaperTradingService:
                 # Sizing down: release excess capital back to cash
                 new_cash = cash + abs(cost_diff)
 
-            PaperRepository.update_cash_balance(new_cash)
+            PaperRepository.update_cash_balance(new_cash, user_id=user_id)
             updates["quantity"] = new_qty
             updates["contracts"] = new_contracts
         else:
@@ -484,11 +485,11 @@ class PaperTradingService:
             updates["notes"] = request.notes.strip()
 
         if updates:
-            success = PaperRepository.update_trade(pos["id"], updates)
+            success = PaperRepository.update_trade(pos["id"], updates, user_id=user_id)
         else:
             success = True
 
-        updated_pos = PaperRepository.get_position(pos["id"]) or pos
+        updated_pos = PaperRepository.get_position(pos["id"], user_id=user_id) or pos
 
         return {
             "success": success,
@@ -505,9 +506,9 @@ class PaperTradingService:
         }
 
     @classmethod
-    def get_open_positions(cls) -> list[PaperPosition]:
-        """Return all active open positions with live mark-to-market prices."""
-        raw_positions = PaperRepository.get_open_positions()
+    def get_open_positions(cls, user_id: int = 1) -> list[PaperPosition]:
+        """Return all active open positions with live mark-to-market prices for a specific user."""
+        raw_positions = PaperRepository.get_open_positions(user_id=user_id)
         positions: list[PaperPosition] = []
 
         for p in raw_positions:
@@ -564,9 +565,9 @@ class PaperTradingService:
         return positions
 
     @classmethod
-    def get_history(cls) -> list[PaperTradeRecord]:
-        """Return all closed trade records for the journal."""
-        raw_trades = PaperRepository.get_closed_trades()
+    def get_history(cls, user_id: int = 1) -> list[PaperTradeRecord]:
+        """Return all closed trade records for the journal of a specific user."""
+        raw_trades = PaperRepository.get_closed_trades(user_id=user_id)
         records: list[PaperTradeRecord] = []
 
         for t in raw_trades:
@@ -609,18 +610,18 @@ class PaperTradingService:
         return records
 
     @classmethod
-    def get_summary(cls) -> PaperPortfolioSummary:
-        """Calculate complete portfolio health, equity, and KPIs."""
-        account = PaperRepository.get_account()
+    def get_summary(cls, user_id: int = 1) -> PaperPortfolioSummary:
+        """Calculate complete portfolio health, equity, and KPIs for a specific user."""
+        account = PaperRepository.get_account(user_id=user_id)
         initial_cap = account["initial_capital"]
         cash = account["cash_balance"]
 
-        open_positions = cls.get_open_positions()
+        open_positions = cls.get_open_positions(user_id=user_id)
         invested = sum(p.invested_amount for p in open_positions)
         unrealized = sum(p.unrealized_pnl for p in open_positions)
         total_equity = cash + invested + unrealized
 
-        closed = cls.get_history()
+        closed = cls.get_history(user_id=user_id)
         realized = sum(t.pnl_amount for t in closed)
         total_trades = len(closed)
         winning_trades = sum(1 for t in closed if t.pnl_amount > 0)
@@ -651,5 +652,5 @@ class PaperTradingService:
         )
 
     @classmethod
-    def reset_portfolio(cls, capital: float = 1000000.0) -> None:
-        PaperRepository.reset_account(capital)
+    def reset_portfolio(cls, capital: float = 1000000.0, user_id: int = 1) -> None:
+        PaperRepository.reset_account(capital, user_id=user_id)

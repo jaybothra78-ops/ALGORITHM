@@ -7,6 +7,26 @@
 
 const App = window.App = window.App || {};
 
+// Global Authenticated Fetch Interceptor (Multi-User Data Isolation)
+const _originalFetch = window.fetch;
+window.fetch = function(url, options) {
+  options = options || {};
+  const token = localStorage.getItem('stratlab_auth_token');
+  if (token) {
+    if (options.headers instanceof Headers) {
+      if (!options.headers.has('Authorization')) {
+        options.headers.set('Authorization', `Bearer ${token}`);
+      }
+    } else {
+      options.headers = options.headers || {};
+      if (!options.headers['Authorization'] && !options.headers['authorization']) {
+        options.headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+  }
+  return _originalFetch.call(this, url, options);
+};
+
 // Global Article Action Handlers
 window.selectArticle = function(idx) {
   if (window.App && window.App.News) {
@@ -41,6 +61,9 @@ App.State = {
   strategyFilter: '',
   indexFilter: '',
   selectedUniverse: '',
+  
+  // User Authentication State
+  currentUser: null, // { id, username, display_name }
   
   // Paper Trading State
   paperInstrument: 'EQUITY', // 'EQUITY' | 'OPTION'
@@ -3369,10 +3392,299 @@ App.Autocomplete = {
 };
 
 // =====================================================================
+// 8. User Authentication & Terminal Multi-User Management
+// =====================================================================
+App.Auth = {
+  activeTab: 'login',
+
+  async init() {
+    this.bindEvents();
+    await this.checkSession();
+  },
+
+  bindEvents() {
+    const btnUser = document.querySelector('#btn-user-menu');
+    const userDropdown = document.querySelector('#user-dropdown-menu');
+
+    if (btnUser && userDropdown) {
+      btnUser.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isOpen = userDropdown.style.display === 'block';
+        userDropdown.style.display = isOpen ? 'none' : 'block';
+      });
+
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('.user-menu-wrapper')) {
+          userDropdown.style.display = 'none';
+        }
+      });
+    }
+
+    const modalAuth = document.querySelector('#modal-auth');
+    if (modalAuth) {
+      modalAuth.addEventListener('click', (e) => {
+        if (e.target === modalAuth) this.closeAuthModal();
+      });
+    }
+  },
+
+  async checkSession() {
+    const token = localStorage.getItem('stratlab_auth_token');
+    if (!token) {
+      try {
+        const res = await fetch('/auth/me');
+        if (res.ok) {
+          const data = await res.json();
+          this.setCurrentUser(data.user);
+        }
+      } catch (err) {
+        console.debug('Session check error:', err);
+      }
+      return;
+    }
+
+    try {
+      const res = await fetch('/auth/me');
+      if (res.ok) {
+        const data = await res.json();
+        this.setCurrentUser(data.user);
+      } else {
+        localStorage.removeItem('stratlab_auth_token');
+        localStorage.removeItem('stratlab_user');
+        this.openAuthModal('login');
+      }
+    } catch (err) {
+      console.debug('Failed to verify session:', err);
+    }
+  },
+
+  setCurrentUser(user) {
+    App.State.currentUser = user;
+    localStorage.setItem('stratlab_user', JSON.stringify(user));
+
+    const nameLabel = document.querySelector('#nav-username-label');
+    const ddName = document.querySelector('#dropdown-user-name');
+    const ddSub = document.querySelector('#dropdown-user-sub');
+
+    const display = user.display_name || user.username;
+    if (nameLabel) nameLabel.textContent = display;
+    if (ddName) ddName.textContent = display;
+    if (ddSub) ddSub.textContent = `@${user.username} (ID: ${user.id})`;
+  },
+
+  async openAuthModal(tab = 'login') {
+    this.activeTab = tab;
+    this.switchAuthTab(tab);
+
+    const userDropdown = document.querySelector('#user-dropdown-menu');
+    if (userDropdown) userDropdown.style.display = 'none';
+
+    await this.loadQuickUsers();
+
+    const modal = document.querySelector('#modal-auth');
+    if (modal) modal.style.display = 'flex';
+  },
+
+  closeAuthModal() {
+    const modal = document.querySelector('#modal-auth');
+    if (modal) modal.style.display = 'none';
+    const status1 = document.querySelector('#auth-login-status');
+    const status2 = document.querySelector('#auth-reg-status');
+    if (status1) status1.style.display = 'none';
+    if (status2) status2.style.display = 'none';
+  },
+
+  switchAuthTab(tab) {
+    this.activeTab = tab;
+    const isLogin = tab === 'login';
+
+    const tabLogin = document.querySelector('#tab-auth-login');
+    const tabReg = document.querySelector('#tab-auth-register');
+    const formLogin = document.querySelector('#form-auth-login');
+    const formReg = document.querySelector('#form-auth-register');
+    const modalTitle = document.querySelector('#auth-modal-title');
+    const modalSub = document.querySelector('#auth-modal-sub');
+
+    if (tabLogin) tabLogin.classList.toggle('active', isLogin);
+    if (tabReg) tabReg.classList.toggle('active', !isLogin);
+    if (formLogin) formLogin.style.display = isLogin ? 'block' : 'none';
+    if (formReg) formReg.style.display = isLogin ? 'none' : 'block';
+
+    if (modalTitle) modalTitle.textContent = isLogin ? 'Terminal Sign In' : 'Create Trader Account';
+    if (modalSub) modalSub.textContent = isLogin 
+      ? 'Sign in to access your personal trades, portfolio balance, and watchlists.' 
+      : 'Create a new isolated trading profile with ₹10,00,000 initial virtual capital.';
+  },
+
+  async loadQuickUsers() {
+    const section = document.querySelector('#auth-quick-switch-section');
+    const listEl = document.querySelector('#auth-quick-users-list');
+    if (!section || !listEl) return;
+
+    try {
+      const res = await fetch('/auth/users');
+      if (!res.ok) return;
+      const users = await res.json();
+      if (!users || users.length <= 1) {
+        section.style.display = 'none';
+        return;
+      }
+
+      const curId = App.State.currentUser?.id;
+      listEl.innerHTML = users.map(u => {
+        const isCurrent = u.id === curId;
+        return `<button type="button" class="auth-user-chip ${isCurrent ? 'active' : ''}" onclick="App.Auth.selectQuickUser('${u.username}')">
+          👤 ${u.display_name || u.username} ${isCurrent ? '(Active)' : ''}
+        </button>`;
+      }).join('');
+      section.style.display = 'block';
+    } catch (err) {
+      section.style.display = 'none';
+    }
+  },
+
+  selectQuickUser(username) {
+    this.switchAuthTab('login');
+    const uInput = document.querySelector('#auth-login-username');
+    const pInput = document.querySelector('#auth-login-password');
+    if (uInput) uInput.value = username;
+    if (pInput) {
+      pInput.value = '';
+      pInput.focus();
+    }
+  },
+
+  async submitLogin() {
+    const uInput = document.querySelector('#auth-login-username');
+    const pInput = document.querySelector('#auth-login-password');
+    const btn = document.querySelector('#btn-submit-login');
+
+    const username = uInput?.value.trim();
+    const password = pInput?.value;
+
+    if (!username || !password) {
+      App.Utils.showStatus('#auth-login-status', 'Username and password are required', 'error');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Signing in...</span>';
+    }
+
+    try {
+      const res = await fetch('/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Login failed (HTTP ${res.status})`);
+      }
+
+      const data = await res.json();
+      localStorage.setItem('stratlab_auth_token', data.token);
+      this.setCurrentUser(data.user);
+      this.closeAuthModal();
+
+      App.Utils.showStatus('#paper-order-status', `Switched account to: ${data.user.display_name || data.user.username}`, 'success');
+      this.onUserSwitched();
+    } catch (err) {
+      App.Utils.showStatus('#auth-login-status', err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡ Sign In &amp; Load Terminal</span>';
+      }
+    }
+  },
+
+  async submitRegister() {
+    const uInput = document.querySelector('#auth-reg-username');
+    const dInput = document.querySelector('#auth-reg-display');
+    const pInput = document.querySelector('#auth-reg-password');
+    const btn = document.querySelector('#btn-submit-register');
+
+    const username = uInput?.value.trim();
+    const displayName = dInput?.value.trim();
+    const password = pInput?.value;
+
+    if (!username || !password) {
+      App.Utils.showStatus('#auth-reg-status', 'Username and password are required', 'error');
+      return;
+    }
+
+    if (btn) {
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Creating account...</span>';
+    }
+
+    try {
+      const res = await fetch('/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, password, display_name: displayName }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Registration failed (HTTP ${res.status})`);
+      }
+
+      const data = await res.json();
+      localStorage.setItem('stratlab_auth_token', data.token);
+      this.setCurrentUser(data.user);
+      this.closeAuthModal();
+
+      App.Utils.showStatus('#paper-order-status', `Welcome ${data.user.display_name || data.user.username}! Virtual account ready with ₹10,00,000.`, 'success');
+      this.onUserSwitched();
+    } catch (err) {
+      App.Utils.showStatus('#auth-reg-status', err.message, 'error');
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀 Create Account &amp; Start Trading</span>';
+      }
+    }
+  },
+
+  async logout() {
+    const userDropdown = document.querySelector('#user-dropdown-menu');
+    if (userDropdown) userDropdown.style.display = 'none';
+
+    try {
+      await fetch('/auth/logout', { method: 'POST' });
+    } catch (e) {}
+
+    localStorage.removeItem('stratlab_auth_token');
+    localStorage.removeItem('stratlab_user');
+    App.State.currentUser = null;
+
+    const nameLabel = document.querySelector('#nav-username-label');
+    if (nameLabel) nameLabel.textContent = 'Sign In';
+
+    this.openAuthModal('login');
+    this.onUserSwitched();
+  },
+
+  onUserSwitched() {
+    if (App.Paper && App.Paper.loadData) {
+      App.Paper.loadData();
+    }
+    if (App.Screener && App.Screener.loadCustomWatchlists) {
+      App.Screener.loadCustomWatchlists();
+    }
+  },
+};
+
+// =====================================================================
 // 9. Application Bootstrapping
 // =====================================================================
 App.Init = {
   async bootstrap() {
+    await App.Auth.init();
     App.Router.init();
     App.Screener.init();
     App.News.init();

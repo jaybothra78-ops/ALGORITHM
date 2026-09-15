@@ -9,6 +9,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from api.routes import router as api_router
+from api.auth_routes import router as auth_router
 from core.config import settings
 from core.logging import logger, setup_logging
 from db.connection import initialize_schema
@@ -55,6 +56,7 @@ app = FastAPI(
 
 # Static and UI routes
 app.mount("/static", StaticFiles(directory=BASE_DIR / "frontend"), name="static")
+app.include_router(auth_router)
 app.include_router(api_router)
 
 

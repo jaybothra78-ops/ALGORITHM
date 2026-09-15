@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=38.0">
+  <link rel="stylesheet" href="/static/style.css?v=39.0">
 
 
 
@@ -1335,6 +1335,32 @@
 
       <!-- Quick Action Utilities -->
       <div class="nav-actions">
+        <!-- User Account Pill & Fast Switcher -->
+        <div class="user-menu-wrapper">
+          <button id="btn-user-menu" class="btn-subtle user-pill-btn" type="button" title="Active Account / Switch User">
+            <span class="user-avatar-icon">👤</span>
+            <span id="nav-username-label">Trader</span>
+            <span class="dropdown-chevron">▾</span>
+          </button>
+          <div id="user-dropdown-menu" class="user-dropdown" style="display: none;">
+            <div class="user-dropdown-header">
+              <div class="user-info-name" id="dropdown-user-name">Trader</div>
+              <div class="user-info-sub" id="dropdown-user-sub">Default Account (ID: 1)</div>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item" onclick="App.Auth.openAuthModal('login')">
+              <span>🔄 Switch User</span>
+            </button>
+            <button type="button" class="user-dropdown-item" onclick="App.Auth.openAuthModal('register')">
+              <span>➕ Create New Account</span>
+            </button>
+            <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item text-danger" onclick="App.Auth.logout()">
+              <span>🚪 Log Out</span>
+            </button>
+          </div>
+        </div>
+
         <button id="btn-zerodha-modal" class="btn-subtle" title="Connect Zerodha Kite Live Feed">
           <span class="btn-icon-symbol">🪁</span>
           <span id="zerodha-btn-text">Zerodha Live Feed</span>
@@ -2291,6 +2317,74 @@
           </form>
         </div>
       </div>
+
+      <!-- User Authentication & Switch Modal Dialog -->
+      <div id="modal-auth" class="modal-backdrop" style="display: none;">
+        <div class="modal-dialog-card" style="max-width: 440px;">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-icon">👤</span>
+              <div>
+                <h3 class="modal-title" id="auth-modal-title">Terminal Account Access</h3>
+                <p class="modal-subtitle" id="auth-modal-sub">Sign in to access your personal trades, balance, and watchlists.</p>
+              </div>
+            </div>
+            <button type="button" id="btn-close-auth-modal" class="btn-icon-close" onclick="App.Auth.closeAuthModal()">&times;</button>
+          </div>
+
+          <!-- Auth Tabs: Sign In vs Create Account -->
+          <div class="auth-tabs-row">
+            <button type="button" id="tab-auth-login" class="auth-tab-btn active" onclick="App.Auth.switchAuthTab('login')">
+              <span>🔑 Sign In</span>
+            </button>
+            <button type="button" id="tab-auth-register" class="auth-tab-btn" onclick="App.Auth.switchAuthTab('register')">
+              <span>➕ Create Account</span>
+            </button>
+          </div>
+
+          <!-- Fast User Switcher Chips (visible when other accounts exist) -->
+          <div id="auth-quick-switch-section" class="auth-quick-section" style="display: none;">
+            <span class="auth-quick-label">Switch to account:</span>
+            <div id="auth-quick-users-list" class="auth-quick-list"></div>
+          </div>
+
+          <!-- Login Form -->
+          <form id="form-auth-login" onsubmit="event.preventDefault(); App.Auth.submitLogin();">
+            <div class="form-group" style="margin-bottom: 14px;">
+              <label for="auth-login-username">Username</label>
+              <input type="text" id="auth-login-username" placeholder="e.g. jay or trader" required autocomplete="username">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="auth-login-password">Password</label>
+              <input type="password" id="auth-login-password" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+            <div id="auth-login-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
+            <button type="submit" id="btn-submit-login" class="btn-primary btn-full-width">
+              <span>⚡ Sign In &amp; Load Terminal</span>
+            </button>
+          </form>
+
+          <!-- Register Form -->
+          <form id="form-auth-register" style="display: none;" onsubmit="event.preventDefault(); App.Auth.submitRegister();">
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="auth-reg-username">Username</label>
+              <input type="text" id="auth-reg-username" placeholder="Letters or numbers, min 3 chars" required autocomplete="off">
+            </div>
+            <div class="form-group" style="margin-bottom: 12px;">
+              <label for="auth-reg-display">Display Name (Optional)</label>
+              <input type="text" id="auth-reg-display" placeholder="e.g. Jay Bothra" autocomplete="name">
+            </div>
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="auth-reg-password">Password</label>
+              <input type="password" id="auth-reg-password" placeholder="Min 4 characters" required autocomplete="new-password">
+            </div>
+            <div id="auth-reg-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
+            <button type="submit" id="btn-submit-register" class="btn-primary btn-full-width">
+              <span>🚀 Create Account &amp; Start Trading</span>
+            </button>
+          </form>
+        </div>
+      </div>
     </section>
 
     <!-- Section 4: Institutional Strategy Tester & Backtest Engine -->
@@ -2589,7 +2683,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=56.0"></script>
+  <script src="/static/app.js?v=57.0"></script>
 
 
 

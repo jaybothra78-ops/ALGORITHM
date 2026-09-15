@@ -3,7 +3,8 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+from api.auth_routes import get_current_user
 from db.repository import SignalRepository
 from models.backtest import BacktestRequest, BacktestResponse
 from models.news import NewsAnalysisRequest, NewsAnalysisResponse
@@ -167,8 +168,9 @@ def trigger_scan_now(
 @router.post("/watchlist/import-tradingview", response_model=dict[str, Any])
 def import_watchlist_endpoint(
     payload: dict[str, Any],
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Import a TradingView public watchlist via URL."""
+    """Import a TradingView public watchlist via URL for the authenticated user."""
     url = payload.get("url", "").strip()
     custom_name = payload.get("custom_name") or payload.get("name")
     if not url:
@@ -176,7 +178,7 @@ def import_watchlist_endpoint(
 
     try:
         from services.universe import import_tradingview_watchlist
-        res = import_tradingview_watchlist(url=url, custom_name=custom_name)
+        res = import_tradingview_watchlist(url=url, custom_name=custom_name, user_id=user["id"])
         return {
             "status": "success",
             "watchlist_name": res["name"],
@@ -189,28 +191,47 @@ def import_watchlist_endpoint(
 
 
 @router.get("/watchlist/list", response_model=dict[str, Any])
-def list_watchlists_endpoint() -> dict[str, Any]:
-    """Return all custom imported watchlists as dictionary."""
+def list_watchlists_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    """Return all custom imported watchlists as dictionary for the authenticated user."""
     from services.universe import load_custom_watchlists
-    return load_custom_watchlists()
+    return load_custom_watchlists(user_id=user["id"])
 
 
 @router.get("/watchlist/custom", response_model=dict[str, Any])
-def list_custom_watchlists_endpoint() -> dict[str, Any]:
-    """Return all custom imported watchlists as array."""
+def list_custom_watchlists_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> dict[str, Any]:
+    """Return all custom imported watchlists as array for the authenticated user."""
     from services.universe import load_custom_watchlists
-    cw = load_custom_watchlists()
+    cw = load_custom_watchlists(user_id=user["id"])
     return {
         "watchlists": [{"name": k, "count": len(v), "symbols": v} for k, v in cw.items()]
     }
 
 
+@router.post("/watchlist/custom", response_model=dict[str, Any])
+def create_custom_watchlist_endpoint(
+    payload: dict[str, Any],
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Create or update a custom watchlist for the authenticated user."""
+    name = payload.get("name", "").strip()
+    symbols = payload.get("symbols", [])
+    if not name:
+        raise HTTPException(400, "Watchlist name is required.")
+    from services.universe import save_custom_watchlist
+    save_custom_watchlist(name, symbols, user_id=user["id"])
+    return {"status": "success", "name": name, "symbols": symbols, "count": len(symbols)}
+
+
+
 @router.delete("/watchlist/{name}")
 @router.delete("/watchlist/custom/{name}")
-def delete_watchlist_endpoint(name: str) -> dict[str, str]:
-    """Delete an imported custom watchlist."""
+def delete_watchlist_endpoint(
+    name: str,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, str]:
+    """Delete an imported custom watchlist for the authenticated user."""
     from services.universe import delete_custom_watchlist
-    success = delete_custom_watchlist(name)
+    success = delete_custom_watchlist(name, user_id=user["id"])
     if not success:
         raise HTTPException(404, f"Watchlist '{name}' not found.")
     return {"status": "success", "message": f"Watchlist '{name}' deleted."}
@@ -422,23 +443,21 @@ def get_option_price_endpoint(
 
 
 @router.get("/paper/summary", response_model=PaperPortfolioSummary)
-def get_paper_summary_endpoint() -> PaperPortfolioSummary:
-
-
-    """Return overall virtual portfolio summary and KPIs."""
+def get_paper_summary_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> PaperPortfolioSummary:
+    """Return overall virtual portfolio summary and KPIs for the authenticated user."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.get_summary()
+        return PaperTradingService.get_summary(user_id=user["id"])
     except Exception as exc:
         raise HTTPException(500, f"Failed to calculate paper summary: {exc}") from exc
 
 
 @router.get("/paper/positions", response_model=list[PaperPosition])
-def get_paper_positions_endpoint() -> list[PaperPosition]:
-    """Return active open paper positions with live mark-to-market prices."""
+def get_paper_positions_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> list[PaperPosition]:
+    """Return active open paper positions with live mark-to-market prices for the authenticated user."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.get_open_positions()
+        return PaperTradingService.get_open_positions(user_id=user["id"])
     except Exception as exc:
         raise HTTPException(500, f"Failed to get paper positions: {exc}") from exc
 
@@ -446,11 +465,12 @@ def get_paper_positions_endpoint() -> list[PaperPosition]:
 @router.post("/paper/order", response_model=dict[str, Any])
 def place_paper_order_endpoint(
     payload: PaperOrderRequest,
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Execute a new paper trade order."""
+    """Execute a new paper trade order for the authenticated user."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.place_order(payload)
+        return PaperTradingService.place_order(payload, user_id=user["id"])
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -460,11 +480,12 @@ def place_paper_order_endpoint(
 @router.post("/paper/close", response_model=dict[str, Any])
 def close_paper_position_endpoint(
     payload: PaperCloseRequest,
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Close an open paper position."""
+    """Close an open paper position for the authenticated user."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.close_position(payload)
+        return PaperTradingService.close_position(payload, user_id=user["id"])
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -474,11 +495,12 @@ def close_paper_position_endpoint(
 @router.post("/paper/modify", response_model=dict[str, Any])
 def modify_paper_order_endpoint(
     payload: PaperModifyRequest,
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Modify an active open paper trade order or position."""
+    """Modify an active open paper trade order or position for the authenticated user."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.modify_order(payload)
+        return PaperTradingService.modify_order(payload, user_id=user["id"])
     except ValueError as exc:
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
@@ -486,11 +508,11 @@ def modify_paper_order_endpoint(
 
 
 @router.get("/paper/history", response_model=list[PaperTradeRecord])
-def get_paper_history_endpoint() -> list[PaperTradeRecord]:
-    """Return completed trade history journal."""
+def get_paper_history_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> list[PaperTradeRecord]:
+    """Return completed trade history journal for the authenticated user."""
     try:
         from services.paper_service import PaperTradingService
-        return PaperTradingService.get_history()
+        return PaperTradingService.get_history(user_id=user["id"])
     except Exception as exc:
         raise HTTPException(500, f"Failed to get paper trade history: {exc}") from exc
 
@@ -498,12 +520,13 @@ def get_paper_history_endpoint() -> list[PaperTradeRecord]:
 @router.post("/paper/reset", response_model=dict[str, Any])
 def reset_paper_portfolio_endpoint(
     payload: dict[str, Any] | None = None,
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
-    """Reset virtual account balance to initial capital."""
+    """Reset virtual account balance to initial capital for the authenticated user."""
     capital = float((payload or {}).get("capital", 1000000.0))
     try:
         from services.paper_service import PaperTradingService
-        PaperTradingService.reset_portfolio(capital)
+        PaperTradingService.reset_portfolio(capital, user_id=user["id"])
         return {"status": "success", "message": f"Portfolio reset to ₹{capital:,.2f}"}
     except Exception as exc:
         raise HTTPException(500, f"Failed to reset portfolio: {exc}") from exc

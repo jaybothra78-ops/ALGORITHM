@@ -65,38 +65,25 @@ def _load_symbols_from_file(file_path: Path) -> set[str]:
     return symbols
 
 
-def load_custom_watchlists() -> dict[str, list[str]]:
-    """Load user-imported watchlists from JSON file."""
-    if not settings.CUSTOM_WATCHLISTS_PATH.exists():
-        return {}
-    try:
-        data = json.loads(settings.CUSTOM_WATCHLISTS_PATH.read_text(encoding="utf-8"))
-        if isinstance(data, dict):
-            return data
-    except Exception as e:
-        logger.error(f"Failed to read custom watchlists: {e}")
-    return {}
+def load_custom_watchlists(user_id: int = 1) -> dict[str, list[str]]:
+    """Load user-imported watchlists from WatchlistRepository."""
+    from db.watchlist_repository import WatchlistRepository
+    return WatchlistRepository.load_custom_watchlists(user_id=user_id)
 
 
-def save_custom_watchlist(name: str, symbols: list[str]) -> None:
-    """Save an imported watchlist."""
-    watchlists = load_custom_watchlists()
-    watchlists[name] = sorted(list(set(symbols)))
-    settings.CUSTOM_WATCHLISTS_PATH.parent.mkdir(parents=True, exist_ok=True)
-    settings.CUSTOM_WATCHLISTS_PATH.write_text(json.dumps(watchlists, indent=2), encoding="utf-8")
+def save_custom_watchlist(name: str, symbols: list[str], user_id: int = 1) -> None:
+    """Save an imported watchlist for a specific user."""
+    from db.watchlist_repository import WatchlistRepository
+    WatchlistRepository.save_custom_watchlist(name, symbols, user_id=user_id)
 
 
-def delete_custom_watchlist(name: str) -> bool:
-    """Remove a custom watchlist."""
-    watchlists = load_custom_watchlists()
-    if name in watchlists:
-        del watchlists[name]
-        settings.CUSTOM_WATCHLISTS_PATH.write_text(json.dumps(watchlists, indent=2), encoding="utf-8")
-        return True
-    return False
+def delete_custom_watchlist(name: str, user_id: int = 1) -> bool:
+    """Remove a custom watchlist for a specific user."""
+    from db.watchlist_repository import WatchlistRepository
+    return WatchlistRepository.delete_custom_watchlist(name, user_id=user_id)
 
 
-def import_tradingview_watchlist(url: str, custom_name: str | None = None) -> dict:
+def import_tradingview_watchlist(url: str, custom_name: str | None = None, user_id: int = 1) -> dict:
     """Fetch a public TradingView watchlist URL and extract all constituent tickers."""
     url = url.strip()
     if not url.startswith("http"):
@@ -144,8 +131,8 @@ def import_tradingview_watchlist(url: str, custom_name: str | None = None) -> di
     if not symbols:
         raise ValueError("Could not find any tickers in the provided TradingView link. Ensure the watchlist is public.")
 
-    save_custom_watchlist(name, symbols)
-    logger.info(f"Imported TradingView watchlist '{name}' with {len(symbols)} symbols")
+    save_custom_watchlist(name, symbols, user_id=user_id)
+    logger.info(f"Imported TradingView watchlist '{name}' with {len(symbols)} symbols for user {user_id}")
 
     return {
         "name": name,
