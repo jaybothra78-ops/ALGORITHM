@@ -141,3 +141,130 @@ def test_zerodha_service_endpoints():
     assert ts_bosch == "BOSCHLTD26SEP44000PE"
 
 
+def test_modify_order_workflow():
+    # 1. Reset account
+    client.post("/paper/reset", json={"capital": 100000.0})
+
+    # 2. Place initial order: 10 shares @ 2000.0
+    res_order = client.post(
+        "/paper/order",
+        json={
+            "symbol": "TVSMOTOR",
+            "side": "BUY",
+            "quantity": 10,
+            "entry_price": 2000.0,
+            "target_price": 2100.0,
+            "stop_loss_price": 1950.0,
+            "notes": "Initial setup",
+        },
+    )
+    assert res_order.status_code == 200
+    pos_id = res_order.json()["position_id"]
+
+    # Initial cash: 100,000 - 20,000 = 80,000
+    summary = client.get("/paper/summary").json()
+    assert summary["cash_balance"] == 80000.0
+
+    # 3. Modify Target, Stop Loss, and Notes
+    res_mod1 = client.post(
+        "/paper/modify",
+        json={
+            "position_id": pos_id,
+            "target_price": 2200.0,
+            "stop_loss_price": 1980.0,
+            "notes": "Trail SL to 1980",
+        },
+    )
+    assert res_mod1.status_code == 200
+    data1 = res_mod1.json()
+    assert data1["success"] is True
+    assert data1["target_price"] == 2200.0
+    assert data1["stop_loss_price"] == 1980.0
+    assert data1["notes"] == "Trail SL to 1980"
+    assert data1["remaining_cash"] == 80000.0
+
+    # Verify positions endpoint reflects changes
+    pos = client.get("/paper/positions").json()[0]
+    assert pos["target_price"] == 2200.0
+    assert pos["stop_loss_price"] == 1980.0
+    assert pos["notes"] == "Trail SL to 1980"
+
+    # 4. Sizing up: Increase quantity from 10 to 15 (requires 5 * 2000 = 10,000)
+    res_mod2 = client.post(
+        "/paper/modify",
+        json={
+            "position_id": pos_id,
+            "quantity": 15,
+        },
+    )
+    assert res_mod2.status_code == 200
+    data2 = res_mod2.json()
+    assert data2["quantity"] == 15
+    assert data2["remaining_cash"] == 70000.0
+
+    # 5. Sizing down: Decrease quantity from 15 to 8 (releases 7 * 2000 = 14,000)
+    res_mod3 = client.post(
+        "/paper/modify",
+        json={
+            "position_id": pos_id,
+            "quantity": 8,
+        },
+    )
+    assert res_mod3.status_code == 200
+    data3 = res_mod3.json()
+    assert data3["quantity"] == 8
+    assert data3["remaining_cash"] == 84000.0
+
+    # 6. Insufficient cash test
+    # Attempt to size up to 100 shares (needs 92 * 2000 = 184,000, but only 84,000 available)
+    res_fail = client.post(
+        "/paper/modify",
+        json={
+            "position_id": pos_id,
+            "quantity": 100,
+        },
+    )
+    assert res_fail.status_code == 400
+    assert "Insufficient cash" in res_fail.json()["detail"]
+
+    # 7. Modify Option Contracts
+    opt_res = client.post(
+        "/paper/order",
+        json={
+            "symbol": "NIFTY",
+            "instrument_type": "OPTION",
+            "option_type": "CE",
+            "strike_price": 25000.0,
+            "lot_size": 25,
+            "contracts": 1,
+            "entry_price": 100.0,
+        },
+    )
+    assert opt_res.status_code == 200
+    opt_pos_id = opt_res.json()["position_id"]
+
+    # Modify contracts to 3 lots (3 * 25 = 75 units, additional 50 units @ 100 = 5000)
+    cash_before_opt_mod = client.get("/paper/summary").json()["cash_balance"]
+    res_opt_mod = client.post(
+        "/paper/modify",
+        json={
+            "position_id": opt_pos_id,
+            "contracts": 3,
+        },
+    )
+    assert res_opt_mod.status_code == 200
+    opt_mod_data = res_opt_mod.json()
+    assert opt_mod_data["contracts"] == 3
+    assert opt_mod_data["quantity"] == 75
+    assert opt_mod_data["remaining_cash"] == cash_before_opt_mod - 5000.0
+
+    # 8. Modify closed or non-existent position
+    client.post("/paper/close", json={"position_id": pos_id, "exit_price": 2050.0})
+    res_closed_mod = client.post(
+        "/paper/modify",
+        json={"position_id": pos_id, "target_price": 2500.0},
+    )
+    assert res_closed_mod.status_code == 400
+
+
+

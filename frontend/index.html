@@ -12,7 +12,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=37.0">
+  <link rel="stylesheet" href="/static/style.css?v=38.0">
 
 
 
@@ -2180,6 +2180,117 @@
           </tbody>
         </table>
       </div>
+      <!-- Order Modification Modal Dialog -->
+      <div id="modal-modify-order" class="modal-backdrop" style="display: none;">
+        <div class="modal-dialog-card">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-icon">✏️</span>
+              <div>
+                <h3 class="modal-title" id="modify-modal-title">Modify Paper Order</h3>
+                <p class="modal-subtitle" id="modify-modal-sub">Update target profit, stop loss, sizing, or notes for active position.</p>
+              </div>
+            </div>
+            <button type="button" id="btn-close-modify-modal" class="btn-icon-close" onclick="App.Paper.closeModifyModal()">&times;</button>
+          </div>
+
+          <!-- Position Context Header Banner -->
+          <div class="modify-pos-banner">
+            <div class="banner-item">
+              <span class="banner-lbl">Symbol</span>
+              <strong id="mod-pos-symbol" class="banner-val text-primary">—</strong>
+            </div>
+            <div class="banner-item">
+              <span class="banner-lbl">Instrument</span>
+              <strong id="mod-pos-type" class="banner-val">—</strong>
+            </div>
+            <div class="banner-item">
+              <span class="banner-lbl">Entry Price</span>
+              <strong id="mod-pos-entry" class="banner-val font-mono">₹0.00</strong>
+            </div>
+            <div class="banner-item">
+              <span class="banner-lbl">Current Market</span>
+              <strong id="mod-pos-current" class="banner-val font-mono">₹0.00</strong>
+            </div>
+          </div>
+
+          <form id="form-modify-order" onsubmit="event.preventDefault(); App.Paper.submitModifyOrder();">
+            <input type="hidden" id="mod-pos-id" value="">
+
+            <!-- Quantity / Lots Input -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <div class="label-with-action">
+                <label for="mod-input-qty" id="mod-label-qty">Quantity (Shares)</label>
+                <span id="mod-lot-hint" class="lot-size-badge" style="display: none;">Lot Size: 25</span>
+              </div>
+              <div class="qty-input-row">
+                <input type="number" id="mod-input-qty" min="1" step="1" required>
+                <div class="qty-quick-btns" id="mod-qty-quick-chips">
+                  <!-- dynamic quick chips inserted by JS -->
+                </div>
+              </div>
+              <div id="mod-capital-impact" class="param-hint-text" style="margin-top: 5px; font-size: 0.74rem;"></div>
+            </div>
+
+            <!-- Target Price -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <div class="label-with-action">
+                <label for="mod-input-target">Take Profit Target (₹)</label>
+                <div class="quick-pct-row">
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModTargetPct(5)">+5%</button>
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModTargetPct(10)">+10%</button>
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModTargetPct(20)">+20%</button>
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModTargetPct(50)">+50%</button>
+                </div>
+              </div>
+              <input type="number" id="mod-input-target" placeholder="Target Price" step="0.05">
+            </div>
+
+            <!-- Stop Loss Price -->
+            <div class="form-group" style="margin-bottom: 14px;">
+              <div class="label-with-action">
+                <label for="mod-input-sl">Stop Loss (₹)</label>
+                <div class="quick-pct-row">
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModSlPct(-2)">-2%</button>
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModSlPct(-5)">-5%</button>
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModSlPct(-10)">-10%</button>
+                  <button type="button" class="btn-pct-chip" onclick="App.Paper.applyModSlPct(-20)">-20%</button>
+                </div>
+              </div>
+              <input type="number" id="mod-input-sl" placeholder="Stop Loss Price" step="0.05">
+            </div>
+
+            <!-- Risk to Reward Dynamic Indicator -->
+            <div class="rr-indicator-box" id="mod-rr-box">
+              <div class="rr-left">
+                <span class="rr-label">Risk-to-Reward Ratio:</span>
+                <strong id="mod-rr-value" class="rr-val font-mono">—</strong>
+              </div>
+              <div class="rr-right">
+                <span id="mod-risk-val" style="color: #ef4444; font-size: 0.74rem; font-family: var(--font-mono);">Risk: —</span> · 
+                <span id="mod-reward-val" style="color: #10b981; font-size: 0.74rem; font-family: var(--font-mono);">Reward: —</span>
+              </div>
+            </div>
+
+            <!-- Trade Notes -->
+            <div class="form-group" style="margin-bottom: 16px;">
+              <label for="mod-input-notes">Trade Rationale &amp; Notes</label>
+              <input type="text" id="mod-input-notes" placeholder="e.g. Trailing stop up after partial breakout" autocomplete="off">
+            </div>
+
+            <!-- Error / Status Box -->
+            <div id="mod-order-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
+
+            <!-- Footer Action Buttons -->
+            <div class="modal-footer-row">
+              <button type="button" class="btn-subtle" onclick="App.Paper.closeModifyModal()">Cancel</button>
+              <button type="submit" id="btn-submit-modify-order" class="btn-primary" style="padding: 10px 24px;">
+                <span>💾 Update Order</span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
     </section>
 
     <!-- Section 4: Institutional Strategy Tester & Backtest Engine -->
@@ -2478,7 +2589,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=55.0"></script>
+  <script src="/static/app.js?v=56.0"></script>
 
 
 

@@ -157,6 +157,28 @@ class PaperRepository:
             return cursor.rowcount > 0
 
     @staticmethod
+    def update_trade(position_id: int, updates: dict[str, Any]) -> bool:
+        """Update mutable fields of an active open trade."""
+        if not updates:
+            return False
+
+        allowed = {"quantity", "contracts", "target_price", "stop_loss_price", "notes", "strategy"}
+        clean_updates = {k: v for k, v in updates.items() if k in allowed}
+        if not clean_updates:
+            return False
+
+        set_clause = ", ".join(f"{k} = ?" for k in clean_updates.keys())
+        params = list(clean_updates.values())
+        params.append(position_id)
+
+        with get_db_connection() as conn:
+            cursor = conn.execute(
+                f"UPDATE paper_trades SET {set_clause} WHERE id = ? AND status = 'OPEN'",
+                params,
+            )
+            return cursor.rowcount > 0
+
+    @staticmethod
     def get_closed_trades() -> list[dict[str, Any]]:
         PaperRepository.initialize_paper_tables()
         with get_db_connection() as conn:

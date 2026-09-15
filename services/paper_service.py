@@ -11,6 +11,7 @@ from models.paper import (
     InstrumentType,
     OptionType,
     PaperCloseRequest,
+    PaperModifyRequest,
     PaperOrderRequest,
     PaperPortfolioSummary,
     PaperPosition,
@@ -408,6 +409,99 @@ class PaperTradingService:
             "pnl_amount": round(pnl_amount, 2),
             "pnl_pct": round(pnl_pct, 2),
             "new_cash_balance": round(new_cash, 2),
+        }
+
+    @classmethod
+    def modify_order(cls, request: PaperModifyRequest) -> dict[str, Any]:
+        """Modify an active open paper trade (Target, Stop Loss, Quantity/Contracts, Notes)."""
+        pos = PaperRepository.get_position(request.position_id)
+        if not pos:
+            raise ValueError(f"Open position #{request.position_id} not found")
+
+        inst_type = pos.get("instrument_type") or "EQUITY"
+        lot_size = pos.get("lot_size") or 1
+        old_qty = pos["quantity"]
+        old_contracts = pos.get("contracts") or 1
+        entry_price = pos["entry_price"]
+
+        updates: dict[str, Any] = {}
+
+        # 1. Quantity & Contracts handling
+        new_qty = old_qty
+        new_contracts = old_contracts
+
+        if inst_type == "OPTION":
+            if request.contracts is not None and request.contracts > 0:
+                new_contracts = request.contracts
+                new_qty = new_contracts * lot_size
+            elif request.quantity is not None and request.quantity > 0:
+                new_qty = request.quantity
+                new_contracts = max(1, math.ceil(new_qty / lot_size))
+                new_qty = new_contracts * lot_size
+        else:
+            if request.quantity is not None and request.quantity > 0:
+                new_qty = request.quantity
+                new_contracts = new_qty
+
+        account = PaperRepository.get_account()
+        cash = account["cash_balance"]
+
+        if new_qty != old_qty:
+            qty_diff = new_qty - old_qty
+            cost_diff = qty_diff * entry_price
+
+            if qty_diff > 0:
+                # Sizing up: requires additional capital
+                if cost_diff > cash:
+                    raise ValueError(
+                        f"Insufficient cash to increase position size. Required additional: ₹{cost_diff:,.2f}, Available: ₹{cash:,.2f}"
+                    )
+                new_cash = cash - cost_diff
+            else:
+                # Sizing down: release excess capital back to cash
+                new_cash = cash + abs(cost_diff)
+
+            PaperRepository.update_cash_balance(new_cash)
+            updates["quantity"] = new_qty
+            updates["contracts"] = new_contracts
+        else:
+            new_cash = cash
+
+        # 2. Target Price
+        if request.target_price is not None:
+            if request.target_price <= 0:
+                raise ValueError("Target price must be greater than 0")
+            updates["target_price"] = round(float(request.target_price), 2)
+
+        # 3. Stop Loss Price
+        if request.stop_loss_price is not None:
+            if request.stop_loss_price <= 0:
+                raise ValueError("Stop loss price must be greater than 0")
+            updates["stop_loss_price"] = round(float(request.stop_loss_price), 2)
+
+        # 4. Notes
+        if request.notes is not None:
+            updates["notes"] = request.notes.strip()
+
+        if updates:
+            success = PaperRepository.update_trade(pos["id"], updates)
+        else:
+            success = True
+
+        updated_pos = PaperRepository.get_position(pos["id"]) or pos
+
+        return {
+            "success": success,
+            "position_id": pos["id"],
+            "symbol": pos["symbol"],
+            "display_symbol": pos.get("display_symbol") or pos["symbol"],
+            "instrument_type": inst_type,
+            "quantity": updated_pos.get("quantity", new_qty),
+            "contracts": updated_pos.get("contracts", new_contracts),
+            "target_price": updated_pos.get("target_price"),
+            "stop_loss_price": updated_pos.get("stop_loss_price"),
+            "notes": updated_pos.get("notes", ""),
+            "remaining_cash": round(new_cash, 2),
         }
 
     @classmethod

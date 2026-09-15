@@ -54,6 +54,17 @@ class PaperCloseRequest(BaseModel):
     exit_reason: str = Field(default="Manual Close", description="Reason for closing the position")
 
 
+class PaperModifyRequest(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+
+    position_id: int = Field(..., description="Unique ID of the open paper position")
+    quantity: int | None = Field(default=None, gt=0, description="New total quantity (shares or units)")
+    contracts: int | None = Field(default=None, gt=0, description="New number of option contracts/lots")
+    target_price: float | None = Field(default=None, gt=0, description="Take profit target price/premium")
+    stop_loss_price: float | None = Field(default=None, gt=0, description="Stop loss price/premium")
+    notes: str | None = Field(default=None, description="Optional updated trade notes or rationale")
+
+
 class PaperPosition(BaseModel):
     id: int
     symbol: str

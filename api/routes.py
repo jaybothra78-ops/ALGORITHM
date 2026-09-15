@@ -9,6 +9,7 @@ from models.backtest import BacktestRequest, BacktestResponse
 from models.news import NewsAnalysisRequest, NewsAnalysisResponse
 from models.paper import (
     PaperCloseRequest,
+    PaperModifyRequest,
     PaperOrderRequest,
     PaperPortfolioSummary,
     PaperPosition,
@@ -468,6 +469,20 @@ def close_paper_position_endpoint(
         raise HTTPException(400, str(exc)) from exc
     except Exception as exc:
         raise HTTPException(500, f"Failed to close position: {exc}") from exc
+
+
+@router.post("/paper/modify", response_model=dict[str, Any])
+def modify_paper_order_endpoint(
+    payload: PaperModifyRequest,
+) -> dict[str, Any]:
+    """Modify an active open paper trade order or position."""
+    try:
+        from services.paper_service import PaperTradingService
+        return PaperTradingService.modify_order(payload)
+    except ValueError as exc:
+        raise HTTPException(400, str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to modify position: {exc}") from exc
 
 
 @router.get("/paper/history", response_model=list[PaperTradeRecord])

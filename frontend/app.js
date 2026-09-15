@@ -1179,6 +1179,30 @@ App.Paper = {
     const btnReset = document.querySelector('#btn-paper-reset');
     if (btnReset) btnReset.addEventListener('click', () => this.resetPortfolio());
 
+    // Modal Modify Event Listeners
+    const modQty = document.querySelector('#mod-input-qty');
+    const modTarget = document.querySelector('#mod-input-target');
+    const modSl = document.querySelector('#mod-input-sl');
+    if (modQty) modQty.addEventListener('input', () => this.updateModCalculations());
+    if (modTarget) modTarget.addEventListener('input', () => this.updateModCalculations());
+    if (modSl) modSl.addEventListener('input', () => this.updateModCalculations());
+
+    const modalMod = document.querySelector('#modal-modify-order');
+    if (modalMod) {
+      modalMod.addEventListener('click', (e) => {
+        if (e.target === modalMod) this.closeModifyModal();
+      });
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        const m = document.querySelector('#modal-modify-order');
+        if (m && m.style.display !== 'none') {
+          this.closeModifyModal();
+        }
+      }
+    });
+
     // Subtabs Navigation
     this.initSubtabs();
   },
@@ -1643,6 +1667,7 @@ App.Paper = {
       const res = await fetch('/paper/positions');
       if (!res.ok) return;
       const positions = await res.json();
+      this.cachedPositions = positions;
       this.renderPositionsTable(positions);
     } catch (err) {
       console.debug('Positions fetch error:', err);
@@ -1705,9 +1730,14 @@ App.Paper = {
         </td>
         <td><span class="strategy-tag">${pos.strategy}</span></td>
         <td>
-          <button type="button" class="btn-close-pos" onclick="App.Paper.closePosition(${pos.id})" title="Square-off position">
-            ✕ Close
-          </button>
+          <div class="pos-actions-cell">
+            <button type="button" class="btn-modify-pos" onclick="App.Paper.openModifyModal(${pos.id})" title="Modify Target, Stop Loss, Quantity">
+              ✏️ Modify
+            </button>
+            <button type="button" class="btn-close-pos" onclick="App.Paper.closePosition(${pos.id})" title="Square-off position">
+              ✕ Close
+            </button>
+          </div>
         </td>
       </tr>`;
     }).join('');
@@ -1815,6 +1845,259 @@ App.Paper = {
     this.updateEstimatedCapital();
     this.fetchLivePriceOrPremium();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  },
+
+  openModifyModal(positionId) {
+    const pos = (this.cachedPositions || []).find(p => p.id === positionId);
+    if (!pos) {
+      this.loadPositions().then(() => {
+        const p2 = (this.cachedPositions || []).find(p => p.id === positionId);
+        if (p2) this.populateAndShowModifyModal(p2);
+      });
+      return;
+    }
+    this.populateAndShowModifyModal(pos);
+  },
+
+  populateAndShowModifyModal(pos) {
+    this.activeModPos = pos;
+    const isOpt = pos.instrument_type === 'OPTION';
+
+    // Header context
+    const symEl = document.querySelector('#mod-pos-symbol');
+    const typeEl = document.querySelector('#mod-pos-type');
+    const entryEl = document.querySelector('#mod-pos-entry');
+    const curEl = document.querySelector('#mod-pos-current');
+    const idEl = document.querySelector('#mod-pos-id');
+
+    if (symEl) symEl.textContent = pos.display_symbol || pos.symbol;
+    if (typeEl) typeEl.textContent = `${pos.instrument_type} (${pos.side})`;
+    if (entryEl) entryEl.textContent = App.Utils.money(pos.entry_price);
+    if (curEl) curEl.textContent = App.Utils.money(pos.current_price);
+    if (idEl) idEl.value = pos.id;
+
+    // Quantity / Lots inputs & chips
+    const labelQty = document.querySelector('#mod-label-qty');
+    const inputQty = document.querySelector('#mod-input-qty');
+    const lotHint = document.querySelector('#mod-lot-hint');
+    const quickChips = document.querySelector('#mod-qty-quick-chips');
+
+    if (isOpt) {
+      if (labelQty) labelQty.textContent = 'Number of Lots';
+      if (inputQty) inputQty.value = pos.contracts || Math.max(1, Math.round(pos.quantity / (pos.lot_size || 1)));
+      if (lotHint) {
+        lotHint.style.display = 'inline-block';
+        lotHint.textContent = `Lot Size: ${pos.lot_size || 1}`;
+      }
+      if (quickChips) {
+        quickChips.innerHTML = `
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.setModQty(1)">1L</button>
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.setModQty(2)">2L</button>
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.setModQty(5)">5L</button>
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.setModQty(10)">10L</button>
+        `;
+      }
+    } else {
+      if (labelQty) labelQty.textContent = 'Quantity (Shares)';
+      if (inputQty) inputQty.value = pos.quantity;
+      if (lotHint) lotHint.style.display = 'none';
+      if (quickChips) {
+        quickChips.innerHTML = `
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.adjustModQty(5)">+5</button>
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.adjustModQty(10)">+10</button>
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.adjustModQty(25)">+25</button>
+          <button type="button" class="btn-qty-chip" onclick="App.Paper.adjustModQty(50)">+50</button>
+        `;
+      }
+    }
+
+    // Target, SL, Notes
+    const inputTarget = document.querySelector('#mod-input-target');
+    const inputSl = document.querySelector('#mod-input-sl');
+    const inputNotes = document.querySelector('#mod-input-notes');
+    const statusBox = document.querySelector('#mod-order-status');
+
+    if (inputTarget) inputTarget.value = pos.target_price ? Number(pos.target_price).toFixed(2) : '';
+    if (inputSl) inputSl.value = pos.stop_loss_price ? Number(pos.stop_loss_price).toFixed(2) : '';
+    if (inputNotes) inputNotes.value = pos.notes || '';
+    if (statusBox) statusBox.style.display = 'none';
+
+    this.updateModCalculations();
+
+    const modal = document.querySelector('#modal-modify-order');
+    if (modal) modal.style.display = 'flex';
+  },
+
+  closeModifyModal() {
+    const modal = document.querySelector('#modal-modify-order');
+    if (modal) modal.style.display = 'none';
+    this.activeModPos = null;
+  },
+
+  setModQty(val) {
+    const inputQty = document.querySelector('#mod-input-qty');
+    if (inputQty) {
+      inputQty.value = val;
+      this.updateModCalculations();
+    }
+  },
+
+  adjustModQty(delta) {
+    const inputQty = document.querySelector('#mod-input-qty');
+    if (inputQty) {
+      const cur = parseInt(inputQty.value, 10) || 0;
+      inputQty.value = Math.max(1, cur + delta);
+      this.updateModCalculations();
+    }
+  },
+
+  applyModTargetPct(pct) {
+    if (!this.activeModPos) return;
+    const base = this.activeModPos.entry_price || this.activeModPos.current_price;
+    const target = base * (1 + pct / 100);
+    const inputTarget = document.querySelector('#mod-input-target');
+    if (inputTarget) {
+      inputTarget.value = target.toFixed(2);
+      this.updateModCalculations();
+    }
+  },
+
+  applyModSlPct(pct) {
+    if (!this.activeModPos) return;
+    const base = this.activeModPos.entry_price || this.activeModPos.current_price;
+    const sl = base * (1 + pct / 100);
+    const inputSl = document.querySelector('#mod-input-sl');
+    if (inputSl) {
+      inputSl.value = sl.toFixed(2);
+      this.updateModCalculations();
+    }
+  },
+
+  updateModCalculations() {
+    if (!this.activeModPos) return;
+    const pos = this.activeModPos;
+    const isOpt = pos.instrument_type === 'OPTION';
+    const lotSize = pos.lot_size || 1;
+    const entryPrice = pos.entry_price;
+
+    const inputQty = document.querySelector('#mod-input-qty');
+    const inputTarget = document.querySelector('#mod-input-target');
+    const inputSl = document.querySelector('#mod-input-sl');
+    const capImpactEl = document.querySelector('#mod-capital-impact');
+    const rrValEl = document.querySelector('#mod-rr-value');
+    const riskValEl = document.querySelector('#mod-risk-val');
+    const rewardValEl = document.querySelector('#mod-reward-val');
+
+    const qtyVal = parseInt(inputQty?.value, 10) || 0;
+    const targetVal = parseFloat(inputTarget?.value) || 0;
+    const slVal = parseFloat(inputSl?.value) || 0;
+
+    // 1. Margin impact preview
+    const oldQty = pos.quantity;
+    const newQty = isOpt ? qtyVal * lotSize : qtyVal;
+    const qtyDiff = newQty - oldQty;
+    const costDiff = qtyDiff * entryPrice;
+
+    if (capImpactEl) {
+      if (qtyDiff > 0) {
+        capImpactEl.innerHTML = `<span style="color: #b45309; font-weight: 600;">⚠️ Sizing Up: Additional Margin Required: ${App.Utils.money(costDiff)}</span>`;
+      } else if (qtyDiff < 0) {
+        capImpactEl.innerHTML = `<span style="color: #10b981; font-weight: 600;">✓ Sizing Down: Margin to be Credited: ${App.Utils.money(Math.abs(costDiff))}</span>`;
+      } else {
+        capImpactEl.innerHTML = `<span style="color: #78716c;">Position size unchanged (${newQty} units)</span>`;
+      }
+    }
+
+    // 2. Risk to Reward indicator
+    if (targetVal > 0 && slVal > 0 && entryPrice > 0) {
+      const riskPerUnit = Math.abs(entryPrice - slVal);
+      const rewardPerUnit = Math.abs(targetVal - entryPrice);
+      const totalRisk = riskPerUnit * (newQty || 1);
+      const totalReward = rewardPerUnit * (newQty || 1);
+
+      if (riskValEl) riskValEl.textContent = `Risk: ${App.Utils.money(totalRisk)}`;
+      if (rewardValEl) rewardValEl.textContent = `Reward: ${App.Utils.money(totalReward)}`;
+
+      if (rrValEl) {
+        if (riskPerUnit > 0) {
+          const ratio = (rewardPerUnit / riskPerUnit).toFixed(2);
+          rrValEl.textContent = `1 : ${ratio}`;
+          rrValEl.style.color = ratio >= 2 ? '#10b981' : (ratio >= 1.5 ? '#b45309' : '#ef4444');
+        } else {
+          rrValEl.textContent = '—';
+        }
+      }
+    } else {
+      if (rrValEl) rrValEl.textContent = '—';
+      if (riskValEl) riskValEl.textContent = 'Risk: —';
+      if (rewardValEl) rewardValEl.textContent = 'Reward: —';
+    }
+  },
+
+  async submitModifyOrder() {
+    if (!this.activeModPos) return;
+    const pos = this.activeModPos;
+    const isOpt = pos.instrument_type === 'OPTION';
+
+    const inputQty = document.querySelector('#mod-input-qty');
+    const inputTarget = document.querySelector('#mod-input-target');
+    const inputSl = document.querySelector('#mod-input-sl');
+    const inputNotes = document.querySelector('#mod-input-notes');
+    const statusBox = document.querySelector('#mod-order-status');
+    const submitBtn = document.querySelector('#btn-submit-modify-order');
+
+    const qtyVal = parseInt(inputQty?.value, 10);
+    const targetVal = parseFloat(inputTarget?.value) || null;
+    const slVal = parseFloat(inputSl?.value) || null;
+    const notesVal = inputNotes?.value || '';
+
+    if (!qtyVal || qtyVal <= 0) {
+      App.Utils.showStatus('#mod-order-status', 'Quantity must be at least 1', 'error');
+      return;
+    }
+
+    const payload = {
+      position_id: pos.id,
+      target_price: targetVal,
+      stop_loss_price: slVal,
+      notes: notesVal,
+    };
+
+    if (isOpt) {
+      payload.contracts = qtyVal;
+    } else {
+      payload.quantity = qtyVal;
+    }
+
+    if (submitBtn) {
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span>⏳ Saving...</span>';
+    }
+
+    try {
+      const res = await fetch('/paper/modify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+
+      const data = await res.json();
+      this.closeModifyModal();
+      App.Utils.showStatus('#paper-order-status', `Position #${pos.id} (${pos.display_symbol || pos.symbol}) updated successfully!`, 'success');
+      this.loadData();
+    } catch (err) {
+      App.Utils.showStatus('#mod-order-status', 'Modification failed: ' + err.message, 'error');
+    } finally {
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<span>💾 Update Order</span>';
+      }
+    }
   },
 };
 
