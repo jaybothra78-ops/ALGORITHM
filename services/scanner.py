@@ -108,7 +108,9 @@ class ScannerEngine:
                 filtered_universe = {clean_sym: {"Custom"}}
             include_neutral = True
         elif index_filter:
-            filtered_universe = {s: m for s, m in universe.items() if index_filter in m}
+            target_idx = index_filter.replace("custom:", "").strip() if index_filter.startswith("custom:") else index_filter
+            filtered_universe = {s: m for s, m in universe.items() if target_idx in m or index_filter in m}
+
         else:
             filtered_universe = universe
 

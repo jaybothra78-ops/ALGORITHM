@@ -417,13 +417,20 @@ App.Screener = {
 
       // Populate both Screener dropdown and News Analyzer universe dropdown
       [lookbackSelect, newsUniverseSelect].forEach(select => {
-        if (!select || !data.watchlists) return;
-        // Remove old custom options
+        if (!select) return;
+        // Aggressively remove any old custom options (including any legacy Watchlist or ⭐ options)
         Array.from(select.options).forEach(opt => {
-          if (opt.dataset.custom === 'true') opt.remove();
+          if (
+            opt.dataset.custom === 'true' ||
+            (opt.value && opt.value.startsWith('custom:')) ||
+            opt.value === 'Watchlist' ||
+            (opt.textContent && opt.textContent.includes('⭐'))
+          ) {
+            opt.remove();
+          }
         });
 
-        data.watchlists.forEach(w => {
+        (data.watchlists || []).forEach(w => {
           const opt = document.createElement('option');
           opt.value = `custom:${w.name}`;
           opt.textContent = `⭐ ${w.name} (${w.count})`;
@@ -431,10 +438,25 @@ App.Screener = {
           select.appendChild(opt);
         });
       });
+
+      // If currently selected universe option no longer exists in lookbackSelect, reset to All Universes
+      if (lookbackSelect) {
+        const hasCurrent = Array.from(lookbackSelect.options).some(o => o.value === lookbackSelect.value);
+        if (!hasCurrent || !lookbackSelect.value) {
+          lookbackSelect.value = '';
+          App.State.indexFilter = '';
+        }
+      }
+
+      // Also refresh backtester universe select
+      if (App.Backtester && typeof App.Backtester.populateUniverseSelect === 'function') {
+        App.Backtester.populateUniverseSelect();
+      }
     } catch (err) {
       console.debug('Custom watchlists load error:', err);
     }
   },
+
 
 
   async deleteWatchlist(name) {
@@ -2417,9 +2439,9 @@ App.Backtester = {
     let html = `
       <option value="">All Universes (Combined)</option>
       <option value="FNO">FNO (178 Stocks)</option>
-      <option value="Watchlist">Default Watchlist (108 Stocks)</option>
       <option value="Nifty50">Nifty 50 Index</option>
     `;
+
 
     const customLists = App.State.customWatchlists || [];
     if (customLists.length) {
@@ -3670,13 +3692,23 @@ App.Auth = {
   },
 
   onUserSwitched() {
+    // Reset index filter to all universes
+    App.State.indexFilter = '';
+    const lookbackSelect = document.querySelector('#lookback-index');
+    if (lookbackSelect) lookbackSelect.value = '';
+
     if (App.Paper && App.Paper.loadData) {
       App.Paper.loadData();
     }
     if (App.Screener && App.Screener.loadCustomWatchlists) {
-      App.Screener.loadCustomWatchlists();
+      App.Screener.loadCustomWatchlists().then(() => {
+        if (App.Screener.fetchSignals) {
+          App.Screener.fetchSignals();
+        }
+      });
     }
   },
+
 };
 
 // =====================================================================
