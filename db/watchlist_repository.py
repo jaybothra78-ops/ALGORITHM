@@ -51,7 +51,26 @@ class WatchlistRepository:
                             )
                 except Exception as exc:
                     logger.warning(f"Failed to migrate legacy custom_watchlists.json: {exc}")
+
+            # Migrate F&O list into user 1 custom watchlists if not present
+            if settings.FNO_PATH.exists():
+                try:
+                    fno_lines = settings.FNO_PATH.read_text(encoding="utf-8").splitlines()
+                    fno_syms = [l.strip().replace("NSE:", "").replace("BSE:", "") for l in fno_lines if l.strip() and not l.strip().startswith("#")]
+                    if fno_syms:
+                        conn.execute(
+                            """
+                            INSERT OR IGNORE INTO user_watchlists (user_id, name, symbols)
+                            VALUES (1, 'F&O List', ?)
+                            """,
+                            (json.dumps(sorted(list(set(fno_syms)))),),
+                        )
+
+                except Exception as exc:
+                    logger.warning(f"Failed to migrate fno_watchlist.txt: {exc}")
+
             cls._initialized = True
+
 
 
     @classmethod

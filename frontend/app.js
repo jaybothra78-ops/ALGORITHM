@@ -424,10 +424,12 @@ App.Screener = {
             opt.dataset.custom === 'true' ||
             (opt.value && opt.value.startsWith('custom:')) ||
             opt.value === 'Watchlist' ||
-            (opt.textContent && opt.textContent.includes('⭐'))
+            opt.value === 'FNO' ||
+            (opt.textContent && (opt.textContent.includes('⭐') || opt.textContent.includes('F&O')))
           ) {
             opt.remove();
           }
+
         });
 
         (data.watchlists || []).forEach(w => {
@@ -2438,9 +2440,9 @@ App.Backtester = {
 
     let html = `
       <option value="">All Universes (Combined)</option>
-      <option value="FNO">FNO (178 Stocks)</option>
       <option value="Nifty50">Nifty 50 Index</option>
     `;
+
 
 
     const customLists = App.State.customWatchlists || [];
@@ -3737,8 +3739,9 @@ App.Init = {
       const allData = await res.json();
       App.State.universeSymbols = allData;
 
-      // Populate initial news stock select with FNO or All
-      App.News.populateStockSelect('FNO');
+      // Populate initial news stock select with All symbols
+      App.News.populateStockSelect('');
+
       App.Backtester.populateStockSelect('');
     } catch (err) {
       console.debug('Universe symbols load error:', err);
