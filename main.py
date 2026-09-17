@@ -60,6 +60,20 @@ app.include_router(auth_router)
 app.include_router(api_router)
 
 
+@app.get("/login", include_in_schema=False)
+@app.get("/login.html", include_in_schema=False)
+def serve_login() -> FileResponse:
+    """Serve dedicated login portal with no-cache headers."""
+    return FileResponse(
+        BASE_DIR / "frontend" / "login.html",
+        headers={
+            "Cache-Control": "no-cache, no-store, must-revalidate",
+            "Pragma": "no-cache",
+            "Expires": "0",
+        },
+    )
+
+
 @app.get("/", include_in_schema=False)
 def serve_dashboard() -> FileResponse:
     """Serve single-page frontend application with no-cache headers."""

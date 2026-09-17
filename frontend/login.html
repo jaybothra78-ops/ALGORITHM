@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In — STRATLAB Quant Studio</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #070a0f;
+      --bg-surface: #0e131d;
+      --bg-card: rgba(16, 22, 34, 0.85);
+      --bg-card-hover: rgba(22, 30, 46, 0.95);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: #f59e0b;
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-subtle: #6b7280;
+      --accent-amber: #f59e0b;
+      --accent-amber-glow: rgba(245, 158, 11, 0.25);
+      --accent-cyan: #06b6d4;
+      --accent-cyan-glow: rgba(6, 182, 212, 0.25);
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --font-main: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      background-image: 
+        radial-gradient(ellipse 80% 50% at 50% -20%, rgba(245, 158, 11, 0.12), transparent),
+        radial-gradient(ellipse 60% 40% at 85% 90%, rgba(6, 182, 212, 0.08), transparent),
+        radial-gradient(ellipse 50% 30% at 15% 70%, rgba(16, 185, 129, 0.06), transparent);
+      color: var(--text-main);
+      font-family: var(--font-main);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      overflow-x: hidden;
+    }
+
+    /* Ambient grid background overlay */
+    .bg-grid {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-size: 40px 40px;
+      background-image: 
+        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .login-container {
+      position: relative;
+      z-index: 1;
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+    }
+
+    /* Brand Header */
+    .brand-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .brand-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 9999px;
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: var(--accent-amber);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      font-family: var(--font-mono);
+    }
+
+    .brand-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      background: linear-gradient(135deg, #ffffff 30%, #e2e8f0 70%, #94a3b8 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .brand-logo-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      box-shadow: 0 0 16px var(--accent-amber-glow);
+      -webkit-text-fill-color: #070a0f;
+    }
+
+    .brand-subtitle {
+      font-size: 0.88rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Auth Card */
+    .auth-card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+      padding: 30px 28px;
+      transition: border-color 0.25s ease;
+    }
+
+    /* Tabs Row */
+    .tabs-row {
+      display: flex;
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 24px;
+      gap: 4px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 9px 14px;
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: var(--font-main);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn.active {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent-amber);
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Form Styles */
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .input-wrapper {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .input-icon {
+      position: absolute;
+      left: 14px;
+      color: var(--text-subtle);
+      font-size: 0.95rem;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .form-input {
+      width: 100%;
+      padding: 11px 14px 11px 40px;
+      background: rgba(7, 10, 15, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 9px;
+      color: var(--text-main);
+      font-size: 0.92rem;
+      font-family: var(--font-main);
+      transition: all 0.2s ease;
+      outline: none;
+    }
+
+    .form-input:focus {
+      border-color: var(--accent-amber);
+      box-shadow: 0 0 0 3px var(--accent-amber-glow);
+      background: rgba(11, 16, 24, 0.9);
+    }
+
+    .form-input::placeholder {
+      color: var(--text-subtle);
+    }
+
+    /* Status Message Box */
+    .status-box {
+      padding: 11px 14px;
+      border-radius: 9px;
+      font-size: 0.83rem;
+      margin-bottom: 18px;
+      display: none;
+      align-items: center;
+      gap: 10px;
+      line-height: 1.4;
+      animation: fadeIn 0.2s ease-in;
+    }
+
+    .status-box.error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      display: flex;
+    }
+
+    .status-box.success {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      color: #6ee7b7;
+      display: flex;
+    }
+
+    /* Submit Button */
+    .btn-submit {
+      width: 100%;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      border: none;
+      border-radius: 9px;
+      color: #070a0f;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      cursor: pointer;
+      box-shadow: 0 4px 14px var(--accent-amber-glow);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-main);
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+      filter: brightness(1.06);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+
+    /* Divider */
+    .auth-divider {
+      display: flex;
+      align-items: center;
+      margin: 20px 0;
+      color: var(--text-subtle);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .auth-divider::before,
+    .auth-divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .auth-divider span {
+      padding: 0 12px;
+    }
+
+    /* Quick Demo Login Button */
+    .btn-demo {
+      width: 100%;
+      padding: 10px 14px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px dashed rgba(245, 158, 11, 0.35);
+      border-radius: 9px;
+      color: var(--accent-amber);
+      font-size: 0.84rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-family: var(--font-main);
+    }
+
+    .btn-demo:hover {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: var(--accent-amber);
+      border-style: solid;
+      transform: translateY(-1px);
+    }
+
+    /* Feature Badges under card */
+    .card-footer-info {
+      margin-top: 18px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.74rem;
+      color: var(--text-subtle);
+    }
+
+    .card-footer-info span {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent-green);
+      box-shadow: 0 0 6px rgba(16, 185, 129, 0.6);
+    }
+
+    /* Footer Copyright & Security */
+    .page-footer {
+      text-align: center;
+      margin-top: 24px;
+      font-size: 0.75rem;
+      color: var(--text-subtle);
+      line-height: 1.6;
+    }
+
+    .page-footer code {
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    /* Initial loading state cover */
+    #auth-checking-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: var(--bg-dark);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      z-index: 9999;
+      transition: opacity 0.25s ease;
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid rgba(245, 158, 11, 0.15);
+      border-top-color: var(--accent-amber);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="bg-grid"></div>
+
+  <!-- Smooth verification overlay when checking active token -->
+  <div id="auth-checking-overlay">
+    <div class="spinner"></div>
+    <p style="font-size: 0.84rem; color: var(--text-muted); font-family: var(--font-mono);">Connecting to Quant Studio...</p>
+  </div>
+
+  <div class="login-container">
+    <!-- Brand Header -->
+    <header class="brand-header">
+      <div class="brand-badge">Institutional Quant Terminal</div>
+      <h1 class="brand-title">
+        <span class="brand-logo-icon">📈</span>
+        <span>STRATLAB</span>
+      </h1>
+      <p class="brand-subtitle">Automated Indian Equity Scanner &amp; Alpha Studio</p>
+    </header>
+
+    <!-- Auth Card -->
+    <main class="auth-card">
+      <!-- Tabs -->
+      <nav class="tabs-row" aria-label="Authentication Options">
+        <button type="button" id="btn-tab-login" class="tab-btn active" onclick="switchAuthMode('login')">
+          <span>⚡</span> Sign In
+        </button>
+        <button type="button" id="btn-tab-register" class="tab-btn" onclick="switchAuthMode('register')">
+          <span>✨</span> Create Account
+        </button>
+      </nav>
+
+      <!-- Status Alert Box -->
+      <div id="auth-status-alert" class="status-box" role="alert"></div>
+
+      <!-- Sign In Form -->
+      <form id="form-signin" onsubmit="event.preventDefault(); handleSignIn();">
+        <div class="form-group">
+          <label class="form-label" for="signin-username">Username</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="signin-username" class="form-input" placeholder="e.g. trader or jay" required autocomplete="username" autofocus>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="signin-password">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="signin-password" class="form-input" placeholder="Enter your password" required autocomplete="current-password">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-signin" class="btn-submit">
+          <span>⚡</span> Sign In &amp; Launch Terminal
+        </button>
+
+        <div class="auth-divider">
+          <span>or one-click demo</span>
+        </div>
+
+        <button type="button" class="btn-demo" onclick="handleDemoLogin()">
+          <span>🚀</span> One-Click Demo Access (trader / trader123)
+        </button>
+      </form>
+
+      <!-- Create Account Form -->
+      <form id="form-register" style="display: none;" onsubmit="event.preventDefault(); handleRegister();">
+        <div class="form-group">
+          <label class="form-label" for="reg-username">Username</label>
+          <div class="input-wrapper">
+            <span class="input-icon">👤</span>
+            <input type="text" id="reg-username" class="form-input" placeholder="Choose a username (min 3 chars)" required autocomplete="username">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-display">Display Name (Optional)</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🏷️</span>
+            <input type="text" id="reg-display" class="form-input" placeholder="e.g. Jay Bothra" autocomplete="name">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="reg-password">Password</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input type="password" id="reg-password" class="form-input" placeholder="Min 4 characters" required autocomplete="new-password">
+          </div>
+        </div>
+
+        <button type="submit" id="btn-submit-register" class="btn-submit">
+          <span>🚀</span> Create Account &amp; Claim ₹10,00,000 Capital
+        </button>
+      </form>
+
+      <!-- Footer Info -->
+      <div class="card-footer-info">
+        <span><span class="status-dot"></span> NSE Engine Online</span>
+        <span>₹10,00,000 Virtual Capital</span>
+      </div>
+    </main>
+
+    <!-- Page Footer -->
+    <footer class="page-footer">
+      <p>Multi-Tenant Security • PBKDF2 Salted Encryption</p>
+      <p>STRATLAB Quant Studio v2.0 • High-Frequency Screening</p>
+    </footer>
+  </div>
+
+  <script>
+    // Tab switching logic
+    function switchAuthMode(mode) {
+      const isLogin = mode === 'login';
+      document.getElementById('btn-tab-login').classList.toggle('active', isLogin);
+      document.getElementById('btn-tab-register').classList.toggle('active', !isLogin);
+      document.getElementById('form-signin').style.display = isLogin ? 'block' : 'none';
+      document.getElementById('form-register').style.display = isLogin ? 'none' : 'block';
+      clearStatus();
+
+      if (isLogin) {
+        document.getElementById('signin-username').focus();
+      } else {
+        document.getElementById('reg-username').focus();
+      }
+    }
+
+    function showStatus(message, type = 'error') {
+      const alert = document.getElementById('auth-status-alert');
+      alert.className = `status-box ${type}`;
+      alert.innerHTML = `${type === 'error' ? '⚠️' : '✅'} <span>${message}</span>`;
+      alert.style.display = 'flex';
+    }
+
+    function clearStatus() {
+      const alert = document.getElementById('auth-status-alert');
+      alert.style.display = 'none';
+      alert.innerHTML = '';
+    }
+
+    // Direct Login Submission
+    async function handleSignIn() {
+      clearStatus();
+      const usernameInput = document.getElementById('signin-username');
+      const passwordInput = document.getElementById('signin-password');
+      const btn = document.getElementById('btn-submit-signin');
+
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!username || !password) {
+        showStatus('Please enter both username and password.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Signing in...</span>';
+
+      try {
+        const res = await fetch('/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.detail || `Login failed (HTTP ${res.status})`);
+        }
+
+        localStorage.setItem('stratlab_auth_token', data.token);
+        localStorage.setItem('stratlab_user', JSON.stringify(data.user));
+
+        showStatus(`Authenticated as ${data.user.display_name || data.user.username}. Launching terminal...`, 'success');
+        setTimeout(() => {
+          window.location.replace('/');
+        }, 400);
+      } catch (err) {
+        showStatus(err.message || 'Authentication failed. Please check credentials.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>⚡</span> Sign In &amp; Launch Terminal';
+      }
+    }
+
+    // One-Click Demo Access
+    function handleDemoLogin() {
+      document.getElementById('signin-username').value = 'trader';
+      document.getElementById('signin-password').value = 'trader123';
+      handleSignIn();
+    }
+
+    // Registration Submission
+    async function handleRegister() {
+      clearStatus();
+      const usernameInput = document.getElementById('reg-username');
+      const displayInput = document.getElementById('reg-display');
+      const passwordInput = document.getElementById('reg-password');
+      const btn = document.getElementById('btn-submit-register');
+
+      const username = usernameInput.value.trim();
+      const displayName = displayInput.value.trim();
+      const password = passwordInput.value;
+
+      if (!username || !password) {
+        showStatus('Username and password are required.');
+        return;
+      }
+
+      if (username.length < 3) {
+        showStatus('Username must be at least 3 characters.');
+        return;
+      }
+
+      if (password.length < 4) {
+        showStatus('Password must be at least 4 characters.');
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span>⏳ Creating account...</span>';
+
+      try {
+        const res = await fetch('/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password, display_name: displayName || null })
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.detail || `Registration failed (HTTP ${res.status})`);
+        }
+
+        localStorage.setItem('stratlab_auth_token', data.token);
+        localStorage.setItem('stratlab_user', JSON.stringify(data.user));
+
+        showStatus(`Account created! Welcome, ${data.user.display_name || data.user.username}. Entering terminal...`, 'success');
+        setTimeout(() => {
+          window.location.replace('/');
+        }, 500);
+      } catch (err) {
+        showStatus(err.message || 'Registration failed.');
+        btn.disabled = false;
+        btn.innerHTML = '<span>🚀</span> Create Account &amp; Claim ₹10,00,000 Capital';
+      }
+    }
+
+    // Check existing session on load
+    async function checkExistingSession() {
+      const token = localStorage.getItem('stratlab_auth_token');
+      const overlay = document.getElementById('auth-checking-overlay');
+
+      if (!token) {
+        // No token, remove overlay smoothly
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+        return;
+      }
+
+      try {
+        const res = await fetch('/auth/me', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+          // Valid active session, immediately route to terminal
+          window.location.replace('/');
+          return;
+        } else {
+          // Token is invalid/expired, purge and show login
+          localStorage.removeItem('stratlab_auth_token');
+          localStorage.removeItem('stratlab_user');
+          overlay.style.opacity = '0';
+          setTimeout(() => { overlay.style.display = 'none'; }, 200);
+        }
+      } catch (err) {
+        overlay.style.opacity = '0';
+        setTimeout(() => { overlay.style.display = 'none'; }, 200);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', checkExistingSession);
+  </script>
+</body>
+</html>

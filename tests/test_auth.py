@@ -223,3 +223,26 @@ def test_custom_watchlist_user_isolation():
     assert "UserA_Picks" not in lists_a
     assert "UserB_Picks" in lists_b
 
+
+def test_login_portal_routes():
+    # 1. /login serves login.html with no-cache headers
+    res_login = client.get("/login")
+    assert res_login.status_code == 200
+    assert "no-cache" in res_login.headers.get("Cache-Control", "")
+    assert "STRATLAB" in res_login.text
+    assert "Sign In" in res_login.text
+    assert "form-signin" in res_login.text
+    assert "form-register" in res_login.text
+
+    # 2. /login.html alias works
+    res_login_html = client.get("/login.html")
+    assert res_login_html.status_code == 200
+    assert "STRATLAB" in res_login_html.text
+
+    # 3. / (dashboard) has the early auth gate script
+    res_root = client.get("/")
+    assert res_root.status_code == 200
+    assert "stratlab_auth_token" in res_root.text
+    assert "window.location.replace('/login')" in res_root.text
+
+

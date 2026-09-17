@@ -3304,15 +3304,7 @@ App.Auth = {
   async checkSession() {
     const token = localStorage.getItem('stratlab_auth_token');
     if (!token) {
-      try {
-        const res = await fetch('/auth/me');
-        if (res.ok) {
-          const data = await res.json();
-          this.setCurrentUser(data.user);
-        }
-      } catch (err) {
-        console.debug('Session check error:', err);
-      }
+      window.location.replace('/login');
       return;
     }
 
@@ -3324,7 +3316,7 @@ App.Auth = {
       } else {
         localStorage.removeItem('stratlab_auth_token');
         localStorage.removeItem('stratlab_user');
-        this.openAuthModal('login');
+        window.location.replace('/login');
       }
     } catch (err) {
       console.debug('Failed to verify session:', err);
@@ -3535,11 +3527,7 @@ App.Auth = {
     localStorage.removeItem('stratlab_user');
     App.State.currentUser = null;
 
-    const nameLabel = document.querySelector('#nav-username-label');
-    if (nameLabel) nameLabel.textContent = 'Sign In';
-
-    this.openAuthModal('login');
-    this.onUserSwitched();
+    window.location.replace('/login');
   },
 
   onUserSwitched() {

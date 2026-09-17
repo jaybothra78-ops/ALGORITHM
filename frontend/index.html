@@ -8,6 +8,19 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>STRATLAB — Institutional Quantitative Trading Terminal</title>
+  <script>
+    // Early Authentication Gate: Bounce unauthenticated visitors immediately to /login
+    (function() {
+      try {
+        var token = localStorage.getItem('stratlab_auth_token');
+        if (!token) {
+          window.location.replace('/login');
+        }
+      } catch (e) {
+        window.location.replace('/login');
+      }
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -2634,7 +2647,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=64.0"></script>
+  <script src="/static/app.js?v=65.0"></script>
 
 
 
