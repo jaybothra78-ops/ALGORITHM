@@ -402,19 +402,52 @@ class NSEDerivativesMaster:
         return expiries
 
     @classmethod
-    def calculate_days_to_expiry(cls, expiry_date_str: str | None, symbol: str = "NIFTY") -> float:
-        """Parse expiry date string (YYYY-MM-DD) and return fractional days remaining."""
-        if not expiry_date_str:
-            expiries = cls.get_expiry_calendar(symbol)
-            return expiries[0]["days_to_expiry"] if expiries else 3.0
+    def resolve_expiry_date(cls, expiry_date_str: str | None, symbol: str = "NIFTY") -> dict[str, Any]:
+        """
+        Resolve an expiry parameter (which could be an exact YYYY-MM-DD date,
+        'weekly', 'next_weekly', 'monthly', or None) into the exact date string and DTE.
+        """
+        expiries = cls.get_expiry_calendar(symbol)
+        clean_exp = (expiry_date_str or "").strip().lower()
 
+        if not clean_exp or clean_exp in ("weekly", "current_weekly", "current"):
+            if expiries:
+                return {"date": expiries[0]["date"], "days_to_expiry": expiries[0]["days_to_expiry"], "label": expiries[0]["label"]}
+            today_str = datetime.now(timezone.utc).date().strftime("%Y-%m-%d")
+            return {"date": today_str, "days_to_expiry": 1.0, "label": "Current Expiry"}
+
+        if clean_exp in ("next_weekly", "next"):
+            if len(expiries) > 1:
+                return {"date": expiries[1]["date"], "days_to_expiry": expiries[1]["days_to_expiry"], "label": expiries[1]["label"]}
+            elif expiries:
+                return {"date": expiries[0]["date"], "days_to_expiry": expiries[0]["days_to_expiry"] + 7.0, "label": expiries[0]["label"]}
+
+        if clean_exp in ("monthly", "current_monthly"):
+            monthly = next((e for e in expiries if "Month" in e.get("type", "")), None)
+            if monthly:
+                return {"date": monthly["date"], "days_to_expiry": monthly["days_to_expiry"], "label": monthly["label"]}
+            elif expiries:
+                return {"date": expiries[-1]["date"], "days_to_expiry": expiries[-1]["days_to_expiry"], "label": expiries[-1]["label"]}
+
+        # Attempt to parse exact YYYY-MM-DD
         try:
             exp_date = datetime.strptime(expiry_date_str.strip(), "%Y-%m-%d").date()
             today = datetime.now(timezone.utc).date()
             diff_days = (exp_date - today).days
-            return max(0.5, float(diff_days))
+            dte = max(0.5, float(diff_days))
+            return {"date": exp_date.strftime("%Y-%m-%d"), "days_to_expiry": dte, "label": exp_date.strftime("%d %b %Y")}
         except Exception:
-            return 3.0
+            if expiries:
+                return {"date": expiries[0]["date"], "days_to_expiry": expiries[0]["days_to_expiry"], "label": expiries[0]["label"]}
+            today_str = datetime.now(timezone.utc).date().strftime("%Y-%m-%d")
+            return {"date": today_str, "days_to_expiry": 3.0, "label": "Expiry"}
+
+    @classmethod
+    def calculate_days_to_expiry(cls, expiry_date_str: str | None, symbol: str = "NIFTY") -> float:
+        """Parse expiry date string or alias ('weekly', 'monthly') and return fractional days remaining."""
+        info = cls.resolve_expiry_date(expiry_date_str, symbol)
+        return float(info["days_to_expiry"])
+
 
 
 # =====================================================================
@@ -472,6 +505,11 @@ class OptionsPricingService:
     @classmethod
     def calculate_days_to_expiry(cls, expiry_date_str: str | None, symbol: str = "NIFTY") -> float:
         return NSEDerivativesMaster.calculate_days_to_expiry(expiry_date_str, symbol)
+
+    @classmethod
+    def resolve_expiry_date(cls, expiry_date_str: str | None, symbol: str = "NIFTY") -> dict[str, Any]:
+        return NSEDerivativesMaster.resolve_expiry_date(expiry_date_str, symbol)
+
 
     @classmethod
     def get_option_strikes(

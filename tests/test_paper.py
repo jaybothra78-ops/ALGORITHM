@@ -267,4 +267,46 @@ def test_modify_order_workflow():
     assert res_closed_mod.status_code == 400
 
 
+def test_option_pricing_and_caching_improvements():
+    # 1. Test auto-calculated ATM strike when strike is omitted
+    res_atm = client.get("/market/option-price?symbol=NIFTY&option_type=CE")
+    assert res_atm.status_code == 200
+    atm_data = res_atm.json()
+    assert atm_data["symbol"] == "NIFTY"
+    assert atm_data["strike_price"] > 0
+    assert atm_data["premium"] > 0
+    assert atm_data["days_to_expiry"] > 0
+    assert "intrinsic" in atm_data
+    assert "time_value" in atm_data
+    assert "delta" in atm_data
+
+    # 2. Test alias expiry ("weekly", "monthly") resolution
+    res_weekly = client.get("/market/option-price?symbol=TVSMOTOR&option_type=PE&expiry_date=weekly")
+    assert res_weekly.status_code == 200
+    weekly_data = res_weekly.json()
+    # Check that expiry_date resolved to a proper YYYY-MM-DD date string
+    assert len(weekly_data["expiry_date"]) == 10
+    assert weekly_data["expiry_date"].count("-") == 2
+
+    # 3. Test option strikes ladder endpoint
+    res_strikes = client.get("/market/option-strikes?symbol=NIFTY")
+    assert res_strikes.status_code == 200
+    strikes_data = res_strikes.json()
+    assert strikes_data["atm_strike"] > 0
+    assert len(strikes_data["strikes"]) >= 5
+    # Find ATM strike item in strikes
+    atm_item = next((s for s in strikes_data["strikes"] if s["strike"] == strikes_data["atm_strike"]), None)
+    assert atm_item is not None
+    assert atm_item["is_atm"] is True
+    assert "ce_premium" in atm_item
+    assert "pe_premium" in atm_item
+
+    # 4. Test LTP caching speed
+    from services.paper_service import PaperTradingService
+    t1 = PaperTradingService.get_live_ltp("NIFTY")
+    assert "ltp" in t1
+    assert "NIFTY" in PaperTradingService._LTP_CACHE
+
+
+
 

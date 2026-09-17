@@ -1165,10 +1165,11 @@ App.Paper = {
       });
     }
 
-    // Ticker Input Auto-Detect
+    // Ticker Input Auto-Detect (Debounced input + Enter + change)
     const stockInput = document.querySelector('#paper-stock-input');
     if (stockInput) {
-      stockInput.addEventListener('change', () => {
+      let stockInputTimeout = null;
+      const handleStockChange = () => {
         const sym = stockInput.value.trim().toUpperCase();
         if (sym) {
           if (App.State.paperInstrument === 'OPTION') {
@@ -1177,6 +1178,21 @@ App.Paper = {
             this.fetchLivePriceOrPremium();
           }
         }
+      };
+
+      stockInput.addEventListener('input', () => {
+        clearTimeout(stockInputTimeout);
+        stockInputTimeout = setTimeout(handleStockChange, 600);
+      });
+      stockInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(stockInputTimeout);
+          handleStockChange();
+        }
+      });
+      stockInput.addEventListener('change', () => {
+        clearTimeout(stockInputTimeout);
+        handleStockChange();
       });
     }
 
@@ -1191,14 +1207,32 @@ App.Paper = {
 
     const strikeInput = document.querySelector('#paper-strike-input');
     if (strikeInput) {
-      strikeInput.addEventListener('change', () => this.fetchLivePriceOrPremium());
+      let strikeInputTimeout = null;
+      strikeInput.addEventListener('input', () => {
+        clearTimeout(strikeInputTimeout);
+        strikeInputTimeout = setTimeout(() => this.fetchLivePriceOrPremium(), 600);
+      });
+      strikeInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          clearTimeout(strikeInputTimeout);
+          this.fetchLivePriceOrPremium();
+        }
+      });
+      strikeInput.addEventListener('change', () => {
+        clearTimeout(strikeInputTimeout);
+        this.fetchLivePriceOrPremium();
+      });
     }
 
     const btnAutoAtm = document.querySelector('#btn-auto-atm-strike');
     if (btnAutoAtm) {
       btnAutoAtm.addEventListener('click', () => {
         const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
-        if (sym) this.fetchOptionStrikes(sym);
+        if (sym) {
+          const sIn = document.querySelector('#paper-strike-input');
+          if (sIn) sIn.value = '';
+          this.fetchOptionStrikes(sym);
+        }
       });
     }
 
@@ -1276,8 +1310,13 @@ App.Paper = {
       if (labelPrice) labelPrice.textContent = 'Option Premium (₹)';
       this.updateQuickChips('OPTION');
 
-      const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
-      if (sym) this.fetchOptionStrikes(sym);
+      let sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
+      if (!sym) {
+        sym = 'NIFTY';
+        const stIn = document.querySelector('#paper-stock-input');
+        if (stIn) stIn.value = 'NIFTY';
+      }
+      this.fetchOptionStrikes(sym);
     } else {
       if (btnEq) btnEq.classList.add('active');
       if (btnOpt) btnOpt.classList.remove('active');
@@ -1300,6 +1339,11 @@ App.Paper = {
 
     if (btnCe) btnCe.classList.toggle('active', isCe);
     if (btnPe) btnPe.classList.toggle('active', !isCe);
+
+    // Re-render strike ladder dropdown with current CE/PE premiums
+    if (this._lastStrikesData) {
+      this.renderStrikeLadder(this._lastStrikesData);
+    }
 
     const sym = (document.querySelector('#paper-stock-input').value || '').trim().toUpperCase();
     if (sym) this.fetchLivePriceOrPremium();
@@ -1407,6 +1451,29 @@ App.Paper = {
     }
   },
 
+  renderStrikeLadder(data) {
+    if (!data || !data.strikes || !data.strikes.length) return;
+    const strikeSelect = document.querySelector('#paper-strike-quick-select');
+    if (!strikeSelect) return;
+
+    const currentStrike = parseFloat(document.querySelector('#paper-strike-input')?.value || 0);
+    const isCe = App.State.paperOptionType === 'CE';
+
+    strikeSelect.innerHTML = `<option value="">⚡ Select Strike Ladder</option>` + data.strikes.map(s => {
+      const tag = isCe ? s.ce_tag : s.pe_tag;
+      const prem = isCe ? s.ce_premium : s.pe_premium;
+      const isSelected = currentStrike === s.strike || (!currentStrike && s.is_atm);
+      return `<option value="${s.strike}" ${isSelected ? 'selected' : ''}>${s.strike} (${tag} · ₹${prem})</option>`;
+    }).join('');
+
+    strikeSelect.onchange = () => {
+      if (strikeSelect.value) {
+        document.querySelector('#paper-strike-input').value = strikeSelect.value;
+        this.fetchLivePriceOrPremium();
+      }
+    };
+  },
+
   async fetchOptionStrikes(sym, selectedExpiry = null) {
     try {
       const url = selectedExpiry
@@ -1416,6 +1483,7 @@ App.Paper = {
       const res = await fetch(url);
       if (!res.ok) return;
       const data = await res.json();
+      this._lastStrikesData = data;
 
       App.State.paperLotSize = data.lot_size;
       const lotBadge = document.querySelector('#paper-lot-size-badge');
@@ -1430,29 +1498,18 @@ App.Paper = {
         `).join('');
       }
 
-      // Populate Strike Ladder Quick Select
-      const strikeSelect = document.querySelector('#paper-strike-quick-select');
-      if (strikeSelect && data.strikes && data.strikes.length) {
-        strikeSelect.innerHTML = `<option value="">⚡ Select Strike Ladder</option>` + data.strikes.map(s => {
-          const isCe = App.State.paperOptionType === 'CE';
-          const tag = isCe ? s.ce_tag : s.pe_tag;
-          const prem = isCe ? s.ce_premium : s.pe_premium;
-          return `<option value="${s.strike}" ${s.is_atm ? 'selected' : ''}>${s.strike} (${tag} · ₹${prem})</option>`;
-        }).join('');
-
-        strikeSelect.onchange = () => {
-          if (strikeSelect.value) {
-            document.querySelector('#paper-strike-input').value = strikeSelect.value;
-            this.fetchLivePriceOrPremium();
-          }
-        };
-      }
-
-      // Set ATM Strike if blank
+      // Update Strike Input with ATM Strike if empty or mismatched with new ticker
       const strikeInput = document.querySelector('#paper-strike-input');
-      if (strikeInput && !strikeInput.value) {
-        strikeInput.value = data.atm_strike;
+      if (strikeInput) {
+        const currentStrike = parseFloat(strikeInput.value);
+        const strikeExists = data.strikes && data.strikes.some(s => s.strike === currentStrike);
+        if (!strikeInput.value || !strikeExists) {
+          strikeInput.value = data.atm_strike;
+        }
       }
+
+      // Populate Strike Ladder Quick Select with live tags & premiums
+      this.renderStrikeLadder(data);
 
       this.fetchLivePriceOrPremium();
     } catch (err) {
@@ -1471,12 +1528,29 @@ App.Paper = {
     try {
       if (isOpt) {
         const optType = App.State.paperOptionType;
-        const strike = parseFloat(document.querySelector('#paper-strike-input').value || 0);
-        const expiry = document.querySelector('#paper-expiry-select').value;
+        const strikeVal = document.querySelector('#paper-strike-input')?.value;
+        const strike = parseFloat(strikeVal) || 0;
+        const expiry = document.querySelector('#paper-expiry-select')?.value || '';
 
-        const res = await fetch(`/market/option-price?symbol=${encodeURIComponent(sym)}&option_type=${optType}&strike=${strike}&expiry_date=${encodeURIComponent(expiry)}`);
+        let qUrl = `/market/option-price?symbol=${encodeURIComponent(sym)}&option_type=${encodeURIComponent(optType)}`;
+        if (strike > 0) {
+          qUrl += `&strike=${strike}`;
+        }
+        if (expiry) {
+          qUrl += `&expiry_date=${encodeURIComponent(expiry)}`;
+        }
+
+        const res = await fetch(qUrl);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const data = await res.json();
+
+        // If strike was auto-calculated or corrected, update input
+        if (data.strike_price) {
+          const sIn = document.querySelector('#paper-strike-input');
+          if (sIn && (!sIn.value || parseFloat(sIn.value) <= 0)) {
+            sIn.value = data.strike_price;
+          }
+        }
 
         document.querySelector('#paper-price-input').value = data.premium.toFixed(2);
         this.updateDefaultTargetAndSl(data.premium);

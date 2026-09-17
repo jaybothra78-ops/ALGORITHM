@@ -24,12 +24,48 @@ from services.options_pricing import OptionsPricingService
 class PaperTradingService:
     """Comprehensive Paper Trading & Virtual Portfolio Manager for Equity & Options."""
 
+    _LTP_CACHE: dict[str, tuple[float, dict[str, Any]]] = {}
+    _LTP_TTL: float = 15.0  # Cache real-time quotes for 15 seconds to eliminate yfinance synchronous latency
+
     @classmethod
     def get_live_ltp(cls, symbol: str) -> dict[str, Any]:
-        """Fetch exact real-time Last Traded Price (LTP) from NSE/BSE feeds."""
-        import yfinance as yf
+        """Fetch exact real-time Last Traded Price (LTP) from NSE/BSE feeds with TTL caching."""
         clean_sym = symbol.strip().upper()
-        
+        now = time.time()
+
+        # 1. Check in-memory TTL cache first (< 0.1ms)
+        if clean_sym in cls._LTP_CACHE:
+            cached_time, cached_val = cls._LTP_CACHE[clean_sym]
+            if now - cached_time < cls._LTP_TTL:
+                return dict(cached_val)
+
+        # 2. Check Zerodha live quote if connected
+        try:
+            from services.zerodha_service import ZerodhaService
+            zd = ZerodhaService.get_instance()
+            if zd and zd.is_connected:
+                zd_quote = zd.get_live_quote(clean_sym)
+                if zd_quote and zd_quote.get("ltp", 0.0) > 0:
+                    ltp = round(float(zd_quote["ltp"]), 2)
+                    prev_close = round(float(zd_quote.get("close", ltp)), 2)
+                    change = round(float(zd_quote.get("change", ltp - prev_close)), 2)
+                    change_pct = round(float(zd_quote.get("change_pct", 0.0)), 2)
+                    res = {
+                        "symbol": clean_sym,
+                        "ticker": clean_sym,
+                        "ltp": ltp,
+                        "previous_close": prev_close,
+                        "change": change,
+                        "change_pct": change_pct,
+                        "source": "Zerodha Kite Live Stream",
+                        "timestamp": now,
+                    }
+                    cls._LTP_CACHE[clean_sym] = (now, res)
+                    return dict(res)
+        except Exception:
+            pass
+
+        import yfinance as yf
         # Handle index ticker and demerged mapping for Yahoo Finance
         if clean_sym in ("NIFTY", "NIFTY50"):
             ticker_candidates = ["^NSEI", "NIFTYBEES.NS"]
@@ -87,7 +123,7 @@ class PaperTradingService:
                     change = round(float(price - prev_close), 2)
                     change_pct = round(float((change / prev_close) * 100.0), 2) if prev_close > 0 else 0.0
 
-                    return {
+                    res = {
                         "symbol": clean_sym,
                         "ticker": ticker_str,
                         "ltp": round(float(price), 2),
@@ -95,8 +131,10 @@ class PaperTradingService:
                         "change": change,
                         "change_pct": change_pct,
                         "source": "NSE Real-Time Market Feed" if ".NS" in ticker_str or "^" in ticker_str else "BSE Market Feed",
-                        "timestamp": time.time(),
+                        "timestamp": now,
                     }
+                    cls._LTP_CACHE[clean_sym] = (now, res)
+                    return dict(res)
             except Exception:
                 continue
 
@@ -108,7 +146,7 @@ class PaperTradingService:
             prev_p = float(df_c["Close"].iloc[-2]) if len(df_c) > 1 else p
             change = round(p - prev_p, 2)
             change_pct = round((change / prev_p) * 100.0, 2) if prev_p > 0 else 0.0
-            return {
+            res = {
                 "symbol": clean_sym,
                 "ticker": f"{clean_sym}.NS",
                 "ltp": round(p, 2),
@@ -116,8 +154,10 @@ class PaperTradingService:
                 "change": change,
                 "change_pct": change_pct,
                 "source": "Cached Daily Close",
-                "timestamp": time.time(),
+                "timestamp": now,
             }
+            cls._LTP_CACHE[clean_sym] = (now, res)
+            return dict(res)
 
         data_map = MarketDataProvider.get_universe_ohlc([clean_sym])
         if clean_sym in data_map and not data_map[clean_sym].empty:
@@ -126,7 +166,7 @@ class PaperTradingService:
             prev_p = float(df_c["Close"].iloc[-2]) if len(df_c) > 1 else p
             change = round(p - prev_p, 2)
             change_pct = round((change / prev_p) * 100.0, 2) if prev_p > 0 else 0.0
-            return {
+            res = {
                 "symbol": clean_sym,
                 "ticker": f"{clean_sym}.NS",
                 "ltp": round(p, 2),
@@ -134,12 +174,14 @@ class PaperTradingService:
                 "change": change,
                 "change_pct": change_pct,
                 "source": "Cached Daily Close",
-                "timestamp": time.time(),
+                "timestamp": now,
             }
+            cls._LTP_CACHE[clean_sym] = (now, res)
+            return dict(res)
 
         # Default fallback for index if offline
         default_p = 25000.0 if clean_sym in ("NIFTY", "NIFTY50") else (51500.0 if clean_sym == "BANKNIFTY" else 100.0)
-        return {
+        res = {
             "symbol": clean_sym,
             "ticker": f"{clean_sym}.NS",
             "ltp": default_p,
@@ -147,8 +189,10 @@ class PaperTradingService:
             "change": 0.0,
             "change_pct": 0.0,
             "source": "Default Fallback",
-            "timestamp": time.time(),
+            "timestamp": now,
         }
+        cls._LTP_CACHE[clean_sym] = (now, res)
+        return dict(res)
 
     @classmethod
     def get_live_price(cls, symbol: str) -> float:
@@ -161,8 +205,11 @@ class PaperTradingService:
         """Fetch spot price and standard strike list for Options trading with accurate DTE."""
         spot_data = cls.get_live_ltp(symbol)
         spot_price = spot_data["ltp"]
-        strikes_data = OptionsPricingService.get_option_strikes(symbol, spot_price, expiry_date_str=expiry_date)
+        exp_info = OptionsPricingService.resolve_expiry_date(expiry_date, symbol)
+        resolved_date = exp_info["date"]
+        strikes_data = OptionsPricingService.get_option_strikes(symbol, spot_price, expiry_date_str=resolved_date)
         strikes_data["spot_quote"] = spot_data
+        strikes_data["resolved_expiry"] = exp_info
         return strikes_data
 
     @classmethod
@@ -170,7 +217,7 @@ class PaperTradingService:
         cls,
         symbol: str,
         option_type: str,
-        strike: float,
+        strike: float | None = None,
         expiry_date: str | None = None,
         days_to_expiry: float | None = None,
     ) -> dict[str, Any]:
@@ -179,9 +226,16 @@ class PaperTradingService:
         spot_data = cls.get_live_ltp(clean_sym)
         spot = spot_data["ltp"]
 
-        # Calculate accurate days to expiry
+        # If strike is missing, negative, or zero, automatically calculate nearest ATM strike
+        if strike is None or strike <= 0:
+            step = OptionsPricingService.get_strike_step(clean_sym, spot)
+            strike = round(spot / step) * step
+
+        # Resolve accurate expiry date string and days to expiry
+        exp_info = OptionsPricingService.resolve_expiry_date(expiry_date, clean_sym)
+        resolved_date_str = exp_info["date"]
         if days_to_expiry is None:
-            days_to_expiry = OptionsPricingService.calculate_days_to_expiry(expiry_date, clean_sym)
+            days_to_expiry = float(exp_info["days_to_expiry"])
 
         bsm = OptionsPricingService.calculate_bsm_price(
             spot=spot,
@@ -194,10 +248,9 @@ class PaperTradingService:
         display_sym = f"{clean_sym} {int(strike) if strike.is_integer() else strike} {option_type.upper()}"
         lot_size = OptionsPricingService.get_lot_size(clean_sym)
 
-
         # Check if Zerodha live stream quote is available
         from services.zerodha_service import ZerodhaService
-        zd_quote = ZerodhaService.get_instance().get_live_option_quote(clean_sym, strike, option_type, expiry_date)
+        zd_quote = ZerodhaService.get_instance().get_live_option_quote(clean_sym, strike, option_type, resolved_date_str)
         
         if zd_quote and zd_quote.get("ltp", 0.0) > 0:
             live_premium = zd_quote["ltp"]
@@ -207,12 +260,12 @@ class PaperTradingService:
             source_lbl = f"Black-Scholes Live Model ({spot_data['source']})"
 
         return {
-            "symbol": symbol.upper(),
+            "symbol": clean_sym,
             "display_symbol": display_sym,
             "instrument_type": "OPTION",
             "option_type": option_type.upper(),
             "strike_price": strike,
-            "expiry_date": expiry_date,
+            "expiry_date": resolved_date_str,
             "days_to_expiry": days_to_expiry,
             "spot_price": spot,
             "lot_size": lot_size,
@@ -240,7 +293,8 @@ class PaperTradingService:
         if inst_type == "OPTION":
             opt_type = request.option_type.value if hasattr(request.option_type, "value") else str(request.option_type or "CE")
             strike = request.strike_price or round(cls.get_live_price(symbol))
-            expiry = request.expiry_date
+            resolved_exp_info = OptionsPricingService.resolve_expiry_date(request.expiry_date, symbol)
+            expiry = resolved_exp_info["date"]
             lot_size = request.lot_size or OptionsPricingService.get_lot_size(symbol)
             contracts = max(1, request.contracts or 1)
             total_quantity = contracts * lot_size

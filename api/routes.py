@@ -426,8 +426,8 @@ def get_option_strikes_endpoint(
 def get_option_price_endpoint(
     symbol: str = Query(..., description="Underlying Stock or Index (e.g. NIFTY, TVSMOTOR)"),
     option_type: str = Query("CE", description="CE (Call) or PE (Put)"),
-    strike: float = Query(..., description="Strike price (e.g. 25000)"),
-    expiry_date: str | None = Query(None, description="Expiry date in YYYY-MM-DD format"),
+    strike: float | None = Query(None, description="Strike price (e.g. 25000, optional: auto-calculated ATM strike if omitted)"),
+    expiry_date: str | None = Query(None, description="Expiry date in YYYY-MM-DD or alias ('weekly', 'monthly')"),
 ) -> dict[str, Any]:
     """Fetch live option premium, intrinsic value, time value, and Greeks for a specific Call or Put strike."""
     try:
