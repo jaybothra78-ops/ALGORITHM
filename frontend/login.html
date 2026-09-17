@@ -490,7 +490,7 @@
           <label class="form-label" for="signin-username">Username</label>
           <div class="input-wrapper">
             <span class="input-icon">👤</span>
-            <input type="text" id="signin-username" class="form-input" placeholder="e.g. trader or jay" required autocomplete="username" autofocus>
+            <input type="text" id="signin-username" class="form-input" placeholder="e.g. jay or demo" required autocomplete="username" autofocus>
           </div>
         </div>
 
@@ -511,7 +511,7 @@
         </div>
 
         <button type="button" class="btn-demo" onclick="handleDemoLogin()">
-          <span>🚀</span> One-Click Demo Access (trader / trader123)
+          <span>🚀</span> One-Click Demo Access (demo / demo123)
         </button>
       </form>
 
@@ -636,8 +636,8 @@
 
     // One-Click Demo Access
     function handleDemoLogin() {
-      document.getElementById('signin-username').value = 'trader';
-      document.getElementById('signin-password').value = 'trader123';
+      document.getElementById('signin-username').value = 'demo';
+      document.getElementById('signin-password').value = 'demo123';
       handleSignIn();
     }
 
