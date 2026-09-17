@@ -73,7 +73,7 @@ def test_options_trading_workflow():
     strikes_data = res_strikes.json()
     assert strikes_data["symbol"] == "NIFTY"
     assert len(strikes_data["strikes"]) >= 5
-    assert strikes_data["lot_size"] == 25
+    assert strikes_data["lot_size"] in (25, 50, 65, 75)
 
     # 2. Test Option Pricing Endpoint (Call CE)
     res_opt_price = client.get("/market/option-price?symbol=NIFTY&option_type=CE&strike=25000")

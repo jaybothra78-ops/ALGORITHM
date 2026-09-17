@@ -339,10 +339,22 @@ class NSEDerivativesMaster:
     def get_expiry_calendar(cls, symbol: str) -> list[dict[str, Any]]:
         """
         Generate exact NSE regulatory expiry calendar:
-        - Indices: Weekly cycle on specific weekday (NIFTY=Thu, BANKNIFTY=Wed, FINNIFTY=Tue, MIDCPNIFTY=Mon, SENSEX=Fri).
-        - Stock Options: Monthly cycle on the Last Thursday of current, next, and far months.
+        - First checks Groww real-world exchange live calendar.
+        - Fallback:
+          - Indices: Weekly cycle on specific weekday (NIFTY=Thu/Tue, BANKNIFTY=Wed/Tue).
+          - Stock Options: Monthly cycle on the Last Thursday of current, next, and far months.
         """
         clean_sym = symbol.strip().upper()
+
+        # 1. Try real exchange live expiry calendar from Groww
+        try:
+            from services.groww_service import GrowwOptionsService
+            groww_exp = GrowwOptionsService.get_instance().get_expiry_calendar(clean_sym)
+            if groww_exp:
+                return groww_exp
+        except Exception as exc:
+            logger.debug(f"Groww live calendar error for {clean_sym}: {exc}")
+
         today = datetime.now(timezone.utc).date()
         expiries = []
 
@@ -362,8 +374,13 @@ class NSEDerivativesMaster:
             curr = today
             while len(expiries) < 4:
                 days_ahead = (target_weekday - curr.weekday() + 7) % 7
+                # If today is target weekday, check if session is over (after 15:30 IST / 10:00 UTC)
+                if days_ahead == 0 and curr == today and datetime.now(timezone.utc).hour >= 10:
+                    days_ahead = 7
+
                 exp_date = curr if days_ahead == 0 else curr + timedelta(days=days_ahead)
-                dte = max(0.5, float((exp_date - today).days))
+                diff = (exp_date - today).days
+                dte = max(1.0, float(diff)) if diff > 0 else 0.5
 
                 tag = "Current Weekly" if len(expiries) == 0 else "Next Weekly"
                 label = f"{exp_date.strftime('%d %b %Y')} ({int(dte)}d - {tag})"
@@ -386,18 +403,21 @@ class NSEDerivativesMaster:
                 days_back = (last_day.weekday() - 3 + 7) % 7
                 last_thursday = last_day - timedelta(days=days_back)
 
-                if last_thursday >= today:
-                    dte = max(0.5, float((last_thursday - today).days))
-                    tag = "Current Monthly" if month_offset == 0 else ("Next Month" if month_offset == 1 else "Far Month")
-                    label = f"{last_thursday.strftime('%d %b %Y')} ({int(dte)}d - {tag})"
+                # If last thursday has passed or expired today after market hours, move to next month
+                if last_thursday < today or (last_thursday == today and datetime.now(timezone.utc).hour >= 10):
+                    continue
 
-                    expiries.append({
-                        "label": label,
-                        "date": last_thursday.strftime("%Y-%m-%d"),
-                        "days_to_expiry": dte,
-                        "type": tag,
-                        "is_current": len(expiries) == 0,
-                    })
+                dte = max(1.0, float((last_thursday - today).days))
+                tag = "Current Monthly" if month_offset == 0 else ("Next Month" if month_offset == 1 else "Far Month")
+                label = f"{last_thursday.strftime('%d %b %Y')} ({int(dte)}d - {tag})"
+
+                expiries.append({
+                    "label": label,
+                    "date": last_thursday.strftime("%Y-%m-%d"),
+                    "days_to_expiry": dte,
+                    "type": tag,
+                    "is_current": len(expiries) == 0,
+                })
 
         return expiries
 
@@ -520,6 +540,19 @@ class OptionsPricingService:
     ) -> dict[str, Any]:
         """Generate standard ATM, ITM, and OTM strike ladder around spot price with accurate DTE."""
         clean_sym = symbol.strip().upper()
+
+        # 1. Try real-world exchange live strike ladder from Groww
+        try:
+            from services.groww_service import GrowwOptionsService
+            groww_data = GrowwOptionsService.get_instance().get_option_strikes(clean_sym, spot_price, expiry_date_str)
+            if groww_data and groww_data.get("strikes"):
+                exp_info = NSEDerivativesMaster.resolve_expiry_date(expiry_date_str, clean_sym)
+                groww_data["days_to_expiry"] = exp_info["days_to_expiry"]
+                return groww_data
+        except Exception as exc:
+            logger.debug(f"Groww live strikes error for {clean_sym}: {exc}")
+
+        # 2. Synthetic BSM Fallback
         step = NSEDerivativesMaster.get_strike_step(clean_sym, spot_price)
         lot_size = NSEDerivativesMaster.get_lot_size(clean_sym, spot_price)
         expiries = NSEDerivativesMaster.get_expiry_calendar(clean_sym)

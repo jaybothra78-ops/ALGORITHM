@@ -248,16 +248,39 @@ class PaperTradingService:
         display_sym = f"{clean_sym} {int(strike) if strike.is_integer() else strike} {option_type.upper()}"
         lot_size = OptionsPricingService.get_lot_size(clean_sym)
 
-        # Check if Zerodha live stream quote is available
+        # 1. Check if Zerodha live stream quote is available
+        live_premium = None
+        source_lbl = None
+
         from services.zerodha_service import ZerodhaService
         zd_quote = ZerodhaService.get_instance().get_live_option_quote(clean_sym, strike, option_type, resolved_date_str)
-        
         if zd_quote and zd_quote.get("ltp", 0.0) > 0:
             live_premium = zd_quote["ltp"]
             source_lbl = f"⚡ {zd_quote['source']}"
-        else:
+
+        # 2. Check Groww live market options feed
+        if not live_premium or live_premium <= 0:
+            try:
+                from services.groww_service import GrowwOptionsService
+                groww_quote = GrowwOptionsService.get_instance().get_live_option_quote(clean_sym, strike, option_type, resolved_date_str)
+                if groww_quote and groww_quote.get("ltp", 0.0) > 0:
+                    live_premium = groww_quote["ltp"]
+                    source_lbl = f"⚡ {groww_quote['source']}"
+                    if groww_quote.get("lot_size"):
+                        lot_size = groww_quote["lot_size"]
+            except Exception as exc:
+                logger.debug(f"Groww quote error for {clean_sym}: {exc}")
+
+        # 3. Fallback to Black-Scholes Analytical Model
+        if not live_premium or live_premium <= 0:
             live_premium = bsm["premium"]
             source_lbl = f"Black-Scholes Live Model ({spot_data['source']})"
+
+        # Calculate exact intrinsic and time value based on actual market premium
+        opt_upper = option_type.upper()
+        intrinsic = max(0.0, spot - strike) if opt_upper == "CE" else max(0.0, strike - spot)
+        intrinsic = round(intrinsic, 2)
+        time_value = round(max(0.0, live_premium - intrinsic), 2)
 
         return {
             "symbol": clean_sym,
@@ -270,8 +293,8 @@ class PaperTradingService:
             "spot_price": spot,
             "lot_size": lot_size,
             "premium": live_premium,
-            "intrinsic": bsm["intrinsic"],
-            "time_value": bsm["time_value"],
+            "intrinsic": intrinsic,
+            "time_value": time_value,
             "delta": bsm["delta"],
             "theta": bsm["theta"],
             "gamma": bsm["gamma"],
