@@ -38,33 +38,6 @@ class PaperTradingService:
             cached_time, cached_val = cls._LTP_CACHE[clean_sym]
             if now - cached_time < cls._LTP_TTL:
                 return dict(cached_val)
-
-        # 2. Check Zerodha live quote if connected
-        try:
-            from services.zerodha_service import ZerodhaService
-            zd = ZerodhaService.get_instance()
-            if zd and zd.is_connected:
-                zd_quote = zd.get_live_quote(clean_sym)
-                if zd_quote and zd_quote.get("ltp", 0.0) > 0:
-                    ltp = round(float(zd_quote["ltp"]), 2)
-                    prev_close = round(float(zd_quote.get("close", ltp)), 2)
-                    change = round(float(zd_quote.get("change", ltp - prev_close)), 2)
-                    change_pct = round(float(zd_quote.get("change_pct", 0.0)), 2)
-                    res = {
-                        "symbol": clean_sym,
-                        "ticker": clean_sym,
-                        "ltp": ltp,
-                        "previous_close": prev_close,
-                        "change": change,
-                        "change_pct": change_pct,
-                        "source": "Zerodha Kite Live Stream",
-                        "timestamp": now,
-                    }
-                    cls._LTP_CACHE[clean_sym] = (now, res)
-                    return dict(res)
-        except Exception:
-            pass
-
         import yfinance as yf
         # Handle index ticker and demerged mapping for Yahoo Finance
         if clean_sym in ("NIFTY", "NIFTY50"):
@@ -248,30 +221,22 @@ class PaperTradingService:
         display_sym = f"{clean_sym} {int(strike) if strike.is_integer() else strike} {option_type.upper()}"
         lot_size = OptionsPricingService.get_lot_size(clean_sym)
 
-        # 1. Check if Zerodha live stream quote is available
+        # 1. Check Groww live market options feed
         live_premium = None
         source_lbl = None
 
-        from services.zerodha_service import ZerodhaService
-        zd_quote = ZerodhaService.get_instance().get_live_option_quote(clean_sym, strike, option_type, resolved_date_str)
-        if zd_quote and zd_quote.get("ltp", 0.0) > 0:
-            live_premium = zd_quote["ltp"]
-            source_lbl = f"⚡ {zd_quote['source']}"
+        try:
+            from services.groww_service import GrowwOptionsService
+            groww_quote = GrowwOptionsService.get_instance().get_live_option_quote(clean_sym, strike, option_type, resolved_date_str)
+            if groww_quote and groww_quote.get("ltp", 0.0) > 0:
+                live_premium = groww_quote["ltp"]
+                source_lbl = f"⚡ {groww_quote['source']}"
+                if groww_quote.get("lot_size"):
+                    lot_size = groww_quote["lot_size"]
+        except Exception as exc:
+            logger.debug(f"Groww quote error for {clean_sym}: {exc}")
 
-        # 2. Check Groww live market options feed
-        if not live_premium or live_premium <= 0:
-            try:
-                from services.groww_service import GrowwOptionsService
-                groww_quote = GrowwOptionsService.get_instance().get_live_option_quote(clean_sym, strike, option_type, resolved_date_str)
-                if groww_quote and groww_quote.get("ltp", 0.0) > 0:
-                    live_premium = groww_quote["ltp"]
-                    source_lbl = f"⚡ {groww_quote['source']}"
-                    if groww_quote.get("lot_size"):
-                        lot_size = groww_quote["lot_size"]
-            except Exception as exc:
-                logger.debug(f"Groww quote error for {clean_sym}: {exc}")
-
-        # 3. Fallback to Black-Scholes Analytical Model
+        # 2. Fallback to Black-Scholes Analytical Model
         if not live_premium or live_premium <= 0:
             live_premium = bsm["premium"]
             source_lbl = f"Black-Scholes Live Model ({spot_data['source']})"

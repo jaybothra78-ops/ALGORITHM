@@ -343,7 +343,6 @@ def analyze_article_chat_endpoint(
         summary = payload.get("article_summary", "")
         link = payload.get("article_link", "")
         question = payload.get("user_question", None)
-        api_key = payload.get("api_key", None)
 
         if not title:
             raise HTTPException(400, "Article title is required.")
@@ -354,43 +353,9 @@ def analyze_article_chat_endpoint(
             article_summary=summary,
             article_link=link,
             user_question=question,
-            api_key=api_key or NewsService.get_api_key(),
         )
     except Exception as exc:
         raise HTTPException(500, f"Article analysis failed: {exc}") from exc
-
-
-@router.get("/news/key", response_model=dict[str, Any])
-def get_news_key_status() -> dict[str, Any]:
-    """Check whether a Claude API key has been registered."""
-    from services.news_service import NewsService
-    key = NewsService.get_api_key()
-    return {
-        "has_key": bool(key),
-        "key_masked": f"{key[:7]}...{key[-4:]}" if key and len(key) > 12 else None,
-    }
-
-
-@router.post("/news/key", response_model=dict[str, Any])
-def save_news_key_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
-    """Register or update Anthropic Claude API key for live deep-dive synthesis."""
-    from services.news_service import NewsService
-    key = (payload.get("api_key") or "").strip()
-    if not key:
-        raise HTTPException(400, "API key cannot be empty.")
-    NewsService.set_api_key(key)
-    return {"status": "success", "message": "Claude API key registered successfully."}
-
-
-@router.delete("/news/key", response_model=dict[str, Any])
-def clear_news_key_endpoint() -> dict[str, Any]:
-    """Clear registered Anthropic Claude API key."""
-    from services.news_service import NewsService
-    NewsService.set_api_key("")
-    return {"status": "success", "message": "Claude API key cleared."}
-
-
-
 
 
 # -------------------------------------------------------------
@@ -548,54 +513,3 @@ def reset_paper_portfolio_endpoint(
         return {"status": "success", "message": f"Portfolio reset to ₹{capital:,.2f}"}
     except Exception as exc:
         raise HTTPException(500, f"Failed to reset portfolio: {exc}") from exc
-
-
-# -------------------------------------------------------------
-# Zerodha Live Stream Connection Endpoints
-# -------------------------------------------------------------
-@router.get("/zerodha/status", response_model=dict[str, Any])
-def get_zerodha_status_endpoint() -> dict[str, Any]:
-    """Return whether Zerodha live broker feed is connected."""
-    try:
-        from services.zerodha_service import ZerodhaService
-        zs = ZerodhaService.get_instance()
-        return {
-            "connected": zs.is_connected,
-            "method": "KiteConnect" if zs._kite_client else ("Web Enctoken" if zs._enctoken else "Disconnected"),
-            "user_id": zs._user_id or (zs._kite_client.user_id if zs._kite_client and hasattr(zs._kite_client, "user_id") else None),
-        }
-    except Exception as exc:
-        return {"connected": False, "method": "Disconnected", "error": str(exc)}
-
-
-@router.post("/zerodha/connect", response_model=dict[str, Any])
-def connect_zerodha_endpoint(payload: dict[str, Any]) -> dict[str, Any]:
-    """Connect Zerodha via Enctoken or KiteConnect API."""
-    try:
-        from services.zerodha_service import ZerodhaService
-        zs = ZerodhaService.get_instance()
-        
-        enctoken = payload.get("enctoken")
-        user_id = payload.get("user_id")
-        api_key = payload.get("api_key")
-        access_token = payload.get("access_token")
-
-        if enctoken and user_id:
-            os.environ["ZERODHA_ENCTOKEN"] = str(enctoken).strip()
-            os.environ["ZERODHA_USER_ID"] = str(user_id).strip()
-            zs.initialize()
-            return {"status": "success", "message": "Zerodha Web Enctoken session connected successfully!"}
-        elif api_key and access_token:
-            os.environ["KITE_API_KEY"] = str(api_key).strip()
-            os.environ["KITE_ACCESS_TOKEN"] = str(access_token).strip()
-            zs.initialize()
-            return {"status": "success", "message": "Zerodha KiteConnect developer session connected successfully!"}
-        else:
-            raise HTTPException(400, "Provide either (enctoken + user_id) or (api_key + access_token).")
-    except Exception as exc:
-        raise HTTPException(500, f"Failed to connect Zerodha: {exc}") from exc
-
-
-
-
-

@@ -1,6 +1,6 @@
 /**
  * STRATLAB Institutional Trading Platform - Modular Frontend Architecture
- * Namespaces: App.State, App.Utils, App.Screener, App.News, App.Paper, App.Zerodha, App.Init
+ * Namespaces: App.State, App.Utils, App.Screener, App.News, App.Paper, App.Backtester, App.Init
  */
 
 'use strict';
@@ -73,14 +73,6 @@ App.State = {
   paperLots: 1,
   paperExpiry: null,
   paperStrike: null,
-  
-  // Zerodha Broker State
-  zerodhaConnected: false,
-  zerodhaUserId: null,
-  zerodhaMethod: null,
-  
-  // Claude AI Key State
-  hasClaudeKey: false,
   activeNewsTicker: null,
 };
 
@@ -474,7 +466,7 @@ App.Screener = {
 };
 
 // =====================================================================
-// 5. AI News Analyzer & Claude 3.5 Sonnet Synthesis Module
+// 5. Institutional Financial AI News & Catalyst Analysis Module
 // =====================================================================
 App.News = {
   _stepTimers: [],
@@ -547,8 +539,6 @@ App.News = {
         }
       });
     }
-
-    this.initClaudeKeyModal();
   },
 
 
@@ -957,7 +947,6 @@ App.News = {
           article_summary: article.summary,
           article_link: article.link,
           user_question: q,
-          api_key: localStorage.getItem('claude_api_key') || '',
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -1045,80 +1034,6 @@ App.News = {
     }).catch(err => {
       console.warn('Copy failed:', err);
     });
-  },
-
-  initClaudeKeyModal() {
-
-    const card = document.querySelector('#card-claude-key');
-    const btnOpen = document.querySelector('#btn-claude-key-modal');
-    const btnClose = document.querySelector('#btn-close-claude-key');
-    const btnSave = document.querySelector('#btn-save-claude-key');
-    const btnClear = document.querySelector('#btn-clear-claude-key');
-    const inputKey = document.querySelector('#input-claude-key');
-
-    if (btnOpen && card) {
-      btnOpen.addEventListener('click', () => {
-        card.style.display = card.style.display === 'none' ? 'block' : 'none';
-        if (card.style.display === 'block') card.scrollIntoView({ behavior: 'smooth' });
-      });
-    }
-
-    if (btnClose && card) {
-      btnClose.addEventListener('click', () => { card.style.display = 'none'; });
-    }
-
-    if (btnSave && inputKey) {
-      btnSave.addEventListener('click', async () => {
-        const key = inputKey.value.trim();
-        if (!key) {
-          App.Utils.showStatus('#claude-key-status', 'Please enter a valid Anthropic API key (sk-ant-...)', 'error');
-          return;
-        }
-
-        try {
-          const res = await fetch('/news/key', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ api_key: key }),
-          });
-
-          if (!res.ok) throw new Error(`HTTP ${res.status}`);
-          localStorage.setItem('claude_api_key', key);
-          App.Utils.showStatus('#claude-key-status', '✅ Claude API Key saved successfully!', 'success');
-          this.checkKeyStatus();
-          setTimeout(() => { if (card) card.style.display = 'none'; }, 1500);
-        } catch (err) {
-          App.Utils.showStatus('#claude-key-status', 'Failed to save key: ' + err.message, 'error');
-        }
-      });
-    }
-
-    if (btnClear) {
-      btnClear.addEventListener('click', async () => {
-        await fetch('/news/key', { method: 'DELETE' });
-        localStorage.removeItem('claude_api_key');
-        if (inputKey) inputKey.value = '';
-        App.Utils.showStatus('#claude-key-status', 'Claude API Key cleared', 'success');
-        this.checkKeyStatus();
-      });
-    }
-
-
-    this.checkKeyStatus();
-  },
-
-  async checkKeyStatus() {
-    try {
-      const res = await fetch('/news/status');
-      if (!res.ok) return;
-      const data = await res.json();
-      const btnText = document.querySelector('#claude-key-btn-text');
-      if (btnText) {
-        btnText.textContent = data.has_api_key ? '🟢 Claude Active' : 'Claude AI Key';
-      }
-    } catch (err) {
-      console.debug('Claude status error:', err);
-    }
   },
 };
 
@@ -2235,168 +2150,6 @@ App.Paper = {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '<span>💾 Update Order</span>';
       }
-    }
-  },
-};
-
-// =====================================================================
-// 7. Zerodha Live Stream Connector Module
-// =====================================================================
-App.Zerodha = {
-  init() {
-    const card = document.querySelector('#card-zerodha');
-    const btnOpen = document.querySelector('#btn-zerodha-modal');
-    const btnClose = document.querySelector('#btn-close-zerodha');
-    const btnQuick = document.querySelector('#btn-quick-zd-connect');
-
-    const toggle = (show) => {
-      if (!card) return;
-      const isShown = show !== undefined ? show : card.style.display === 'none';
-      card.style.display = isShown ? 'block' : 'none';
-      if (isShown) card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    };
-
-    if (btnOpen) btnOpen.addEventListener('click', () => toggle());
-    if (btnQuick) btnQuick.addEventListener('click', () => toggle(true));
-    if (btnClose) btnClose.addEventListener('click', () => toggle(false));
-
-    // Tab Switcher
-    const tabEnc = document.querySelector('#zd-tab-enctoken');
-    const tabApi = document.querySelector('#zd-tab-apikey');
-    const formEnc = document.querySelector('#zd-form-enctoken');
-    const formApi = document.querySelector('#zd-form-apikey');
-
-    if (tabEnc && tabApi) {
-      tabEnc.addEventListener('click', () => {
-        tabEnc.classList.add('active');
-        tabApi.classList.remove('active');
-        if (formEnc) formEnc.style.display = 'block';
-        if (formApi) formApi.style.display = 'none';
-      });
-
-      tabApi.addEventListener('click', () => {
-        tabApi.classList.add('active');
-        tabEnc.classList.remove('active');
-        if (formApi) formApi.style.display = 'block';
-        if (formEnc) formEnc.style.display = 'none';
-      });
-    }
-
-    // Connect via Enctoken
-    const btnSaveEnc = document.querySelector('#btn-save-zd-enctoken');
-    if (btnSaveEnc) {
-      btnSaveEnc.addEventListener('click', async () => {
-        const userId = (document.querySelector('#zd-input-userid').value || '').trim();
-        const enctoken = (document.querySelector('#zd-input-enctoken').value || '').trim();
-
-        if (!userId || !enctoken) {
-          App.Utils.showStatus('#zerodha-status-box', 'Please provide both Zerodha Client ID and Enctoken value.', 'error');
-          return;
-        }
-
-        btnSaveEnc.disabled = true;
-        btnSaveEnc.innerHTML = '<span>⏳ Connecting to Zerodha…</span>';
-
-        try {
-          const res = await fetch('/zerodha/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: userId, enctoken: enctoken }),
-          });
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `HTTP Error ${res.status}`);
-          }
-
-          App.Utils.showStatus('#zerodha-status-box', `✅ Connected to Zerodha Web Stream for ${userId}!`, 'success');
-          this.checkStatus();
-          setTimeout(() => toggle(false), 1500);
-        } catch (err) {
-          App.Utils.showStatus('#zerodha-status-box', 'Zerodha connection failed: ' + err.message, 'error');
-        } finally {
-          btnSaveEnc.disabled = false;
-          btnSaveEnc.innerHTML = '<span>⚡ Connect Live Feed</span>';
-        }
-      });
-    }
-
-    // Connect via Kite Developer API
-    const btnSaveApi = document.querySelector('#btn-save-zd-apikey');
-    if (btnSaveApi) {
-      btnSaveApi.addEventListener('click', async () => {
-        const apiKey = (document.querySelector('#zd-input-apikey').value || '').trim();
-        const accessToken = (document.querySelector('#zd-input-accesstoken').value || '').trim();
-
-        if (!apiKey || !accessToken) {
-          App.Utils.showStatus('#zerodha-status-box', 'Please provide both Kite API Key and Access Token.', 'error');
-          return;
-        }
-
-        btnSaveApi.disabled = true;
-        btnSaveApi.innerHTML = '<span>⏳ Connecting API…</span>';
-
-        try {
-          const res = await fetch('/zerodha/connect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ api_key: apiKey, access_token: accessToken }),
-          });
-
-          if (!res.ok) {
-            const err = await res.json().catch(() => ({}));
-            throw new Error(err.detail || `HTTP Error ${res.status}`);
-          }
-
-          App.Utils.showStatus('#zerodha-status-box', '✅ Connected to Zerodha KiteConnect Developer API!', 'success');
-          this.checkStatus();
-          setTimeout(() => toggle(false), 1500);
-        } catch (err) {
-          App.Utils.showStatus('#zerodha-status-box', 'KiteConnect connection failed: ' + err.message, 'error');
-        } finally {
-          btnSaveApi.disabled = false;
-          btnSaveApi.innerHTML = '<span>⚡ Connect API</span>';
-        }
-      });
-    }
-
-    this.checkStatus();
-  },
-
-  async checkStatus() {
-    try {
-      const res = await fetch('/zerodha/status');
-      if (!res.ok) return;
-      const data = await res.json();
-
-      App.State.zerodhaConnected = data.connected;
-      App.State.zerodhaUserId = data.user_id;
-      App.State.zerodhaMethod = data.method;
-
-      const zdBtnText = document.querySelector('#zerodha-btn-text');
-      const feedDot = document.querySelector('#feed-source-dot');
-      const feedLabel = document.querySelector('#feed-source-label');
-      const quickBtn = document.querySelector('#btn-quick-zd-connect');
-
-      if (data.connected) {
-        if (zdBtnText) zdBtnText.textContent = `🟢 Zerodha (${data.user_id || 'Active'})`;
-        if (feedDot) feedDot.classList.add('connected');
-        if (feedLabel) feedLabel.innerHTML = `Market Feed: <strong style="color:#10b981;">🟢 Zerodha Live Stream</strong> (${data.method}${data.user_id ? ' · ' + data.user_id : ''})`;
-        if (quickBtn) {
-          quickBtn.classList.add('connected');
-          quickBtn.innerHTML = `<span>🟢 Zerodha Connected</span>`;
-        }
-      } else {
-        if (zdBtnText) zdBtnText.textContent = 'Zerodha Live Feed';
-        if (feedDot) feedDot.classList.remove('connected');
-        if (feedLabel) feedLabel.textContent = 'Market Feed: Real-Time NSE Spot Engine';
-        if (quickBtn) {
-          quickBtn.classList.remove('connected');
-          quickBtn.innerHTML = `<span>🪁 Connect Zerodha Live Ticks</span>`;
-        }
-      }
-    } catch (err) {
-      console.debug('Zerodha status check error:', err);
     }
   },
 };
@@ -3814,7 +3567,6 @@ App.Init = {
     App.Screener.init();
     App.News.init();
     App.Paper.init();
-    App.Zerodha.init();
     App.Backtester.init();
 
     await App.Screener.loadCustomWatchlists();

@@ -17,16 +17,6 @@ from models.news import NewsAnalysisRequest, NewsAnalysisResponse, NewsArticle
 class NewsService:
     """Service to fetch real-time financial news and perform AI sentiment synthesis."""
 
-    _claude_api_key: str | None = None
-
-    @classmethod
-    def set_api_key(cls, key: str) -> None:
-        cls._claude_api_key = key.strip() if key else None
-
-    @classmethod
-    def get_api_key(cls) -> str | None:
-        return cls._claude_api_key or os.getenv("ANTHROPIC_API_KEY", None)
-
     @classmethod
     def fetch_news(cls, symbol: str, limit: int = 10) -> list[NewsArticle]:
 
@@ -110,16 +100,6 @@ class NewsService:
         """Perform comprehensive AI news analysis and sentiment synthesis."""
         clean_sym = request.symbol.strip().upper()
         articles = cls.fetch_news(clean_sym, limit=12)
-
-        # Check for Anthropic Claude API Key (from request payload or environment)
-        anthropic_key = (request.api_key or os.getenv("ANTHROPIC_API_KEY", "")).strip()
-        if anthropic_key and articles:
-            try:
-                return cls._analyze_with_claude(clean_sym, articles, anthropic_key)
-            except Exception as exc:
-                logger.warning(f"Claude API analysis failed, falling back to deep NLP engine: {exc}")
-
-        # Default institutional financial NLP analysis engine
         return cls._analyze_with_nlp_engine(clean_sym, articles)
 
     @classmethod
@@ -371,71 +351,6 @@ class NewsService:
         return clean_catalysts[:4], clean_risks[:3]
 
     @classmethod
-    def _analyze_with_claude(cls, symbol: str, articles: list[NewsArticle], api_key: str) -> NewsAnalysisResponse:
-
-        """Call Anthropic Claude API for deep reasoning and institutional synthesis."""
-        import json
-        articles_text = "\n".join([f"- Title: {a.title}\n  Publisher: {a.publisher}\n  Date: {a.published_at}\n  Summary: {a.summary}" for a in articles[:8]])
-
-        prompt = f"""You are a senior institutional equity research analyst.
-Analyze the following recent news articles for Indian stock ticker {symbol} and generate an institutional equity synthesis.
-
-News Articles:
-{articles_text}
-
-Respond ONLY in valid JSON with this exact schema:
-{{
-  "company_name": "Full official company name",
-  "sentiment": "Bullish" | "Bearish" | "Neutral",
-  "sentiment_score": integer between 0 and 100,
-  "executive_summary": "2-3 concise sentences synthesizing the overall news and business trajectory.",
-  "catalysts": ["Key catalyst 1", "Key catalyst 2", "Key catalyst 3"],
-  "risks": ["Key risk or headwind 1", "Key risk 2"],
-  "technical_correlation": "1-2 sentences on how this news context supports technical setups (e.g. RSI reversals, 200 MA support)."
-}}
-"""
-        req_data = {
-            "model": "claude-3-5-sonnet-20241022",
-            "max_tokens": 1000,
-            "temperature": 0.2,
-            "messages": [{"role": "user", "content": prompt}],
-        }
-
-        req = urllib.request.Request(
-            "https://api.anthropic.com/v1/messages",
-            data=json.dumps(req_data).encode("utf-8"),
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-        )
-
-        with urllib.request.urlopen(req, timeout=25) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-            content_text = data["content"][0]["text"].strip()
-            # Clean possible markdown block
-            if content_text.startswith("```json"):
-                content_text = content_text[7:]
-            if content_text.endswith("```"):
-                content_text = content_text[:-3]
-            parsed = json.loads(content_text.strip())
-
-            return NewsAnalysisResponse(
-                symbol=symbol,
-                company_name=parsed.get("company_name", f"{symbol} (NSE)"),
-                sentiment=parsed.get("sentiment", "Neutral"),
-                sentiment_score=parsed.get("sentiment_score", 50),
-                analysis_engine="Claude 3.5 Sonnet (Live AI)",
-                executive_summary=parsed.get("executive_summary", ""),
-                catalysts=parsed.get("catalysts", []),
-                risks=parsed.get("risks", []),
-                technical_correlation=parsed.get("technical_correlation", ""),
-                articles=articles,
-                timestamp=time.time(),
-            )
-
-    @classmethod
     def analyze_article_chat(
         cls,
         symbol: str,
@@ -443,75 +358,12 @@ Respond ONLY in valid JSON with this exact schema:
         article_summary: str = "",
         article_link: str = "",
         user_question: str | None = None,
-        api_key: str | None = None,
+        **kwargs: Any,
     ) -> dict[str, Any]:
         """Deep dive breakdown (100-150 words + key bullets) and interactive Q&A for an individual news article."""
         clean_sym = symbol.strip().upper()
-        anthropic_key = (api_key or os.getenv("ANTHROPIC_API_KEY", "")).strip()
 
-        # Try Claude 3.5 Sonnet if API key is provided
-        if anthropic_key:
-            try:
-                import json
-                prompt = f"""You are a senior institutional equity research analyst covering Indian stock markets ({clean_sym}.NSE).
-Analyze this specific news article and provide a concise, high-value breakdown for an equity trader:
-
-Article Title: {article_title}
-Article Snippet/Summary: {article_summary}
-Article URL: {article_link}
-User Specific Question: {user_question or "None (Provide general 100-150w analysis and key bullets)"}
-
-Respond ONLY with valid JSON with this exact structure:
-{{
-  "short_analysis": "A concise 100 to 150 words institutional analysis of what this development means for {clean_sym}, its business momentum, and trading valuation.",
-  "bullet_points": [
-    "🎯 Core Catalyst: One clear sentence on the main growth/deal driver.",
-    "📊 Financial & Margin Impact: Projected impact on EBITDA, revenue, or market share.",
-    "⚠️ Key Risk to Watch: Potential risk, execution hurdle, or valuation headwind.",
-    "💡 Trader Takeaway: Actionable trading insight on momentum or price levels."
-  ],
-  "sentiment": "Bullish" | "Bearish" | "Neutral",
-  "confidence_score": integer between 50 and 95,
-  "thinking": [
-    "Step 1: Reasoning about user question and headline facts...",
-    "Step 2: Assessing sector risk-reward and valuation impact...",
-    "Step 3: Determining tactical trade execution guidance..."
-  ],
-  "answer": "A comprehensive, structured, professional institutional answer to the user's question with actionable trade takeaways, or null if no question asked."
-}}
-"""
-                req_data = {
-                    "model": "claude-3-5-sonnet-20241022",
-                    "max_tokens": 1000,
-                    "temperature": 0.2,
-                    "messages": [{"role": "user", "content": prompt}],
-                }
-                req = urllib.request.Request(
-                    "https://api.anthropic.com/v1/messages",
-                    data=json.dumps(req_data).encode("utf-8"),
-                    headers={
-                        "x-api-key": anthropic_key,
-                        "anthropic-version": "2023-06-01",
-                        "content-type": "application/json",
-                    },
-                )
-                with urllib.request.urlopen(req, timeout=18) as resp:
-                    data = json.loads(resp.read().decode("utf-8"))
-                    content_text = data["content"][0]["text"].strip()
-                    if content_text.startswith("```json"):
-                        content_text = content_text[7:]
-                    if content_text.endswith("```"):
-                        content_text = content_text[:-3]
-                    parsed = json.loads(content_text.strip())
-                    parsed["symbol"] = clean_sym
-                    parsed["article_title"] = article_title
-                    parsed["engine"] = "Claude 3.5 Sonnet (Live AI)"
-                    parsed["user_question"] = user_question
-                    return parsed
-            except Exception as exc:
-                logger.warning(f"Claude article chat analysis failed, using institutional NLP engine: {exc}")
-
-        # Fallback to Built-in Financial Intelligence NLP Kernel with Deep Reasoning
+        # Built-in Financial Intelligence NLP Kernel with Deep Reasoning
         text = f"{article_title} {article_summary}".lower()
         bullish_keywords = ["surge", "jump", "growth", "profit", "gain", "rally", "upgrade", "buy", "target", "record", "order", "contract", "expansion", "dividend", "revenue", "outperform", "bullish", "acquisition", "high", "soar", "deal", "positive", "strong", "beats", "guidance", "boost", "inflows", "ebitda"]
         bearish_keywords = ["fall", "drop", "loss", "decline", "slump", "downgrade", "sell", "plunge", "cut", "weak", "probe", "penalty", "fine", "lawsuit", "debt", "default", "underperform", "bearish", "crash", "low", "negative", "cautious", "slowdown", "headwind", "margin pressure"]
