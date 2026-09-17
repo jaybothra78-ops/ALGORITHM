@@ -2139,6 +2139,25 @@ select:focus, input:focus, textarea:focus {
   border-color: rgba(124, 58, 237, 0.25);
 }
 
+.feed-chip-sensibull {
+  background: rgba(234, 88, 12, 0.1);
+  color: #c2410c;
+  border: 1px solid rgba(234, 88, 12, 0.3);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.feed-chip-sensibull:hover {
+  background: rgba(234, 88, 12, 0.18);
+  color: #9a3412;
+  border-color: rgba(234, 88, 12, 0.5);
+  transform: translateY(-1px);
+}
+
 .feed-dot {
   width: 8px;
   height: 8px;

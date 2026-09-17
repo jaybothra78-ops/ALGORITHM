@@ -1405,6 +1405,11 @@ App.Paper = {
       const lotBadge = document.querySelector('#paper-lot-size-badge');
       if (lotBadge) lotBadge.textContent = `Lot Size: ${data.lot_size}`;
 
+      const sbLink = document.querySelector('#link-sensibull-chain');
+      if (sbLink) {
+        sbLink.href = `https://web.sensibull.com/option-chain?tradingsymbol=${encodeURIComponent(sym)}`;
+      }
+
       // Populate Expiry Select
       const expSelect = document.querySelector('#paper-expiry-select');
       if (expSelect && data.expiries && data.expiries.length) {
