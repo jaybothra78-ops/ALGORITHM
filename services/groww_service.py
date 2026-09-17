@@ -158,6 +158,27 @@ class GrowwOptionsService:
 
         return expiries if expiries else None
 
+    @staticmethod
+    def _normalize_strike(raw_s: float | int, spot_price: float = 0.0) -> float:
+        """
+        Normalize Groww derivatives strike price into Indian Rupees.
+        Groww API returns strikePrice in paise (i.e. Rupee strike * 100).
+        For example:
+          NBCC 65 CE -> 6500 paise -> 65.0 Rs
+          TATASTEEL 155 CE -> 15500 paise -> 155.0 Rs
+          RELIANCE 1040 CE -> 104000 paise -> 1040.0 Rs
+          NIFTY 25000 CE -> 2500000 paise -> 25000.0 Rs
+        """
+        if not raw_s:
+            return 0.0
+        val = float(raw_s)
+        if spot_price > 0:
+            if val > (spot_price * 25):
+                return round(val / 100.0, 2)
+            elif val <= (spot_price * 5):
+                return round(val, 2)
+        return round(val / 100.0, 2)
+
     def get_option_strikes(self, symbol: str, spot_price: float, expiry_date_str: str | None = None) -> dict[str, Any] | None:
         """
         Generate live strike ladder from real exchange options feed.
@@ -175,15 +196,15 @@ class GrowwOptionsService:
 
         exp_dto = oc.get("expiryDetailsDto", {})
         live_price_data = data.get("livePrice", {})
-        actual_spot = float(live_price_data.get("value") or spot_price)
+        actual_spot = float(live_price_data.get("ltp") or live_price_data.get("value") or spot_price)
         lot_size = int(exp_dto.get("expiryLotSize") or 50)
 
         parsed_strikes: list[dict[str, Any]] = []
         for item in chains:
             ce = item.get("callOption") or {}
             pe = item.get("putOption") or {}
-            raw_s = ce.get("strikePrice") or pe.get("strikePrice") or 0
-            strike = float(raw_s / 100.0 if raw_s > 100000 else raw_s)
+            raw_s = ce.get("strikePrice") or pe.get("strikePrice") or item.get("strikePrice") or 0
+            strike = self._normalize_strike(raw_s, actual_spot)
             if strike <= 0:
                 continue
 
@@ -269,20 +290,21 @@ class GrowwOptionsService:
 
         exp_dto = oc.get("expiryDetailsDto", {})
         live_price_data = data.get("livePrice", {})
-        spot = float(live_price_data.get("value") or 0.0)
+        spot = float(live_price_data.get("ltp") or live_price_data.get("value") or 0.0)
         lot_size = int(exp_dto.get("expiryLotSize") or 50)
 
         for item in chains:
             opt = item.get("callOption" if opt_type == "CE" else "putOption") or {}
-            raw_s = opt.get("strikePrice", 0)
-            s = float(raw_s / 100.0 if raw_s > 100000 else raw_s)
+            raw_s = opt.get("strikePrice", 0) or item.get("strikePrice", 0)
+            s = self._normalize_strike(raw_s, spot)
 
-            if abs(s - strike) < 0.01:
+            if abs(s - strike) < 0.05:
                 ltp = float(opt.get("ltp") or 0.0)
                 if ltp > 0:
+                    formatted_strike = f"{strike:g}"
                     return {
                         "source": "Groww Live Market Feed",
-                        "tradingsymbol": opt.get("growwContractId") or f"{clean_sym} {int(strike)} {opt_type}",
+                        "tradingsymbol": opt.get("growwContractId") or f"{clean_sym} {formatted_strike} {opt_type}",
                         "ltp": round(ltp, 2),
                         "open": round(float(opt.get("open") or 0.0), 2),
                         "high": round(float(opt.get("high") or 0.0), 2),

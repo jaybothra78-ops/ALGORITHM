@@ -258,6 +258,7 @@ class NSEDerivativesMaster:
         "TATASTEEL": 5500,
         "INDUSINDBK": 500,
         "IDFCFIRSTB": 7500,
+        "NBCC": 6500,
         "BOSCHLTD": 25,
         "MRF": 10,
         "PAGEIND": 15,
@@ -282,6 +283,7 @@ class NSEDerivativesMaster:
         "MIDCPNIFTY": 25.0,
         "SENSEX": 100.0,
         "BANKEX": 100.0,
+        "NBCC": 2.5,
         "BOSCHLTD": 200.0,
         "MRF": 500.0,
     }
@@ -322,7 +324,9 @@ class NSEDerivativesMaster:
         if clean_sym in cls.STRIKE_STEPS:
             return cls.STRIKE_STEPS[clean_sym]
 
-        if spot_price < 200:
+        if spot_price < 100:
+            return 2.5
+        elif spot_price < 200:
             return 5.0
         elif spot_price < 500:
             return 10.0
