@@ -912,6 +912,139 @@ select:focus, input:focus, textarea:focus {
   color: #6ee7b7;
 }
 
+/* =========================================================
+   TABLE ROW ACTION BUTTONS (Clean Institutional Micro-Pills)
+   ========================================================= */
+.row-action-btns {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+}
+
+.btn-table-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 5px 11px;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  white-space: nowrap;
+  line-height: 1.25;
+  outline: none;
+  text-decoration: none;
+}
+
+/* Paper Trade Pill */
+.btn-table-action.btn-table-trade {
+  background: #faf4ea;
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  color: #92400e;
+  box-shadow: 0 1px 2px rgba(70, 55, 35, 0.05);
+}
+
+.btn-table-action.btn-table-trade:hover {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  border-color: #b45309;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(180, 83, 9, 0.28);
+}
+
+.btn-table-action.btn-table-trade:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(70, 55, 35, 0.1);
+}
+
+/* News Pill */
+.btn-table-action.btn-table-news, .btn-table-action.subtle {
+  background: #f0f9ff;
+  border: 1px solid rgba(2, 132, 199, 0.32);
+  color: #0369a1;
+  box-shadow: 0 1px 2px rgba(70, 55, 35, 0.04);
+}
+
+.btn-table-action.btn-table-news:hover, .btn-table-action.subtle:hover {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  border-color: #0284c7;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.28);
+}
+
+.btn-table-action.btn-table-news:active, .btn-table-action.subtle:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(70, 55, 35, 0.1);
+}
+
+.btn-table-action .action-btn-icon {
+  font-size: 0.82rem;
+  line-height: 1;
+}
+
+/* Positions Table Actions */
+.pos-actions-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.btn-modify-pos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(70, 55, 35, 0.04);
+}
+
+.btn-modify-pos:hover {
+  background: #475569;
+  border-color: #334155;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(71, 85, 105, 0.25);
+}
+
+.btn-close-pos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  font-family: var(--font-sans);
+  font-size: 0.74rem;
+  font-weight: 700;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #b91c1c;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(70, 55, 35, 0.04);
+}
+
+.btn-close-pos:hover {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border-color: #b91c1c;
+  color: #ffffff;
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(220, 38, 38, 0.28);
+}
+
 .price-cell {
   font-family: var(--font-mono);
   font-weight: 600;

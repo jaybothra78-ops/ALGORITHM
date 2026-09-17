@@ -260,7 +260,7 @@ App.Screener = {
     if (!tbody) return;
 
     if (!signals.length) {
-      tbody.innerHTML = `<tr><td colspan="10" class="empty-cell">No matching signals found for selected filters.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No matching signals found for selected filters.</td></tr>`;
       return;
     }
 
@@ -298,11 +298,11 @@ App.Screener = {
         <td class="date-cell">${dateVal}</td>
         <td>
           <div class="row-action-btns">
-            <button class="btn-table-action" onclick="App.Paper.prefillOrder('${s.symbol}', ${price}, '${strat}')" title="Place Paper Trade">
-              ⚡ Paper Trade
+            <button type="button" class="btn-table-action btn-table-trade" onclick="App.Paper.prefillOrder('${s.symbol}', ${price}, '${strat}')" title="Place Paper Trade for ${s.symbol}">
+              <span class="action-btn-icon">⚡</span> Paper Trade
             </button>
-            <button class="btn-table-action subtle" onclick="App.News.analyzeTicker('${s.symbol}')" title="AI News Breakdown">
-              📰 News
+            <button type="button" class="btn-table-action btn-table-news" onclick="App.News.analyzeTicker('${s.symbol}')" title="AI News Breakdown for ${s.symbol}">
+              <span class="action-btn-icon">📰</span> News
             </button>
           </div>
         </td>
