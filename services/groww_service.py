@@ -32,7 +32,22 @@ class GrowwOptionsService:
     def get_instance(cls) -> GrowwOptionsService:
         if cls._instance is None:
             cls._instance = GrowwOptionsService()
+            cls._instance._load_slugs()
         return cls._instance
+
+    def _load_slugs(self) -> None:
+        """Load pre-compiled universe F&O slugs from config/groww_fno_slugs.json."""
+        import json
+        from pathlib import Path
+        slug_file = Path("config/groww_fno_slugs.json")
+        if slug_file.exists():
+            try:
+                data = json.loads(slug_file.read_text(encoding="utf-8"))
+                if isinstance(data, dict):
+                    self._SLUG_CACHE.update(data)
+                    logger.debug(f"Loaded {len(data)} pre-resolved F&O stock slugs from {slug_file}")
+            except Exception as e:
+                logger.warning(f"Failed to load {slug_file}: {e}")
 
     def get_slug(self, symbol: str) -> str:
         """Resolve NSE ticker symbol to Groww derivatives slug."""
@@ -49,6 +64,13 @@ class GrowwOptionsService:
                     if item.get("nse_scrip_code") == clean_sym or item.get("search_id") == clean_sym.lower():
                         slug = item.get("search_id")
                         self._SLUG_CACHE[clean_sym] = slug
+                        self._persist_slug(clean_sym, slug)
+                        return slug
+                if data.get("content"):
+                    slug = data["content"][0].get("search_id")
+                    if slug:
+                        self._SLUG_CACHE[clean_sym] = slug
+                        self._persist_slug(clean_sym, slug)
                         return slug
         except Exception as exc:
             logger.debug(f"Groww search error for {clean_sym}: {exc}")
@@ -56,6 +78,20 @@ class GrowwOptionsService:
         slug = clean_sym.lower()
         self._SLUG_CACHE[clean_sym] = slug
         return slug
+
+    def _persist_slug(self, symbol: str, slug: str) -> None:
+        """Persist dynamically discovered slug to disk."""
+        import json
+        from pathlib import Path
+        try:
+            slug_file = Path("config/groww_fno_slugs.json")
+            data = {}
+            if slug_file.exists():
+                data = json.loads(slug_file.read_text(encoding="utf-8"))
+            data[symbol] = slug
+            slug_file.write_text(json.dumps(data, indent=2), encoding="utf-8")
+        except Exception:
+            pass
 
     def fetch_option_chain_raw(self, symbol: str, expiry: str | None = None) -> dict[str, Any] | None:
         """Fetch raw JSON option chain from Groww with 15-second TTL cache."""

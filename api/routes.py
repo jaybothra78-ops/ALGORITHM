@@ -442,6 +442,24 @@ def get_option_price_endpoint(
         raise HTTPException(500, f"Failed to calculate option price for {symbol}: {exc}") from exc
 
 
+@router.get("/market/fno-symbols", response_model=list[dict[str, str]])
+def get_fno_symbols_endpoint() -> list[dict[str, str]]:
+    """Return all available F&O tradeable indices and equity symbols in the user universe."""
+    try:
+        from services.groww_service import GrowwOptionsService
+        slugs = GrowwOptionsService.get_instance()._SLUG_CACHE
+        indices = ["NIFTY", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX"]
+        result = []
+        for idx in indices:
+            result.append({"symbol": idx, "type": "INDEX"})
+        for sym in sorted(slugs.keys()):
+            if sym not in indices and sym not in ("NIFTY50",):
+                result.append({"symbol": sym, "type": "STOCK"})
+        return result
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to fetch F&O symbols: {exc}") from exc
+
+
 @router.get("/paper/summary", response_model=PaperPortfolioSummary)
 def get_paper_summary_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> PaperPortfolioSummary:
     """Return overall virtual portfolio summary and KPIs for the authenticated user."""

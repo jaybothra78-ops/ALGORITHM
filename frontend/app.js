@@ -1286,6 +1286,23 @@ App.Paper = {
 
     // Subtabs Navigation
     this.initSubtabs();
+
+    // Populate F&O Stocks & Indices Autocomplete Datalist
+    this.loadFnoAutocomplete();
+  },
+
+  async loadFnoAutocomplete() {
+    try {
+      const res = await fetch('/market/fno-symbols');
+      if (!res.ok) return;
+      const symbols = await res.json();
+      const datalist = document.querySelector('#paper-stock-datalist');
+      if (datalist && symbols && symbols.length) {
+        datalist.innerHTML = symbols.map(s => `<option value="${s.symbol}">${s.symbol} (${s.type})</option>`).join('');
+      }
+    } catch (e) {
+      console.warn('Failed to load F&O symbols datalist:', e);
+    }
   },
 
   switchInstrument(inst) {
