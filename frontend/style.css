@@ -228,6 +228,51 @@ body {
   gap: 8px;
 }
 
+/* Terminal Status Indicators in Top Navbar */
+.terminal-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-glass);
+  padding: 5px 12px;
+  border-radius: 20px;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  user-select: none;
+  transition: all 0.2s ease;
+}
+
+.terminal-status-pill:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: var(--text-main);
+}
+
+.terminal-status-pill.nlp-pill {
+  border-color: rgba(124, 58, 237, 0.25);
+  background: rgba(124, 58, 237, 0.06);
+  color: #c084fc;
+}
+
+.status-indicator-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald-glow);
+}
+
+.status-indicator-dot.live-pulse {
+  animation: liveDotPulse 2s infinite ease-in-out;
+}
+
+@keyframes liveDotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px var(--emerald); }
+  50% { transform: scale(1.25); opacity: 0.8; box-shadow: 0 0 12px var(--emerald); }
+}
+
 /* Base Buttons */
 button {
   font-family: var(--font-sans);
@@ -1946,24 +1991,69 @@ select:focus, input:focus, textarea:focus {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 6px;
-  padding: 6px 12px;
-  gap: 10px;
+  background: linear-gradient(90deg, rgba(22, 163, 74, 0.08) 0%, rgba(13, 18, 31, 0.6) 100%);
+  border: 1px solid rgba(22, 163, 74, 0.25);
+  border-radius: var(--radius-md);
+  padding: 8px 14px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .feed-source-left {
   display: flex;
   align-items: center;
-  gap: 8px;
-  font-size: 0.76rem;
-  color: var(--text-secondary);
+  gap: 10px;
+}
+
+.feed-source-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.feed-source-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-main);
+}
+
+.feed-source-meta {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+}
+
+.feed-source-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.feed-chip {
+  font-size: 0.68rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 4px;
+  border: 1px solid transparent;
+}
+
+.feed-chip-groww {
+  background: rgba(56, 189, 248, 0.1);
+  color: var(--accent-cyan);
+  border-color: rgba(56, 189, 248, 0.25);
+}
+
+.feed-chip-bsm {
+  background: rgba(124, 58, 237, 0.1);
+  color: #c084fc;
+  border-color: rgba(124, 58, 237, 0.25);
 }
 
 .feed-dot {
-  width: 7px;
-  height: 7px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: var(--accent-cyan);
   box-shadow: 0 0 8px var(--accent-cyan);
@@ -1977,9 +2067,9 @@ select:focus, input:focus, textarea:focus {
 
 /* Options Parameters Panel */
 .options-params-bar {
-
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  background: rgba(13, 18, 31, 0.6);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(56, 189, 248, 0.18);
   border-radius: var(--radius-md);
   padding: 14px 18px;
   display: grid;
@@ -2059,37 +2149,63 @@ select:focus, input:focus, textarea:focus {
   border-radius: 4px;
 }
 
-/* Options Greeks & Live Metrics Ribbon */
+/* Options Greeks & Live Metrics Analytics Deck */
 .options-greeks-box {
   background: rgba(13, 18, 31, 0.95);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  border: 1px solid rgba(56, 189, 248, 0.2);
   border-radius: var(--radius-md);
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 10px;
+  animation: fadeInView 0.2s ease-out;
 }
 
-.greek-item {
+.greek-card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 8px 12px;
   display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 0.78rem;
-  color: var(--text-secondary);
+  flex-direction: column;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.greek-card:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.greek-card.highlight {
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.1);
+}
+
+.greek-card.capital-card {
+  background: rgba(22, 163, 74, 0.08);
+  border-color: rgba(22, 163, 74, 0.3);
+  box-shadow: 0 0 12px rgba(22, 163, 74, 0.1);
 }
 
 .greek-lbl {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: 0.4px;
 }
 
-.greek-item strong {
+.greek-val {
   font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 800;
   color: #fff;
+}
+
+.text-emerald {
+  color: #10b981 !important;
 }
 
 .text-accent {

@@ -1488,16 +1488,21 @@ App.Paper = {
         this.updateDefaultTargetAndSl(data.premium);
         this.updateEstimatedCapital();
 
-        // Populate Greeks Ribbon
+        // Populate Greeks Ribbon & Contract Analytics Deck
         const spotEl = document.querySelector('#greek-spot');
         const premEl = document.querySelector('#greek-premium');
+        const lotCostEl = document.querySelector('#greek-lot-cost');
         const deltaEl = document.querySelector('#greek-delta');
         const thetaEl = document.querySelector('#greek-theta');
         const intrEl = document.querySelector('#greek-intrinsic');
         const timeEl = document.querySelector('#greek-time-val');
 
+        const curLotSize = data.lot_size || App.State.paperLotSize || 1;
+        const lotCost = (data.premium || 0) * curLotSize;
+
         if (spotEl) spotEl.textContent = App.Utils.money(data.spot_price);
         if (premEl) premEl.textContent = App.Utils.money(data.premium);
+        if (lotCostEl) lotCostEl.textContent = App.Utils.money(lotCost);
         if (deltaEl) deltaEl.textContent = data.delta;
         if (thetaEl) thetaEl.textContent = data.theta;
         if (intrEl) intrEl.textContent = App.Utils.money(data.intrinsic);

@@ -710,6 +710,36 @@
       max-width: 520px !important;
       line-height: 1.6 !important;
     }
+    .news-feature-chips {
+      display: flex !important;
+      justify-content: center !important;
+      gap: 8px !important;
+      flex-wrap: wrap !important;
+      margin: 16px 0 20px 0 !important;
+    }
+    .news-feat-chip {
+      font-size: 0.74rem !important;
+      font-weight: 700 !important;
+      color: #78350f !important;
+      background: #fef3c7 !important;
+      border: 1px solid rgba(180, 83, 9, 0.3) !important;
+      padding: 4px 12px !important;
+      border-radius: 20px !important;
+      box-shadow: 0 1px 4px rgba(180, 83, 9, 0.08) !important;
+    }
+    .engine-badge {
+      font-size: 0.65rem !important;
+      font-weight: 800 !important;
+      color: #7c3aed !important;
+      background: rgba(124, 58, 237, 0.08) !important;
+      border: 1px solid rgba(124, 58, 237, 0.25) !important;
+      padding: 2px 8px !important;
+      border-radius: 12px !important;
+      letter-spacing: 0.3px !important;
+      display: inline-flex !important;
+      align-items: center !important;
+      gap: 4px !important;
+    }
 
     .news-loading-card {
       background: linear-gradient(135deg, #fffdfa 0%, #fbf4ea 100%) !important;
@@ -1335,6 +1365,16 @@
 
       <!-- Quick Action Utilities -->
       <div class="nav-actions">
+        <!-- Live Market & Engine Status Pills -->
+        <div class="terminal-status-pill" title="Real-Time NSE Market &amp; Live Groww Derivatives Feed Active">
+          <span class="status-indicator-dot live-pulse"></span>
+          <span class="status-pill-text">NSE &amp; F&amp;O Live</span>
+        </div>
+        <div class="terminal-status-pill nlp-pill" title="Native Institutional Financial NLP Engine Active">
+          <span class="nlp-icon">🧠</span>
+          <span class="status-pill-text">Institutional AI</span>
+        </div>
+
         <!-- User Account Pill & Fast Switcher -->
         <div class="user-menu-wrapper">
           <button id="btn-user-menu" class="btn-subtle user-pill-btn" type="button" title="Active Account / Switch User">
@@ -1593,6 +1633,12 @@
           <div class="placeholder-icon">📰</div>
           <h3>Institutional AI News &amp; Catalyst Analyzer</h3>
           <p>Select any stock from your watchlist or enter a custom ticker to analyze live news, market sentiment, key growth catalysts, and risk factors.</p>
+          <div class="news-feature-chips">
+            <span class="news-feat-chip">⚡ Native Financial NLP Kernel</span>
+            <span class="news-feat-chip">📰 Real-Time Financial Press</span>
+            <span class="news-feat-chip">🎯 Dynamic Catalyst Extraction</span>
+            <span class="news-feat-chip">🔓 Zero API Key Required</span>
+          </div>
           <button id="btn-trigger-sample-news" class="btn-secondary">Analyze TVSMOTOR News</button>
         </div>
 
@@ -1632,6 +1678,7 @@
                   <span id="ai-stock-ticker" class="ticker-name">TVSMOTOR</span>
                   <span id="ai-company-name" class="company-sub">TVS Motor Company (NSE)</span>
                   <span class="exchange-tag">NSE • EQ</span>
+                  <span class="engine-badge">🧠 Native NLP Kernel</span>
                 </div>
                 <div class="hero-actions-row">
                   <a id="btn-open-tv" href="https://in.tradingview.com/chart/?symbol=NSE:TVSMOTOR" target="_blank" rel="noopener noreferrer" class="hero-link-btn tv-btn" title="Open interactive chart on TradingView">
@@ -1878,7 +1925,14 @@
         <div class="feed-source-ribbon" id="feed-source-ribbon">
           <div class="feed-source-left">
             <span class="feed-dot connected" id="feed-source-dot"></span>
-            <span class="feed-source-label" id="feed-source-label">Market Feed: Real-Time NSE &amp; Live Derivatives Engine</span>
+            <div class="feed-source-info">
+              <span class="feed-source-label" id="feed-source-label">Market Feed: Real-Time NSE &amp; Live Derivatives Gateway</span>
+              <span class="feed-source-meta">Exchange Expiries &bull; Real Lot Sizes &bull; Tick-by-Tick MTM</span>
+            </div>
+          </div>
+          <div class="feed-source-badges">
+            <span class="feed-chip feed-chip-groww">⚡ Groww Real F&amp;O Feed</span>
+            <span class="feed-chip feed-chip-bsm">📐 Black-Scholes Analytical</span>
           </div>
         </div>
 
@@ -2011,14 +2065,36 @@
           </div>
         </div>
 
-        <!-- Live Option Greeks & Pricing Metrics Ribbon -->
+        <!-- Live Option Greeks & Pricing Metrics Analytics Deck -->
         <div id="options-greeks-ribbon" class="options-greeks-box" style="display: none;">
-          <div class="greek-item"><span class="greek-lbl">Underlying Spot:</span> <strong id="greek-spot">—</strong></div>
-          <div class="greek-item"><span class="greek-lbl">Option Premium:</span> <strong id="greek-premium" class="text-accent">—</strong></div>
-          <div class="greek-item"><span class="greek-lbl">Delta:</span> <strong id="greek-delta">—</strong></div>
-          <div class="greek-item"><span class="greek-lbl">Theta:</span> <strong id="greek-theta">—</strong></div>
-          <div class="greek-item"><span class="greek-lbl">Intrinsic:</span> <strong id="greek-intrinsic">—</strong></div>
-          <div class="greek-item"><span class="greek-lbl">Time Value:</span> <strong id="greek-time-val">—</strong></div>
+          <div class="greek-card">
+            <span class="greek-lbl">Underlying Spot</span>
+            <strong id="greek-spot" class="greek-val">—</strong>
+          </div>
+          <div class="greek-card highlight">
+            <span class="greek-lbl">Live Premium</span>
+            <strong id="greek-premium" class="greek-val text-accent">—</strong>
+          </div>
+          <div class="greek-card capital-card">
+            <span class="greek-lbl">Capital / Lot</span>
+            <strong id="greek-lot-cost" class="greek-val text-emerald">—</strong>
+          </div>
+          <div class="greek-card">
+            <span class="greek-lbl">Delta (Δ)</span>
+            <strong id="greek-delta" class="greek-val">—</strong>
+          </div>
+          <div class="greek-card">
+            <span class="greek-lbl">Theta (Θ/day)</span>
+            <strong id="greek-theta" class="greek-val">—</strong>
+          </div>
+          <div class="greek-card">
+            <span class="greek-lbl">Intrinsic Value</span>
+            <strong id="greek-intrinsic" class="greek-val">—</strong>
+          </div>
+          <div class="greek-card">
+            <span class="greek-lbl">Time Value</span>
+            <strong id="greek-time-val" class="greek-val">—</strong>
+          </div>
         </div>
 
         <div class="order-footer-row">
@@ -2568,7 +2644,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=62.0"></script>
+  <script src="/static/app.js?v=63.0"></script>
 
 
 
