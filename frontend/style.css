@@ -228,51 +228,6 @@ body {
   gap: 8px;
 }
 
-/* Terminal Status Indicators in Top Navbar */
-.terminal-status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border-glass);
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 0.74rem;
-  font-weight: 700;
-  color: var(--text-secondary);
-  user-select: none;
-  transition: all 0.2s ease;
-}
-
-.terminal-status-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.15);
-  color: var(--text-main);
-}
-
-.terminal-status-pill.nlp-pill {
-  border-color: rgba(124, 58, 237, 0.25);
-  background: rgba(124, 58, 237, 0.06);
-  color: #c084fc;
-}
-
-.status-indicator-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: var(--emerald);
-  box-shadow: 0 0 8px var(--emerald-glow);
-}
-
-.status-indicator-dot.live-pulse {
-  animation: liveDotPulse 2s infinite ease-in-out;
-}
-
-@keyframes liveDotPulse {
-  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 6px var(--emerald); }
-  50% { transform: scale(1.25); opacity: 0.8; box-shadow: 0 0 12px var(--emerald); }
-}
-
 /* Base Buttons */
 button {
   font-family: var(--font-sans);
