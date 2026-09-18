@@ -4,6 +4,8 @@ from __future__ import annotations
 import time
 from datetime import datetime, timezone
 from typing import Any
+from core.config import settings
+from core.logging import logger
 from db.connection import get_db_connection
 
 
@@ -104,6 +106,31 @@ class PaperRepository:
 
             conn.execute("CREATE INDEX IF NOT EXISTS idx_paper_trades_user_status ON paper_trades(user_id, status);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_paper_user_accounts_user ON paper_user_accounts(user_id);")
+
+            # Auto-restore trades & portfolio on fresh database deployments (e.g. Render)
+            cnt_row = conn.execute("SELECT COUNT(*) as cnt FROM paper_trades WHERE user_id = 1").fetchone()
+            seed_file = settings.BASE_DIR / "config" / "seed_paper_trades.json"
+            if (not cnt_row or cnt_row["cnt"] == 0) and seed_file.exists():
+                try:
+                    import json
+                    seed_data = json.loads(seed_file.read_text(encoding="utf-8"))
+                    for acc in seed_data.get("account", []):
+                        conn.execute(
+                            "UPDATE paper_user_accounts SET cash_balance = ?, initial_capital = ? WHERE user_id = ?",
+                            (acc["cash_balance"], acc["initial_capital"], acc["user_id"]),
+                        )
+                    db_cols = {row["name"] for row in conn.execute("PRAGMA table_info(paper_trades);").fetchall()}
+                    for t in seed_data.get("trades", []):
+                        cols = [k for k in t.keys() if k != "id" and k in db_cols]
+                        placeholders = ", ".join(["?"] * len(cols))
+                        col_names = ", ".join(cols)
+                        conn.execute(
+                            f"INSERT INTO paper_trades ({col_names}) VALUES ({placeholders})",
+                            [t[k] for k in cols],
+                        )
+                except Exception as exc:
+                    logger.warning(f"Error restoring seed paper trades: {exc}")
+
             cls._initialized = True
 
 
