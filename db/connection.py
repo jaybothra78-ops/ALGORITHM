@@ -58,7 +58,14 @@ def initialize_schema() -> None:
             conn.execute("ALTER TABLE signals ADD COLUMN rsi_value REAL")
         if "rsi_ma_value" not in existing_cols:
             conn.execute("ALTER TABLE signals ADD COLUMN rsi_ma_value REAL")
-
         conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_scan_date ON signals(scan_date)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_strategy ON signals(strategy)")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_signals_symbol ON signals(symbol)")
+
+    from db.paper_repository import PaperRepository
+    from db.user_repository import UserRepository
+    from db.watchlist_repository import WatchlistRepository
+
+    PaperRepository.initialize_paper_tables()
+    UserRepository.initialize_user_tables()
+    WatchlistRepository.initialize_watchlist_tables()

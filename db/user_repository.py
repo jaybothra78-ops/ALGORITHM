@@ -19,6 +19,9 @@ class UserRepository:
         if cls._initialized:
             return
 
+        from db.paper_repository import PaperRepository
+        PaperRepository.initialize_paper_tables()
+
         with get_db_connection() as conn:
             conn.execute(
                 """
