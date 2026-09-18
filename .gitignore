@@ -19,9 +19,11 @@ htmlcov/
 *.db-shm
 scanner.db
 signals.db
-*.pkl
 *.tmp
-config/ohlc_cache.pkl
+
+# Pre-computed market data cache (included for instant cloud deployment startup)
+!config/ohlc_cache.pkl
+!config/intraday_30m_cache.pkl
 
 
 # IDE & OS files

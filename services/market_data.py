@@ -81,16 +81,13 @@ class MarketDataProvider:
         if not p.exists():
             return False
         try:
-            now = time.time()
-            mtime = p.stat().st_mtime
-            if now - mtime < settings.CACHE_TTL_SECONDS:
-                with open(p, "rb") as f:
-                    data = pickle.load(f)
-                if isinstance(data, dict) and data:
-                    cls._CACHE["ohlc_data"] = data
-                    cls._CACHE["ohlc_timestamp"] = mtime
-                    logger.info(f"Loaded {len(data)} cached symbols instantly from disk ({p.name}).")
-                    return True
+            with open(p, "rb") as f:
+                data = pickle.load(f)
+            if isinstance(data, dict) and data:
+                cls._CACHE["ohlc_data"] = data
+                cls._CACHE["ohlc_timestamp"] = time.time()
+                logger.info(f"Loaded {len(data)} cached symbols instantly from disk ({p.name}).")
+                return True
         except Exception as exc:
             logger.warning(f"Could not load disk cache: {exc}")
         return False
@@ -224,16 +221,13 @@ class MarketDataProvider:
         if not p.exists():
             return False
         try:
-            now = time.time()
-            mtime = p.stat().st_mtime
-            if now - mtime < settings.CACHE_TTL_SECONDS:
-                with open(p, "rb") as f:
-                    data = pickle.load(f)
-                if isinstance(data, dict) and data:
-                    cls._INTRADAY_CACHE["ohlc_data"] = data
-                    cls._INTRADAY_CACHE["ohlc_timestamp"] = mtime
-                    logger.info(f"Loaded {len(data)} cached 30m intraday symbols from disk ({p.name}).")
-                    return True
+            with open(p, "rb") as f:
+                data = pickle.load(f)
+            if isinstance(data, dict) and data:
+                cls._INTRADAY_CACHE["ohlc_data"] = data
+                cls._INTRADAY_CACHE["ohlc_timestamp"] = time.time()
+                logger.info(f"Loaded {len(data)} cached 30m intraday symbols from disk ({p.name}).")
+                return True
         except Exception as exc:
             logger.warning(f"Could not load intraday disk cache: {exc}")
         return False
