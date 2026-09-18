@@ -137,10 +137,48 @@ App.Router = {
         this.switchTab(tabId.replace('tab-', ''));
       });
     });
+
+    // Listen for browser forward / back button events
+    window.addEventListener('hashchange', () => {
+      const hash = window.location.hash.replace('#', '').toLowerCase();
+      if (['lookback', 'news', 'paper', 'backtest'].includes(hash)) {
+        this.switchTab(hash, false);
+      }
+    });
+
+    // Restore active tab on page reload from URL hash or localStorage
+    const validTabs = ['lookback', 'news', 'paper', 'backtest'];
+    const urlHash = window.location.hash.replace('#', '').toLowerCase();
+    let savedTab = null;
+    try {
+      savedTab = localStorage.getItem('stratlab_active_tab');
+    } catch (e) {}
+
+    let initialTab = 'lookback';
+    if (validTabs.includes(urlHash)) {
+      initialTab = urlHash;
+    } else if (validTabs.includes(savedTab)) {
+      initialTab = savedTab;
+    }
+
+    this.switchTab(initialTab, true);
   },
 
-  switchTab(tabName) {
+  switchTab(tabName, updateHash = true) {
+    if (!['lookback', 'news', 'paper', 'backtest'].includes(tabName)) {
+      tabName = 'lookback';
+    }
     App.State.activeTab = tabName;
+    try {
+      localStorage.setItem('stratlab_active_tab', tabName);
+    } catch (e) {}
+
+    if (updateHash) {
+      if (window.location.hash !== `#${tabName}`) {
+        window.history.replaceState(null, '', `#${tabName}`);
+      }
+    }
+
     document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.view-section').forEach(s => (s.style.display = 'none'));
 
