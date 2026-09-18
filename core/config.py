@@ -37,8 +37,9 @@ class Settings(BaseSettings):
     KNOX_RSI_PERIOD: int = 14
 
     # Server settings
-    SERVER_HOST: str = "127.0.0.1"
+    SERVER_HOST: str = "0.0.0.0"
     SERVER_PORT: int = 8000
+    PORT: int = 8000
     LOG_LEVEL: str = "INFO"
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")

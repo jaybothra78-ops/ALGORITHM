@@ -25,1313 +25,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/static/style.css?v=43.0">
-
-
-
-
-
-  <style>
-    /* Inlined Critical Styles for News Split Workspace & AI Terminal (Warm Beige Theme) */
-    .news-command-bar {
-      background: rgba(255, 252, 247, 0.94);
-      backdrop-filter: blur(18px);
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      border-radius: 12px;
-      padding: 16px 20px;
-      margin-bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 14px;
-      box-shadow: 0 8px 30px rgba(70, 55, 35, 0.06);
-    }
-    .command-bar-row {
-      display: flex;
-      align-items: flex-end;
-      gap: 14px;
-      flex-wrap: wrap;
-    }
-    .cmd-field-group {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      flex: 1;
-      min-width: 170px;
-    }
-    .cmd-field-group.ticker-search-group {
-      flex: 1.2;
-      min-width: 210px;
-    }
-    .cmd-label {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.6px;
-      color: #78716c;
-    }
-    .cmd-run-btn {
-      padding: 10px 22px;
-      font-size: 0.88rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #b45309, #92400e);
-      border: 1px solid rgba(180, 83, 9, 0.4);
-      box-shadow: 0 4px 14px rgba(180, 83, 9, 0.25);
-      color: #ffffff;
-      white-space: nowrap;
-    }
-    .trending-pills-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding-top: 10px;
-      border-top: 1px solid rgba(168, 142, 110, 0.15);
-      flex-wrap: wrap;
-    }
-    .trending-label {
-      font-size: 0.74rem;
-      font-weight: 700;
-      color: #78716c;
-    }
-    .news-split-workspace {
-      display: grid !important;
-      grid-template-columns: 380px minmax(0, 1fr) !important;
-      gap: 20px !important;
-      align-items: start !important;
-      margin-top: 14px !important;
-      width: 100% !important;
-      box-sizing: border-box !important;
-    }
-    @media (max-width: 1080px) {
-      .news-split-workspace {
-        grid-template-columns: 100% !important;
-      }
-    }
-    .articles-master-column {
-      background: rgba(255, 252, 247, 0.94);
-      backdrop-filter: blur(16px);
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      border-radius: 10px;
-      padding: 16px;
-      max-height: 750px;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-      overflow: hidden;
-      box-shadow: 0 8px 30px rgba(70, 55, 35, 0.06);
-    }
-    .master-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-bottom: 12px;
-      border-bottom: 1px solid rgba(168, 142, 110, 0.18);
-      margin-bottom: 10px;
-      color: #1c1917;
-    }
-    .articles-list-stack {
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding-right: 4px;
-      max-height: 670px;
-    }
-    .article-list-item {
-      background: rgba(245, 239, 230, 0.75);
-      border: 1px solid rgba(168, 142, 110, 0.2);
-      border-radius: 8px;
-      padding: 12px 14px;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      border-left: 3px solid transparent;
-    }
-    .article-list-item:hover {
-      background: rgba(238, 230, 218, 0.95);
-      border-color: rgba(180, 83, 9, 0.3);
-      border-left-color: #b45309;
-    }
-    .article-list-item.selected {
-      background: rgba(217, 119, 6, 0.12);
-      border-color: rgba(180, 83, 9, 0.45);
-      border-left-color: #b45309;
-      box-shadow: 0 0 15px rgba(217, 119, 6, 0.15);
-    }
-    .item-meta {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.72rem;
-      margin-bottom: 5px;
-    }
-    .item-publisher {
-      font-weight: 700;
-      color: #b45309;
-    }
-    .item-date {
-      color: #78716c;
-      font-family: monospace;
-    }
-    .item-title {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #1c1917;
-      line-height: 1.4;
-      margin: 0;
-    }
-    .item-click-hint {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-top: 6px;
-      font-size: 0.7rem;
-      color: #78716c;
-    }
-    .item-ai-tag {
-      color: #b45309;
-      font-weight: 600;
-    }
-    .article-ai-terminal {
-      background: rgba(255, 252, 247, 0.95);
-      border: 1px solid rgba(168, 142, 110, 0.28);
-      border-radius: 10px;
-      padding: 22px;
-      position: sticky;
-      top: 80px;
-      box-shadow: 0 10px 30px rgba(70, 55, 35, 0.08);
-      min-height: 480px;
-      box-sizing: border-box;
-      overflow: hidden;
-      color: #1c1917;
-    }
-    .terminal-empty {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      height: 420px;
-      color: #78716c;
-      gap: 12px;
-    }
-    .terminal-empty-icon { font-size: 2.4rem; opacity: 0.6; }
-    .terminal-empty h4 { font-size: 1.1rem; color: #44403c; margin: 0; }
-    .terminal-empty p { font-size: 0.86rem; max-width: 320px; line-height: 1.5; margin: 0; }
-    .terminal-content {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    .terminal-article-meta {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid rgba(168, 142, 110, 0.18);
-    }
-    .meta-tags-row {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    .terminal-pub-badge {
-      background: rgba(217, 119, 6, 0.12);
-      color: #78350f;
-      font-size: 0.74rem;
-      font-weight: 700;
-      padding: 3px 8px;
-      border-radius: 4px;
-      white-space: nowrap;
-    }
-    .terminal-date-badge {
-      color: #78716c;
-      font-size: 0.74rem;
-      font-family: monospace;
-      white-space: nowrap;
-    }
-    .terminal-actions-cluster {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .terminal-action-btn {
-      background: rgba(238, 231, 220, 0.9);
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      color: #292524;
-      font-size: 0.74rem;
-      font-weight: 600;
-      padding: 4px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      white-space: nowrap;
-    }
-    .terminal-action-btn:hover {
-      background: #ffffff;
-      border-color: #b45309;
-      color: #78350f;
-    }
-    .terminal-source-link {
-      color: #b45309;
-      font-size: 0.76rem;
-      font-weight: 600;
-      text-decoration: none;
-      white-space: nowrap;
-    }
-    .terminal-source-link:hover { text-decoration: underline; }
-    .terminal-headline {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #1c1917;
-      line-height: 1.45;
-      margin: 0;
-    }
-    .terminal-nav-pills {
-      display: flex !important;
-      background: rgba(235, 227, 214, 0.85) !important;
-      border: 1px solid rgba(168, 142, 110, 0.25) !important;
-      border-radius: 8px !important;
-      padding: 4px !important;
-      gap: 6px !important;
-    }
-    .term-pill {
-      flex: 1 !important;
-      background: transparent !important;
-      border: none !important;
-      color: #57534e !important;
-      font-size: 0.78rem !important;
-      font-weight: 700 !important;
-      padding: 8px 12px !important;
-      border-radius: 7px !important;
-      cursor: pointer !important;
-      transition: all 0.18s ease !important;
-      text-align: center !important;
-      white-space: nowrap !important;
-    }
-    .term-pill:hover {
-      color: #1c1917 !important;
-      background: rgba(255, 255, 255, 0.7) !important;
-    }
-    .term-pill.active {
-      background: #ffffff !important;
-      color: #92400e !important;
-      border: 1px solid rgba(180, 83, 9, 0.4) !important;
-      box-shadow: 0 2px 8px rgba(180, 83, 9, 0.15) !important;
-      font-weight: 800 !important;
-    }
-    .terminal-narrative-text {
-      font-size: 0.94rem;
-      line-height: 1.7;
-      color: #1c1917;
-      margin: 0;
-      background: rgba(245, 239, 230, 0.65);
-      padding: 16px 18px;
-      border-radius: 8px;
-      border: 1px solid rgba(168, 142, 110, 0.18);
-    }
-    .terminal-bullets {
-      margin: 0;
-      padding: 0;
-      list-style: none;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    .terminal-bullets li {
-      font-size: 0.88rem;
-      line-height: 1.55;
-      color: #292524;
-      background: rgba(245, 239, 230, 0.65);
-      padding: 12px 14px;
-      border-radius: 8px;
-      border-left: 3px solid #b45309;
-    }
-    .term-chat-wrapper { display: flex; flex-direction: column; gap: 12px; }
-    .term-prompt-chips { display: flex; gap: 6px; flex-wrap: wrap; }
-    .term-chip {
-      background: rgba(238, 231, 220, 0.85);
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      color: #44403c;
-      font-size: 0.72rem;
-      padding: 4px 10px;
-      border-radius: 14px;
-      cursor: pointer;
-    }
-    .term-chip:hover {
-      background: #ffffff;
-      border-color: #b45309;
-      color: #78350f;
-    }
-    .terminal-chat-thread {
-      max-height: 250px;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-    .terminal-chat-input-bar { display: flex; gap: 8px; margin-top: 4px; }
-    .terminal-chat-input-bar input {
-      flex: 1;
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.35);
-      border-radius: 6px;
-      padding: 10px 14px;
-      color: #1c1917;
-      font-size: 0.85rem;
-      outline: none;
-    }
-    .terminal-chat-input-bar input:focus { border-color: #b45309; }
-    .terminal-chat-input-bar button {
-
-      background: #4f46e5;
-      border: none;
-      color: #fff;
-      padding: 10px 18px;
-      border-radius: 6px;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-    /* Thinking & Reasoned Answer Styles */
-    .thinking-bubble {
-      background: rgba(99, 102, 241, 0.08) !important;
-      border: 1px dashed rgba(99, 102, 241, 0.35) !important;
-      padding: 10px 14px !important;
-      border-radius: 8px !important;
-    }
-    .thinking-header {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      color: #818cf8;
-      font-size: 0.8rem;
-    }
-    .pulse-dot {
-      width: 8px;
-      height: 8px;
-      background: #818cf8;
-      border-radius: 50%;
-      animation: pulseAnim 1.2s infinite ease-in-out;
-      display: inline-block;
-    }
-    @keyframes pulseAnim {
-      0%, 100% { opacity: 0.3; transform: scale(0.85); }
-      50% { opacity: 1; transform: scale(1.2); }
-    }
-    .thinking-subtext {
-      font-size: 0.72rem;
-      color: #94a3b8;
-      margin-top: 4px;
-      margin-left: 16px;
-    }
-    .thought-box {
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.3);
-      border-radius: 8px;
-      padding: 8px 12px;
-      margin-bottom: 8px;
-      font-size: 0.74rem;
-      box-shadow: 0 2px 8px rgba(70, 55, 35, 0.05);
-    }
-    .thought-summary {
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      color: #92400e;
-      font-weight: 700;
-      user-select: none;
-    }
-    .thought-list {
-      margin: 8px 0 2px 0;
-      padding-left: 18px;
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      color: #57534e;
-      font-size: 0.73rem;
-      line-height: 1.45;
-    }
-    .ai-answer-body {
-      color: #1c1917;
-      font-size: 0.84rem;
-      line-height: 1.55;
-    }
-    .ai-ans-h5 {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #92400e;
-      margin: 0 0 6px 0;
-      border-bottom: 1px solid rgba(168, 142, 110, 0.2);
-      padding-bottom: 3px;
-    }
-    .ai-ans-bullet {
-      display: flex;
-      align-items: flex-start;
-      gap: 6px;
-      margin: 4px 0;
-      font-size: 0.83rem;
-    }
-    .bullet-dot {
-      color: #b45309;
-      font-weight: 800;
-      line-height: 1.3;
-    }
-    .ai-ans-gap {
-      height: 6px;
-    }
-    /* News Hero Banner (Warm Beige Executive Theme) */
-    .news-hero-banner {
-      background: rgba(255, 252, 247, 0.96) !important;
-      border: 1px solid rgba(168, 142, 110, 0.28) !important;
-      border-radius: 14px !important;
-      padding: 22px 26px !important;
-      display: flex !important;
-      justify-content: space-between !important;
-      align-items: center !important;
-      gap: 24px !important;
-      flex-wrap: wrap !important;
-      box-shadow: 0 8px 30px rgba(70, 55, 35, 0.07) !important;
-      margin-bottom: 18px !important;
-    }
-    .ticker-name {
-      font-family: 'JetBrains Mono', monospace !important;
-      font-size: 1.6rem !important;
-      font-weight: 800 !important;
-      color: #92400e !important;
-      letter-spacing: -0.5px !important;
-    }
-    .company-sub {
-      font-size: 0.88rem !important;
-      font-weight: 600 !important;
-      color: #78716c !important;
-    }
-    .exchange-tag {
-      background: rgba(21, 128, 61, 0.1) !important;
-      color: #15803d !important;
-      border: 1px solid rgba(21, 128, 61, 0.3) !important;
-      font-size: 0.72rem !important;
-      font-weight: 800 !important;
-      padding: 2px 8px !important;
-      border-radius: 4px !important;
-      letter-spacing: 0.05em !important;
-    }
-    .hero-summary-text {
-      font-size: 0.92rem !important;
-      line-height: 1.65 !important;
-      color: #292524 !important;
-      font-weight: 500 !important;
-      margin: 4px 0 0 0 !important;
-    }
-    .sentiment-meter-box {
-      background: #ffffff !important;
-      border: 1px solid rgba(168, 142, 110, 0.28) !important;
-      border-radius: 12px !important;
-      padding: 16px 20px !important;
-      box-shadow: 0 4px 14px rgba(70, 55, 35, 0.05) !important;
-      min-width: 240px !important;
-    }
-    .meter-label {
-      font-size: 0.72rem !important;
-      font-weight: 800 !important;
-      text-transform: uppercase !important;
-      letter-spacing: 0.05em !important;
-      color: #78716c !important;
-    }
-    .score-label-row {
-      display: flex !important;
-      justify-content: space-between !important;
-      font-size: 0.75rem !important;
-      font-weight: 700 !important;
-      color: #78716c !important;
-      margin-bottom: 6px !important;
-    }
-    .score-label-row strong {
-      color: #1c1917 !important;
-    }
-    .score-track {
-      background: #e7e5e4 !important;
-      border-radius: 6px !important;
-      height: 8px !important;
-      overflow: hidden !important;
-    }
-    .hero-link-btn.screener-btn {
-      background: rgba(180, 83, 9, 0.08) !important;
-      color: #92400e !important;
-      border: 1px solid rgba(180, 83, 9, 0.32) !important;
-      font-size: 0.76rem !important;
-      font-weight: 700 !important;
-      padding: 6px 14px !important;
-      border-radius: 6px !important;
-      text-decoration: none !important;
-      transition: all 0.15s ease !important;
-    }
-    .hero-link-btn.screener-btn:hover {
-      background: rgba(180, 83, 9, 0.16) !important;
-      border-color: #92400e !important;
-    }
-    .hero-link-btn.tv-btn {
-      background: #ffffff !important;
-      color: #44403c !important;
-      border: 1px solid rgba(168, 142, 110, 0.35) !important;
-      font-size: 0.76rem !important;
-      font-weight: 700 !important;
-      padding: 6px 14px !important;
-      border-radius: 6px !important;
-      text-decoration: none !important;
-      transition: all 0.15s ease !important;
-    }
-    .hero-link-btn.tv-btn:hover {
-      background: #f5efe6 !important;
-      color: #1c1917 !important;
-      border-color: #b45309 !important;
-    }
-
-    /* Catalysts Card */
-    .catalysts-card {
-      background: linear-gradient(135deg, rgba(21, 128, 61, 0.07) 0%, #ffffff 100%) !important;
-      border: 1px solid rgba(21, 128, 61, 0.3) !important;
-      border-radius: 12px !important;
-      padding: 18px 20px !important;
-      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
-    }
-    .catalysts-card .breakdown-header {
-      border-bottom: 1px solid rgba(21, 128, 61, 0.2) !important;
-      padding-bottom: 10px !important;
-      margin-bottom: 12px !important;
-    }
-    .catalysts-card .breakdown-header h4 {
-      color: #15803d !important;
-      font-size: 0.95rem !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.02em !important;
-      margin: 0 !important;
-    }
-    .catalysts-list li {
-      color: #1c1917 !important;
-      font-size: 0.86rem !important;
-      line-height: 1.6 !important;
-      font-weight: 600 !important;
-      padding-left: 20px !important;
-      position: relative !important;
-    }
-    .catalysts-list li::before {
-      content: "•";
-      position: absolute;
-      left: 2px;
-      color: #15803d !important;
-      font-size: 1.3rem !important;
-      line-height: 1;
-      top: 0;
-      font-weight: 900 !important;
-    }
-
-    /* Risks Card */
-    .risks-card {
-      background: linear-gradient(135deg, rgba(185, 28, 28, 0.07) 0%, #ffffff 100%) !important;
-      border: 1px solid rgba(185, 28, 28, 0.3) !important;
-      border-radius: 12px !important;
-      padding: 18px 20px !important;
-      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
-    }
-    .risks-card .breakdown-header {
-      border-bottom: 1px solid rgba(185, 28, 28, 0.2) !important;
-      padding-bottom: 10px !important;
-      margin-bottom: 12px !important;
-    }
-    .risks-card .breakdown-header h4 {
-      color: #b91c1c !important;
-      font-size: 0.95rem !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.02em !important;
-      margin: 0 !important;
-    }
-    .risks-list li {
-      color: #1c1917 !important;
-      font-size: 0.86rem !important;
-      line-height: 1.6 !important;
-      font-weight: 600 !important;
-      padding-left: 20px !important;
-      position: relative !important;
-    }
-    .risks-list li::before {
-      content: "•";
-      position: absolute;
-      left: 2px;
-      color: #b91c1c !important;
-      font-size: 1.3rem !important;
-      line-height: 1;
-      top: 0;
-      font-weight: 900 !important;
-    }
-
-    /* Technical & Fundamental Correlation Card */
-    .technical-correlation-card {
-      background: linear-gradient(135deg, rgba(124, 58, 237, 0.07) 0%, #ffffff 100%) !important;
-      border: 1px solid rgba(124, 58, 237, 0.3) !important;
-      border-radius: 12px !important;
-      padding: 18px 22px !important;
-      margin-top: 14px !important;
-      margin-bottom: 18px !important;
-      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 8px !important;
-    }
-    .tc-header {
-      display: flex !important;
-      align-items: center !important;
-      gap: 8px !important;
-      border-bottom: 1px solid rgba(124, 58, 237, 0.18) !important;
-      padding-bottom: 8px !important;
-      margin-bottom: 4px !important;
-    }
-    .tc-header h4 {
-      color: #6d28d9 !important;
-      font-size: 0.92rem !important;
-      font-weight: 800 !important;
-      letter-spacing: 0.02em !important;
-      margin: 0 !important;
-    }
-    .tc-icon {
-      font-size: 1.1rem !important;
-    }
-    .tc-text {
-      color: #292524 !important;
-      font-size: 0.88rem !important;
-      line-height: 1.65 !important;
-      font-weight: 600 !important;
-      margin: 0 !important;
-    }
-
-    /* AI News Loading State & Empty Placeholder (Warm Ivory / Institutional) */
-    .news-empty-placeholder {
-      background: linear-gradient(135deg, #fffdfa 0%, #fbf4ea 100%) !important;
-      border: 1px solid rgba(168, 142, 110, 0.3) !important;
-      border-radius: 14px !important;
-      padding: 60px 24px !important;
-      box-shadow: 0 4px 20px rgba(70, 55, 35, 0.06) !important;
-    }
-    .news-empty-placeholder h3 {
-      font-size: 1.25rem !important;
-      font-weight: 800 !important;
-      color: #1c1917 !important;
-    }
-    .news-empty-placeholder p {
-      font-size: 0.88rem !important;
-      color: #57534e !important;
-      max-width: 520px !important;
-      line-height: 1.6 !important;
-    }
-    .news-feature-chips {
-      display: flex !important;
-      justify-content: center !important;
-      gap: 8px !important;
-      flex-wrap: wrap !important;
-      margin: 16px 0 20px 0 !important;
-    }
-    .news-feat-chip {
-      font-size: 0.74rem !important;
-      font-weight: 700 !important;
-      color: #78350f !important;
-      background: #fef3c7 !important;
-      border: 1px solid rgba(180, 83, 9, 0.3) !important;
-      padding: 4px 12px !important;
-      border-radius: 20px !important;
-      box-shadow: 0 1px 4px rgba(180, 83, 9, 0.08) !important;
-    }
-    .engine-badge {
-      font-size: 0.65rem !important;
-      font-weight: 800 !important;
-      color: #7c3aed !important;
-      background: rgba(124, 58, 237, 0.08) !important;
-      border: 1px solid rgba(124, 58, 237, 0.25) !important;
-      padding: 2px 8px !important;
-      border-radius: 12px !important;
-      letter-spacing: 0.3px !important;
-      display: inline-flex !important;
-      align-items: center !important;
-      gap: 4px !important;
-    }
-
-    .news-loading-card {
-      background: linear-gradient(135deg, #fffdfa 0%, #fbf4ea 100%) !important;
-      border: 1px solid rgba(168, 142, 110, 0.35) !important;
-      border-radius: 14px !important;
-      padding: 44px 28px !important;
-      display: flex !important;
-      flex-direction: column !important;
-      align-items: center !important;
-      text-align: center !important;
-      gap: 12px !important;
-      box-shadow: 0 8px 30px rgba(70, 55, 35, 0.08) !important;
-    }
-    .loading-spinner-ring {
-      width: 48px !important;
-      height: 48px !important;
-      border: 3px solid rgba(180, 83, 9, 0.18) !important;
-      border-top-color: #b45309 !important;
-      border-radius: 50% !important;
-      animation: spin 0.85s linear infinite !important;
-      margin-bottom: 8px !important;
-    }
-    .loading-stage-title {
-      font-size: 1.25rem !important;
-      font-weight: 800 !important;
-      color: #1c1917 !important;
-      letter-spacing: -0.01em !important;
-      margin: 0 !important;
-    }
-    .loading-stage-sub {
-      font-size: 0.88rem !important;
-      color: #57534e !important;
-      max-width: 480px !important;
-      font-weight: 500 !important;
-      line-height: 1.5 !important;
-      margin: 0 !important;
-    }
-    .loading-steps-list {
-      display: flex !important;
-      flex-direction: column !important;
-      gap: 10px !important;
-      margin-top: 18px !important;
-      width: 100% !important;
-      max-width: 480px !important;
-      text-align: left !important;
-    }
-    .loading-step {
-      display: flex !important;
-      align-items: center !important;
-      gap: 12px !important;
-      font-size: 0.84rem !important;
-      padding: 10px 16px !important;
-      border-radius: 8px !important;
-      background: #ffffff !important;
-      border: 1px solid rgba(168, 142, 110, 0.25) !important;
-      color: #57534e !important;
-      box-shadow: 0 1px 4px rgba(70, 55, 35, 0.04) !important;
-      transition: all 0.25s ease !important;
-    }
-    .loading-step .step-icon {
-      font-size: 1.05rem !important;
-      flex-shrink: 0 !important;
-    }
-    .loading-step .step-text {
-      color: #44403c !important;
-      font-weight: 500 !important;
-    }
-    .loading-step.active {
-      background: rgba(180, 83, 9, 0.08) !important;
-      border-color: rgba(180, 83, 9, 0.45) !important;
-      transform: translateX(4px) !important;
-      box-shadow: 0 2px 8px rgba(180, 83, 9, 0.12) !important;
-    }
-    .loading-step.active .step-text {
-      color: #92400e !important;
-      font-weight: 700 !important;
-    }
-    .loading-step.completed,
-    .loading-step.done {
-      background: rgba(21, 128, 61, 0.08) !important;
-      border-color: rgba(21, 128, 61, 0.35) !important;
-      transform: none !important;
-    }
-    .loading-step.completed .step-text,
-    .loading-step.done .step-text {
-      color: #15803d !important;
-      font-weight: 600 !important;
-    }
-
-    .feed-title {
-      font-size: 0.95rem !important;
-      font-weight: 800 !important;
-      color: #1c1917 !important;
-    }
-    .news-article-card {
-      background: #ffffff !important;
-      border: 1px solid rgba(168, 142, 110, 0.28) !important;
-      border-radius: 12px !important;
-      box-shadow: 0 2px 10px rgba(70, 55, 35, 0.05) !important;
-    }
-    .article-title {
-      color: #1c1917 !important;
-      font-size: 0.88rem !important;
-      font-weight: 700 !important;
-    }
-    .article-publisher {
-      color: #b45309 !important;
-      font-weight: 700 !important;
-    }
-    .article-snippet {
-      color: #57534e !important;
-    }
-    .article-link {
-      color: #b45309 !important;
-    }
-    .article-link:hover {
-      color: #92400e !important;
-    }
-
-    /* Strategy Tester KPI Ribbon Styles */
-    .strategy-hero-banner {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
-    }
-    .kpi-card {
-      background: #ffffff !important;
-      border: 1px solid rgba(168, 142, 110, 0.28) !important;
-      border-radius: 12px !important;
-      padding: 14px 16px !important;
-      display: flex !important;
-      flex-direction: column !important;
-      justify-content: center !important;
-      box-shadow: 0 4px 16px rgba(70, 55, 35, 0.06) !important;
-    }
-    .kpi-label {
-      font-size: 0.68rem !important;
-      font-weight: 800 !important;
-      color: #78716c !important;
-      letter-spacing: 0.05em !important;
-      text-transform: uppercase !important;
-    }
-    .kpi-val {
-      font-size: 1.45rem !important;
-      font-weight: 800 !important;
-      color: #1c1917 !important;
-      margin: 4px 0 2px 0 !important;
-      font-feature-settings: "tnum" !important;
-    }
-    .kpi-sub {
-      font-size: 0.72rem !important;
-      color: #a8a29e !important;
-    }
-
-    /* =========================================================
-       STRATEGY TESTER MINIMAL AESTHETIC DESIGN SYSTEM
-       ========================================================= */
-    .tester-glass-card {
-      background: rgba(255, 252, 247, 0.94);
-      border: 1px solid rgba(168, 142, 110, 0.28);
-      border-radius: 14px;
-      padding: 22px 24px;
-      backdrop-filter: blur(20px);
-      box-shadow: 0 10px 32px rgba(70, 55, 35, 0.08);
-      margin-bottom: 22px;
-    }
-    .tester-header-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 18px;
-    }
-    .tester-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(217, 119, 6, 0.12);
-      border: 1px solid rgba(217, 119, 6, 0.28);
-      color: #92400e;
-      font-size: 0.72rem;
-      font-weight: 800;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      margin-bottom: 8px;
-    }
-    .tester-title {
-      font-size: 1.35rem;
-      font-weight: 800;
-      color: #1c1917;
-      letter-spacing: -0.02em;
-      margin: 0 0 6px 0;
-    }
-    .tester-desc {
-      font-size: 0.84rem;
-      color: #57534e;
-      max-width: 780px;
-      line-height: 1.55;
-      margin: 0;
-    }
-    .tester-controls-bar {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 16px;
-    }
-    @media (max-width: 860px) {
-      .tester-controls-bar { grid-template-columns: 1fr; }
-    }
-    .tester-input-box {
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.35);
-      border-radius: 10px;
-      padding: 8px 12px;
-      transition: all 0.2s ease;
-    }
-    .tester-input-box:focus-within {
-      border-color: #b45309;
-      box-shadow: 0 0 0 2px rgba(217, 119, 6, 0.2);
-    }
-    .tester-input-box label {
-      display: block;
-      font-size: 0.68rem;
-      font-weight: 700;
-      color: #78716c;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-    .tester-input-box select,
-    .tester-input-box input {
-      width: 100%;
-      background: transparent;
-      border: none;
-      color: #1c1917;
-      font-size: 0.88rem;
-      font-weight: 600;
-      outline: none;
-    }
-    .tester-input-box select option {
-      background: #ffffff;
-      color: #1c1917;
-    }
-    .tester-strategy-strip {
-      display: flex;
-      background: rgba(238, 231, 220, 0.85);
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      border-radius: 10px;
-      padding: 4px;
-      gap: 6px;
-      margin-bottom: 16px;
-      overflow-x: auto;
-    }
-    .strat-tab {
-      flex: 1;
-      background: transparent;
-      border: none;
-      color: #57534e;
-      font-size: 0.8rem;
-      font-weight: 700;
-      padding: 9px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-      white-space: nowrap;
-      text-align: center;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-    }
-    .strat-tab:hover {
-      color: #1c1917;
-      background: rgba(255, 255, 255, 0.6);
-    }
-    .strat-tab.active {
-      background: #ffffff;
-      color: #92400e;
-      border: 1px solid rgba(180, 83, 9, 0.35);
-      box-shadow: 0 2px 8px rgba(180, 83, 9, 0.15);
-    }
-    .tester-params-strip {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr) 190px;
-      gap: 12px;
-      align-items: center;
-      margin-bottom: 16px;
-    }
-    @media (max-width: 960px) {
-      .tester-params-strip { grid-template-columns: 1fr 1fr; }
-    }
-    .param-card {
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.3);
-      border-radius: 10px;
-      padding: 8px 12px;
-      display: flex;
-      flex-direction: column;
-    }
-    .param-card label {
-      font-size: 0.66rem;
-      font-weight: 700;
-      color: #78716c;
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      margin-bottom: 2px;
-    }
-    .param-card input,
-    .param-card select {
-      background: transparent;
-      border: none;
-      color: #1c1917;
-      font-size: 0.95rem;
-      font-weight: 700;
-      outline: none;
-      width: 100%;
-    }
-    .btn-run-quant {
-      background: linear-gradient(135deg, #b45309 0%, #92400e 100%);
-      border: 1px solid rgba(180, 83, 9, 0.4);
-      color: #ffffff;
-      font-size: 0.88rem;
-      font-weight: 700;
-      padding: 12px 18px;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 4px 16px rgba(180, 83, 9, 0.25);
-      transition: all 0.2s ease;
-      height: 100%;
-      min-height: 48px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    .btn-run-quant:hover {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 22px rgba(180, 83, 9, 0.4);
-    }
-    .btn-run-quant:active {
-      transform: translateY(0);
-    }
-    .tester-quick-strip {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      flex-wrap: wrap;
-      padding-top: 12px;
-      border-top: 1px solid rgba(168, 142, 110, 0.2);
-    }
-    .quick-tag-label {
-      font-size: 0.72rem;
-      font-weight: 700;
-      color: #92400e;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .quick-tag-pill {
-      background: rgba(238, 231, 220, 0.85);
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      color: #57534e;
-      font-size: 0.74rem;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 9999px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .quick-tag-pill:hover {
-      background: #ffffff;
-      border-color: rgba(180, 83, 9, 0.4);
-      color: #92400e;
-      transform: translateY(-1px);
-    }
-
-    /* Minimalist KPI Banner */
-    .kpi-row-minimal {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
-      margin-bottom: 22px;
-    }
-    .kpi-tile-minimal {
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.28);
-      border-radius: 12px;
-      padding: 14px 16px;
-      position: relative;
-      overflow: hidden;
-      box-shadow: 0 4px 14px rgba(70, 55, 35, 0.06);
-    }
-    .kpi-tile-minimal::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, #b45309, transparent);
-      opacity: 0.8;
-    }
-    .kpi-tile-minimal .tile-title {
-      font-size: 0.66rem;
-      font-weight: 800;
-      color: #78716c;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-    .kpi-tile-minimal .tile-number {
-      font-size: 1.55rem;
-      font-weight: 800;
-      color: #1c1917;
-      letter-spacing: -0.02em;
-      line-height: 1.2;
-      font-variant-numeric: tabular-nums;
-    }
-    .kpi-tile-minimal .tile-subtitle {
-      font-size: 0.72rem;
-      color: #a8a29e;
-      margin-top: 4px;
-    }
-
-    /* Refined Trade Ledger Card */
-    .trade-card-minimal {
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.25);
-      border-radius: 10px;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
-      position: relative;
-      box-shadow: 0 2px 8px rgba(70, 55, 35, 0.04);
-    }
-    .trade-card-minimal:hover {
-      background: #faf6f0;
-      border-color: rgba(180, 83, 9, 0.35);
-      transform: translateX(2px);
-    }
-    .trade-card-minimal.selected {
-      background: rgba(254, 243, 199, 0.5) !important;
-      border-color: #b45309 !important;
-      box-shadow: 0 0 16px rgba(180, 83, 9, 0.18);
-    }
-    .trade-card-minimal.selected::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0;
-      bottom: 0;
-      width: 3px;
-      background: #b45309;
-      border-top-left-radius: 10px;
-      border-bottom-left-radius: 10px;
-    }
-    .tc-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 6px;
-    }
-    .tc-sym {
-      font-size: 0.95rem;
-      font-weight: 800;
-      color: #1c1917;
-    }
-    .tc-direction-buy {
-      background: rgba(21, 128, 61, 0.12);
-      border: 1px solid rgba(21, 128, 61, 0.25);
-      color: #15803d;
-      font-size: 0.65rem;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-    .tc-direction-sell {
-      background: rgba(185, 28, 28, 0.12);
-      border: 1px solid rgba(185, 28, 28, 0.25);
-      color: #b91c1c;
-      font-size: 0.65rem;
-      font-weight: 800;
-      padding: 2px 7px;
-      border-radius: 4px;
-    }
-    .tc-pnl-win {
-      font-size: 0.88rem;
-      font-weight: 800;
-      color: #34d399;
-    }
-    .tc-pnl-loss {
-      font-size: 0.88rem;
-      font-weight: 800;
-      color: #fb7185;
-    }
-    .tc-sub {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.74rem;
-      color: #94a3b8;
-    }
-
-    /* Inspector Modern Layout */
-    .inspect-timeline {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      background: #ffffff;
-      border: 1px solid rgba(168, 142, 110, 0.28);
-      border-radius: 12px;
-      padding: 14px 20px;
-      margin-bottom: 16px;
-      box-shadow: 0 4px 16px rgba(70, 55, 35, 0.05);
-    }
-    .timeline-step {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      text-align: center;
-      gap: 4px;
-    }
-    .step-circle {
-      width: 26px;
-      height: 26px;
-      border-radius: 50%;
-      background: rgba(217, 119, 6, 0.1);
-      border: 1px solid rgba(217, 119, 6, 0.35);
-      color: #92400e;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 0.72rem;
-      font-weight: 800;
-    }
-    .step-circle.done {
-      background: #15803d;
-      border-color: #15803d;
-      color: #ffffff;
-      box-shadow: 0 2px 6px rgba(21, 128, 61, 0.25);
-    }
-    .step-name {
-      font-size: 0.68rem;
-      font-weight: 800;
-      color: #78716c;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-    }
-    .timeline-connector {
-      flex: 1;
-      height: 2px;
-      background: rgba(168, 142, 110, 0.3);
-      margin: 0 10px;
-    }
-    .action-btn-ghost {
-      background: rgba(238, 231, 220, 0.85);
-      border: 1px solid rgba(168, 142, 110, 0.28);
-      color: #57534e;
-      font-size: 0.78rem;
-      font-weight: 700;
-      padding: 8px 14px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.18s ease;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      text-decoration: none;
-    }
-    .action-btn-ghost:hover {
-      background: #ffffff;
-      border-color: rgba(180, 83, 9, 0.4);
-      color: #92400e;
-      transform: translateY(-1px);
-    }
-  </style>
-
-
+  <link rel="stylesheet" href="/static/style.css?v=50.0">
 
 </head>
 
@@ -1372,9 +66,6 @@
           <span>Strategy Tester</span>
         </button>
       </nav>
-
-
-
 
       <!-- Quick Action Utilities -->
       <div class="nav-actions">
@@ -1459,8 +150,6 @@
       </div>
     </div>
 
-
-
     <!-- Section 1: Lookback Screener -->
     <section id="section-lookback" class="view-section">
       <!-- Minimal Single-Row Toolbar -->
@@ -1503,10 +192,12 @@
 
           <div class="select-wrapper">
             <select id="lookback-sort" aria-label="Sort Options">
-              <option value="recency">Sort: Newest</option>
-              <option value="rsi_asc">Sort: RSI Low → High</option>
-              <option value="rsi_desc">Sort: RSI High → Low</option>
+              <option value="recency">Sort: Newest First</option>
+              <option value="rsi_asc">Sort: RSI Low → High (Oversold)</option>
+              <option value="rsi_desc">Sort: RSI High → Low (Overbought)</option>
               <option value="symbol">Sort: Ticker A → Z</option>
+              <option value="price_desc">Sort: Price High → Low</option>
+              <option value="price_asc">Sort: Price Low → High</option>
             </select>
           </div>
         </div>
@@ -1543,14 +234,14 @@
         <table class="data-table">
           <thead>
             <tr>
-              <th>Ticker</th>
+              <th class="th-sortable" data-sort="symbol">Ticker <span class="sort-caret">↕</span></th>
               <th>Universe</th>
               <th>Condition</th>
-              <th>Price</th>
-              <th>RSI (14)</th>
+              <th class="th-sortable" data-sort="price">Price <span class="sort-caret">↕</span></th>
+              <th class="th-sortable" data-sort="rsi">RSI (14) <span class="sort-caret">↕</span></th>
               <th>Knoxville</th>
               <th>200 SMA</th>
-              <th>Signal Date</th>
+              <th class="th-sortable" data-sort="date">Signal Date <span class="sort-caret">↕</span></th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -1847,9 +538,6 @@
       </div>
     </section>
 
-
-
-
     <!-- Section 3: Paper Trading / Virtual Portfolio -->
     <section id="section-paper" class="view-section" style="display: none;">
 
@@ -1900,219 +588,223 @@
       </div>
 
       <!-- New Trade Placement Card -->
+      <!-- Modern Minimalist Paper Order Ticket -->
       <div class="paper-order-card">
+        <!-- Ticket Header -->
         <div class="order-card-header">
           <div class="order-title-group">
             <span class="order-card-icon">⚡</span>
             <div>
-              <h3 class="order-card-title">Place New Paper Order</h3>
-              <p class="order-card-sub">Trade Cash Equities or Options (Calls &amp; Puts) with real-time mark-to-market execution.</p>
+              <div class="order-title-flex">
+                <h3 class="order-card-title">Order Terminal</h3>
+                <span class="paper-live-pill"><span class="pulse-dot"></span> Live Tick MTM</span>
+              </div>
+              <p class="order-card-sub">Real-time simulated execution for Cash Equities &amp; F&amp;O Options</p>
             </div>
           </div>
           
           <div class="order-header-switches">
             <!-- Instrument Switch: Equity vs Options -->
             <div class="instrument-pill-group">
-              <button type="button" id="btn-inst-equity" class="inst-pill active">📈 Equity (Cash)</button>
+              <button type="button" id="btn-inst-equity" class="inst-pill active">📈 Cash (Equity)</button>
               <button type="button" id="btn-inst-option" class="inst-pill">⚡ Options (F&amp;O)</button>
             </div>
 
             <!-- Direction Switch: Buy vs Sell -->
             <div class="side-selector-pill-group">
-              <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY (Long)</button>
-              <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL (Short)</button>
+              <button type="button" id="btn-order-side-buy" class="side-pill buy-pill active">🟢 BUY</button>
+              <button type="button" id="btn-order-side-sell" class="side-pill sell-pill">🔴 SELL</button>
             </div>
           </div>
         </div>
 
-        <!-- Live Feed Source Banner -->
-        <div class="feed-source-ribbon" id="feed-source-ribbon">
-          <div class="feed-source-left">
-            <span class="feed-dot connected" id="feed-source-dot"></span>
-            <div class="feed-source-info">
-              <span class="feed-source-label" id="feed-source-label">Market Feed: Real-Time NSE &amp; Live Derivatives Gateway</span>
-              <span class="feed-source-meta">Exchange Expiries &bull; Real Lot Sizes &bull; Tick-by-Tick MTM</span>
-            </div>
-          </div>
-          <div class="feed-source-badges">
-            <span class="feed-chip feed-chip-groww">⚡ Groww Real F&amp;O Feed</span>
-            <span class="feed-chip feed-chip-bsm">📐 Black-Scholes Analytical</span>
-            <a id="link-sensibull-chain" href="https://web.sensibull.com/option-chain?tradingsymbol=NBCC" target="_blank" rel="noopener noreferrer" class="feed-chip feed-chip-sensibull" title="View live Sensibull / NSE Option Chain in a new tab">
-              📊 Sensibull Chain ↗
-            </a>
-          </div>
-        </div>
-
-        <!-- Options Specific Parameters Bar (Visible when Options active) -->
-        <div id="options-control-panel" class="options-params-bar" style="display: none;">
-
-          <!-- Call vs Put Toggle -->
-          <div class="option-type-toggle-group">
-            <button type="button" id="btn-opt-type-ce" class="opt-type-pill call active">🟢 CALL (CE)</button>
-            <button type="button" id="btn-opt-type-pe" class="opt-type-pill put">🔴 PUT (PE)</button>
-          </div>
-
-          <!-- Expiry Date Selector -->
-          <div class="form-group field-expiry">
-            <label for="paper-expiry-select">Expiry Date</label>
-            <div class="select-wrapper">
-              <select id="paper-expiry-select">
-                <option value="weekly">Current Weekly Expiry</option>
-                <option value="next_weekly">Next Weekly Expiry</option>
-                <option value="monthly">Monthly Expiry</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Strike Price Selector -->
-          <div class="form-group field-strike">
-            <div class="label-with-action">
-              <label for="paper-strike-input">Strike Price (₹)</label>
-              <button type="button" id="btn-auto-atm-strike" class="btn-link-action">🎯 Auto ATM</button>
-            </div>
-            <div class="strike-input-row">
-              <input type="number" id="paper-strike-input" placeholder="e.g. 25000" step="50">
-              <select id="paper-strike-quick-select" class="strike-quick-dropdown" title="Select from Strike Ladder">
-                <option value="">⚡ Strike Ladder</option>
-              </select>
-            </div>
-          </div>
-
-          <!-- Lots & Lot Size -->
-          <div class="form-group field-contracts">
-            <div class="label-with-action">
-              <label for="paper-contracts-input">Number of Lots</label>
-              <span id="paper-lot-size-badge" class="lot-size-badge">Lot Size: 100</span>
-            </div>
-            <div class="qty-input-row">
-              <input type="number" id="paper-contracts-input" value="1" min="1" step="1">
-              <div class="qty-quick-btns">
-                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="1">1</button>
-                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="2">2</button>
-                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="5">5</button>
-                <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="10">10</button>
+        <!-- Ticket Body Form -->
+        <div class="order-form-body">
+          <!-- Row 1: Asset & Strategy -->
+          <div class="ticket-row-2col">
+            <!-- Underlying Stock / Index Search -->
+            <div class="form-group field-symbol">
+              <label for="paper-stock-input">Underlying Stock / Index</label>
+              <div class="stock-input-wrapper">
+                <span class="stock-input-icon">🔍</span>
+                <input type="text" id="paper-stock-input" placeholder="Search Symbol (e.g. NIFTY, RELIANCE, TATAMOTORS)" autocomplete="off">
               </div>
             </div>
-          </div>
-        </div>
 
-        <!-- Order Form Main Inputs Grid -->
-        <div class="order-form-grid">
-          <!-- Stock Symbol with scoped autocomplete -->
-          <div class="form-group field-symbol">
-            <label for="paper-stock-input">Underlying Stock / Index</label>
-            <div class="stock-input-wrapper">
-              <span class="stock-input-icon">🔍</span>
-              <input type="text" id="paper-stock-input" placeholder="e.g. NIFTY, TVSMOTOR, RELIANCE" autocomplete="off">
-            </div>
-          </div>
-
-          <!-- Quantity / Total Units -->
-          <div class="form-group field-qty" id="form-group-equity-qty">
-            <label for="paper-qty-input" id="label-qty-shares">Quantity (Shares)</label>
-            <div class="qty-input-row">
-              <input type="number" id="paper-qty-input" value="10" min="1" step="1">
-              <div class="qty-quick-btns" id="equity-qty-quick-btns">
-                <button type="button" class="btn-qty-chip" data-qty="10">+10</button>
-                <button type="button" class="btn-qty-chip" data-qty="50">+50</button>
-                <button type="button" class="btn-qty-chip" data-qty="100">+100</button>
+            <!-- Strategy Selection -->
+            <div class="form-group field-strategy">
+              <label for="paper-strategy-select">Trading Strategy Reason</label>
+              <div class="select-wrapper">
+                <select id="paper-strategy-select">
+                  <option value="Knoxville Divergence" selected>Knoxville Divergence</option>
+                  <option value="Dual RSI Oversold">Dual RSI Oversold</option>
+                  <option value="Options Directional Breakout">Options Directional Breakout</option>
+                  <option value="200 SMA Support Touch">200 SMA Support Touch</option>
+                  <option value="AI News Breakout">AI News Breakout</option>
+                  <option value="Manual Discretionary">Manual Discretionary</option>
+                </select>
               </div>
             </div>
           </div>
 
-          <!-- Entry Price / Premium -->
-          <div class="form-group field-price">
-            <div class="label-with-action">
-              <label for="paper-price-input" id="label-entry-price">Entry Price / Premium (₹)</label>
-              <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch Live Price</button>
+          <!-- Options Contextual Section (Visible ONLY when Options active) -->
+          <div id="options-control-panel" class="options-params-bar" style="display: none;">
+            <!-- Call/Put + Sensibull Bar -->
+            <div class="options-contract-header">
+              <div class="contract-side-wrapper">
+                <span class="contract-label">Contract Type:</span>
+                <div class="option-type-toggle-group">
+                  <button type="button" id="btn-opt-type-ce" class="opt-type-pill call active">🟢 CALL (CE)</button>
+                  <button type="button" id="btn-opt-type-pe" class="opt-type-pill put">🔴 PUT (PE)</button>
+                </div>
+              </div>
+              <a id="link-sensibull-chain" href="https://web.sensibull.com/option-chain?tradingsymbol=NIFTY" target="_blank" rel="noopener noreferrer" class="btn-sensibull-action" title="Open live Sensibull option chain for this stock in a new tab">
+                🎯 Sensibull Option Chain ↗
+              </a>
             </div>
-            <input type="number" id="paper-price-input" placeholder="Leave blank for live market" step="0.05">
-          </div>
 
-          <!-- Target Price -->
-          <div class="form-group field-target">
-            <div class="label-with-action">
-              <label for="paper-target-input">Target (₹)</label>
-              <div class="quick-pct-row" id="quick-target-chips">
-                <button type="button" class="btn-pct-chip" data-pct="5">+5%</button>
-                <button type="button" class="btn-pct-chip" data-pct="20">+20%</button>
-                <button type="button" class="btn-pct-chip" data-pct="50">+50%</button>
+            <!-- Expiry, Strike Ladder & Lots Grid -->
+            <div class="options-contract-grid">
+              <!-- Expiry Date Selector -->
+              <div class="form-group field-expiry">
+                <label for="paper-expiry-select">Expiry Date</label>
+                <div class="select-wrapper">
+                  <select id="paper-expiry-select">
+                    <option value="weekly">Current Weekly Expiry</option>
+                    <option value="next_weekly">Next Weekly Expiry</option>
+                    <option value="monthly">Monthly Expiry</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Strike Price Selector (Spacious Ladder & Input) -->
+              <div class="form-group field-strike">
+                <div class="label-with-action">
+                  <label for="paper-strike-input">Strike Price</label>
+                  <button type="button" id="btn-auto-atm-strike" class="btn-link-action">🎯 Auto ATM</button>
+                </div>
+                <div class="strike-input-row">
+                  <select id="paper-strike-quick-select" class="strike-quick-dropdown" title="Select from Strike Ladder">
+                    <option value="">⚡ Strike Ladder</option>
+                  </select>
+                  <input type="number" id="paper-strike-input" placeholder="Custom" step="50" class="strike-input-small" title="Enter Custom Strike">
+                </div>
+              </div>
+
+              <!-- Lots & Lot Size -->
+              <div class="form-group field-contracts">
+                <div class="label-with-action">
+                  <label for="paper-contracts-input">Number of Lots</label>
+                  <span id="paper-lot-size-badge" class="lot-size-badge">Lot Size: 50</span>
+                </div>
+                <div class="qty-input-row">
+                  <input type="number" id="paper-contracts-input" value="1" min="1" step="1" class="qty-input-small">
+                  <div class="qty-quick-btns">
+                    <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="1">1L</button>
+                    <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="2">2L</button>
+                    <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="5">5L</button>
+                    <button type="button" class="btn-qty-chip btn-lot-chip" data-lots="10">10L</button>
+                  </div>
+                </div>
               </div>
             </div>
-            <input type="number" id="paper-target-input" placeholder="Take Profit Target" step="0.05">
           </div>
 
-          <!-- Stop Loss Price -->
-          <div class="form-group field-sl">
-            <div class="label-with-action">
-              <label for="paper-sl-input">Stop Loss (₹)</label>
-              <div class="quick-pct-row" id="quick-sl-chips">
-                <button type="button" class="btn-pct-chip" data-pct="-2">-2%</button>
-                <button type="button" class="btn-pct-chip" data-pct="-15">-15%</button>
-                <button type="button" class="btn-pct-chip" data-pct="-30">-30%</button>
+          <!-- Pricing & Risk Execution Grid -->
+          <div class="ticket-row-pricing">
+            <!-- Quantity for Cash Equity Only -->
+            <div class="form-group field-qty" id="form-group-equity-qty">
+              <label for="paper-qty-input" id="label-qty-shares">Quantity (Shares)</label>
+              <div class="qty-input-row">
+                <input type="number" id="paper-qty-input" value="10" min="1" step="1" class="qty-input-small">
+                <div class="qty-quick-btns" id="equity-qty-quick-btns">
+                  <button type="button" class="btn-qty-chip" data-qty="10">+10</button>
+                  <button type="button" class="btn-qty-chip" data-qty="50">+50</button>
+                  <button type="button" class="btn-qty-chip" data-qty="100">+100</button>
+                </div>
               </div>
             </div>
-            <input type="number" id="paper-sl-input" placeholder="Stop Loss" step="0.05">
-          </div>
 
-          <!-- Strategy Tag -->
-          <div class="form-group field-strategy">
-            <label for="paper-strategy-select">Strategy Reason</label>
-            <div class="select-wrapper">
-              <select id="paper-strategy-select">
-                <option value="Knoxville Divergence" selected>Knoxville Divergence</option>
-                <option value="Dual RSI Oversold">Dual RSI Oversold</option>
-                <option value="Options Directional Breakout">Options Directional Breakout</option>
-                <option value="200 SMA Support Touch">200 SMA Support Touch</option>
-                <option value="AI News Breakout">AI News Breakout</option>
-                <option value="Manual Discretionary">Manual Discretionary</option>
-              </select>
+            <!-- Price / Premium -->
+            <div class="form-group field-price">
+              <div class="label-with-action">
+                <label for="paper-price-input" id="label-entry-price">Entry Price / Premium (₹)</label>
+                <button type="button" id="btn-paper-fetch-ltp" class="btn-link-action">⚡ Fetch Live</button>
+              </div>
+              <input type="number" id="paper-price-input" placeholder="Live Market Quote" step="0.05">
+            </div>
+
+            <!-- Target Price -->
+            <div class="form-group field-target">
+              <div class="label-with-action">
+                <label for="paper-target-input">Target (₹)</label>
+                <div class="quick-pct-row" id="quick-target-chips">
+                  <button type="button" class="btn-pct-chip" data-pct="5">+5%</button>
+                  <button type="button" class="btn-pct-chip" data-pct="20">+20%</button>
+                  <button type="button" class="btn-pct-chip" data-pct="50">+50%</button>
+                </div>
+              </div>
+              <input type="number" id="paper-target-input" placeholder="Take Profit Target" step="0.05">
+            </div>
+
+            <!-- Stop Loss Price -->
+            <div class="form-group field-sl">
+              <div class="label-with-action">
+                <label for="paper-sl-input">Stop Loss (₹)</label>
+                <div class="quick-pct-row" id="quick-sl-chips">
+                  <button type="button" class="btn-pct-chip" data-pct="-2">-2%</button>
+                  <button type="button" class="btn-pct-chip" data-pct="-15">-15%</button>
+                  <button type="button" class="btn-pct-chip" data-pct="-30">-30%</button>
+                </div>
+              </div>
+              <input type="number" id="paper-sl-input" placeholder="Stop Loss" step="0.05">
             </div>
           </div>
-        </div>
 
-        <!-- Live Option Greeks & Pricing Metrics Analytics Deck -->
-        <div id="options-greeks-ribbon" class="options-greeks-box" style="display: none;">
-          <div class="greek-card">
-            <span class="greek-lbl">Underlying Spot</span>
-            <strong id="greek-spot" class="greek-val">—</strong>
+          <!-- Live Option Greeks Deck (Spans 100% full width evenly) -->
+          <div id="options-greeks-ribbon" class="options-greeks-box" style="display: none;">
+            <div class="greek-card">
+              <span class="greek-lbl">Underlying Spot</span>
+              <strong id="greek-spot" class="greek-val">—</strong>
+            </div>
+            <div class="greek-card highlight">
+              <span class="greek-lbl">Live Premium</span>
+              <strong id="greek-premium" class="greek-val text-accent">—</strong>
+            </div>
+            <div class="greek-card capital-card">
+              <span class="greek-lbl">Capital / Lot</span>
+              <strong id="greek-lot-cost" class="greek-val text-emerald">—</strong>
+            </div>
+            <div class="greek-card">
+              <span class="greek-lbl">Delta (Δ)</span>
+              <strong id="greek-delta" class="greek-val">—</strong>
+            </div>
+            <div class="greek-card">
+              <span class="greek-lbl">Theta (Θ/day)</span>
+              <strong id="greek-theta" class="greek-val">—</strong>
+            </div>
+            <div class="greek-card">
+              <span class="greek-lbl">Intrinsic Value</span>
+              <strong id="greek-intrinsic" class="greek-val">—</strong>
+            </div>
+            <div class="greek-card">
+              <span class="greek-lbl">Time Value</span>
+              <strong id="greek-time-val" class="greek-val">—</strong>
+            </div>
           </div>
-          <div class="greek-card highlight">
-            <span class="greek-lbl">Live Premium</span>
-            <strong id="greek-premium" class="greek-val text-accent">—</strong>
-          </div>
-          <div class="greek-card capital-card">
-            <span class="greek-lbl">Capital / Lot</span>
-            <strong id="greek-lot-cost" class="greek-val text-emerald">—</strong>
-          </div>
-          <div class="greek-card">
-            <span class="greek-lbl">Delta (Δ)</span>
-            <strong id="greek-delta" class="greek-val">—</strong>
-          </div>
-          <div class="greek-card">
-            <span class="greek-lbl">Theta (Θ/day)</span>
-            <strong id="greek-theta" class="greek-val">—</strong>
-          </div>
-          <div class="greek-card">
-            <span class="greek-lbl">Intrinsic Value</span>
-            <strong id="greek-intrinsic" class="greek-val">—</strong>
-          </div>
-          <div class="greek-card">
-            <span class="greek-lbl">Time Value</span>
-            <strong id="greek-time-val" class="greek-val">—</strong>
-          </div>
-        </div>
 
-        <div class="order-footer-row">
-          <div class="order-est-summary">
-            <span>Estimated Capital Required:</span>
-            <strong id="paper-est-capital">₹0.00</strong>
+          <!-- Modern Bottom Action Bar -->
+          <div class="order-footer-row">
+            <div class="order-est-summary">
+              <span class="est-label">Estimated Capital Required:</span>
+              <strong id="paper-est-capital">₹0.00</strong>
+            </div>
+            <button id="btn-paper-execute" class="btn-primary btn-execute-order">
+              <span>⚡ Execute Paper Order</span>
+            </button>
           </div>
-          <button id="btn-paper-execute" class="btn-primary btn-execute-order">
-            <span>⚡ Execute Paper Order</span>
-          </button>
+          <div id="paper-order-status" class="wm-status-box" style="display: none;"></div>
         </div>
-        <div id="paper-order-status" class="wm-status-box" style="display: none;"></div>
       </div>
 
       <!-- Positions & Journal Subtabs -->
@@ -2125,6 +817,15 @@
           <span>📜 Trade History Journal</span>
           <span id="badge-history-trades" class="subtab-count-badge">0</span>
         </button>
+
+        <div class="mtm-poll-wrapper">
+          <span id="mtm-live-pill" class="mtm-live-pill active" title="Mark-To-Market updates automatically every 5s">
+            <span class="mtm-pulse-dot"></span>
+            <span id="mtm-status-text">Live MTM (5s)</span>
+          </span>
+          <button type="button" id="btn-toggle-mtm-poll" class="btn-mtm-control" title="Pause / Resume Live Auto-Refresh">⏸ Pause</button>
+          <button type="button" id="btn-refresh-positions" class="btn-mtm-control" title="Instant MTM Refresh">↻ Refresh</button>
+        </div>
       </div>
 
       <!-- Active Open Positions Table View -->
@@ -2650,43 +1351,8 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=68.0"></script>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  <script src="/static/app.js?v=75.0"></script>
 
 </body>
 
 </html>
-
-
-
-
-
-
-
-
-
-
-
-

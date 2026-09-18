@@ -151,8 +151,12 @@ App.Router = {
 
     if (tabName === 'paper') {
       App.Paper.loadData();
-    } else if (tabName === 'backtest') {
-      if (App.Backtester) App.Backtester.initOnce();
+      if (App.Paper._startMtmPolling) App.Paper._startMtmPolling();
+    } else {
+      if (App.Paper && App.Paper._stopMtmPolling) App.Paper._stopMtmPolling();
+      if (tabName === 'backtest') {
+        if (App.Backtester) App.Backtester.initOnce();
+      }
     }
   },
 };
@@ -163,6 +167,9 @@ App.Router = {
 // 4. Lookback Screener & TradingView Module
 // =====================================================================
 App.Screener = {
+  _currentSort: 'recency',
+  _currentQuery: '',
+
   init() {
     // Lookback Range Pills
     document.querySelectorAll('#lookback-group .pill').forEach(btn => {
@@ -192,6 +199,33 @@ App.Screener = {
         this.fetchSignals();
       });
     }
+
+    // Sort Dropdown
+    const sortSelect = document.querySelector('#lookback-sort');
+    if (sortSelect) {
+      sortSelect.addEventListener('change', () => {
+        this._currentSort = sortSelect.value;
+        this.applySortAndFilter();
+      });
+    }
+
+    // Clickable Interactive Table Headers
+    document.querySelectorAll('#section-lookback th.th-sortable').forEach(th => {
+      th.addEventListener('click', () => {
+        const sortKey = th.dataset.sort;
+        if (sortKey === 'symbol') {
+          this._currentSort = this._currentSort === 'symbol' ? 'symbol_desc' : 'symbol';
+        } else if (sortKey === 'price') {
+          this._currentSort = this._currentSort === 'price_desc' ? 'price_asc' : 'price_desc';
+        } else if (sortKey === 'rsi') {
+          this._currentSort = this._currentSort === 'rsi_asc' ? 'rsi_desc' : 'rsi_asc';
+        } else if (sortKey === 'date') {
+          this._currentSort = this._currentSort === 'recency' ? 'date_asc' : 'recency';
+        }
+        if (sortSelect) sortSelect.value = this._currentSort;
+        this.applySortAndFilter();
+      });
+    });
 
     // Refresh & Rescan Buttons
     const btnRefresh = document.querySelector('#lookback-refresh');
@@ -230,7 +264,7 @@ App.Screener = {
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       this._allSignals = data.signals || [];
-      this.renderTable(this._allSignals);
+      this.applySortAndFilter();
       this.updateMetricsRibbon(data);
       if (statusEl) statusEl.textContent = `Market Ready · ${data.total_signals || 0} Signals Found`;
     } catch (err) {
@@ -240,24 +274,75 @@ App.Screener = {
   },
 
   filterTableByQuery(query) {
-    const q = (query || '').trim().toUpperCase();
+    this._currentQuery = (query || '').trim().toUpperCase();
+    this.applySortAndFilter();
+  },
+
+  applySortAndFilter() {
     if (!this._allSignals) return;
-    if (!q) {
-      this.renderTable(this._allSignals);
-      return;
+    let list = this._allSignals;
+    if (this._currentQuery) {
+      const q = this._currentQuery;
+      list = list.filter(s => {
+        const sym = (s.symbol || '').toUpperCase();
+        const uni = (s.universe || s.index_membership || '').toUpperCase();
+        const strat = (s.strategy || '').toUpperCase();
+        return sym.includes(q) || uni.includes(q) || strat.includes(q);
+      });
     }
-    const filtered = this._allSignals.filter(s => {
-      const sym = (s.symbol || '').toUpperCase();
-      const uni = (s.universe || s.index_membership || '').toUpperCase();
-      const strat = (s.strategy || '').toUpperCase();
-      return sym.includes(q) || uni.includes(q) || strat.includes(q);
-    });
-    this.renderTable(filtered);
+    const sorted = this.sortSignals(list, this._currentSort);
+    this.renderTable(sorted);
+  },
+
+  sortSignals(signals, sortKey) {
+    if (!signals || !signals.length) return [];
+    const copy = [...signals];
+    switch (sortKey) {
+      case 'rsi_asc':
+        return copy.sort((a, b) => (a.rsi == null ? 999 : Number(a.rsi)) - (b.rsi == null ? 999 : Number(b.rsi)));
+      case 'rsi_desc':
+        return copy.sort((a, b) => (b.rsi == null ? -999 : Number(b.rsi)) - (a.rsi == null ? -999 : Number(a.rsi)));
+      case 'symbol':
+        return copy.sort((a, b) => (a.symbol || '').localeCompare(b.symbol || ''));
+      case 'symbol_desc':
+        return copy.sort((a, b) => (b.symbol || '').localeCompare(a.symbol || ''));
+      case 'price_desc':
+        return copy.sort((a, b) => (Number(b.close_price) || 0) - (Number(a.close_price) || 0));
+      case 'price_asc':
+        return copy.sort((a, b) => (Number(a.close_price) || 0) - (Number(b.close_price) || 0));
+      case 'date_asc':
+        return copy.sort((a, b) => (a.scan_date || '').localeCompare(b.scan_date || ''));
+      case 'recency':
+      default:
+        return copy.sort((a, b) => (b.scan_date || '').localeCompare(a.scan_date || ''));
+    }
   },
 
   renderTable(signals) {
     const tbody = document.querySelector('#lookback-rows');
     if (!tbody) return;
+
+    // Update table header sorting visual carets
+    document.querySelectorAll('#section-lookback th.th-sortable').forEach(th => {
+      const key = th.dataset.sort;
+      th.classList.remove('sorted-asc', 'sorted-desc');
+      const caret = th.querySelector('.sort-caret');
+      if (caret) caret.textContent = '↕';
+
+      if ((key === 'symbol' && this._currentSort === 'symbol') ||
+          (key === 'price' && this._currentSort === 'price_asc') ||
+          (key === 'rsi' && this._currentSort === 'rsi_asc') ||
+          (key === 'date' && this._currentSort === 'date_asc')) {
+        th.classList.add('sorted-asc');
+        if (caret) caret.textContent = '▲';
+      } else if ((key === 'symbol' && this._currentSort === 'symbol_desc') ||
+                 (key === 'price' && this._currentSort === 'price_desc') ||
+                 (key === 'rsi' && this._currentSort === 'rsi_desc') ||
+                 (key === 'date' && this._currentSort === 'recency')) {
+        th.classList.add('sorted-desc');
+        if (caret) caret.textContent = '▼';
+      }
+    });
 
     if (!signals.length) {
       tbody.innerHTML = `<tr><td colspan="9" class="empty-cell">No matching signals found for selected filters.</td></tr>`;
@@ -275,6 +360,7 @@ App.Screener = {
       const rsiCls = s.rsi != null && s.rsi <= 30 ? 'oversold' : (s.rsi != null && s.rsi >= 70 ? 'overbought' : '');
       const knoxTag = s.is_knox_divergence ? '<span class="badge-knox">⚡ KNOXVILLE</span>' : '—';
       const ma200Tag = s.is_touching_200sma ? '<span class="badge-ma200">📈 200 SMA</span>' : '—';
+      const liveBadge = s.is_live_price ? `<span class="badge-live-ltp" title="Real-time live exchange tick">LIVE</span>` : '';
 
       return `<tr>
         <td>
@@ -291,7 +377,7 @@ App.Screener = {
         </td>
         <td><span class="universe-cell">${universe}</span></td>
         <td><span class="badge badge-${sigType}">${sigType.toUpperCase()}</span></td>
-        <td class="price-cell">${App.Utils.money(price)}</td>
+        <td class="price-cell">${App.Utils.money(price)} ${liveBadge}</td>
         <td><span class="rsi-cell ${rsiCls}">${rsiVal}</span></td>
         <td>${knoxTag}</td>
         <td>${ma200Tag}</td>
@@ -1043,7 +1129,37 @@ App.News = {
 // 6. Paper Trading & Institutional Options Derivatives Module
 // =====================================================================
 App.Paper = {
+  _mtmPollInterval: null,
+  _isMtmPollingPaused: false,
+  _lastPositionsMap: {},
+
   init() {
+    // Live MTM Auto-Refresh Controls
+    const btnToggleMtm = document.querySelector('#btn-toggle-mtm-poll');
+    if (btnToggleMtm) {
+      btnToggleMtm.addEventListener('click', () => this._toggleMtmPolling());
+    }
+
+    const btnRefreshPos = document.querySelector('#btn-refresh-positions');
+    if (btnRefreshPos) {
+      btnRefreshPos.addEventListener('click', () => {
+        btnRefreshPos.disabled = true;
+        btnRefreshPos.textContent = '⏳ Fetching…';
+        this.pollMtmPositions().finally(() => {
+          setTimeout(() => {
+            btnRefreshPos.disabled = false;
+            btnRefreshPos.textContent = '↻ Refresh';
+          }, 400);
+        });
+      });
+    }
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && App.State.activeTab === 'paper' && !this._isMtmPollingPaused) {
+        this.pollMtmPositions();
+      }
+    });
+
     // Instrument Switches (Equity Cash vs Options F&O)
     const btnEq = document.querySelector('#btn-inst-equity');
     const btnOpt = document.querySelector('#btn-inst-option');
@@ -1084,9 +1200,18 @@ App.Paper = {
     const stockInput = document.querySelector('#paper-stock-input');
     if (stockInput) {
       let stockInputTimeout = null;
+      let _lastSymbol = null;
       const handleStockChange = () => {
         const sym = stockInput.value.trim().toUpperCase();
-        if (sym) {
+        if (sym && sym.length >= 2 && sym !== _lastSymbol) {
+          _lastSymbol = sym;
+          const sIn = document.querySelector('#paper-strike-input');
+          if (sIn) sIn.value = '';
+          const pIn = document.querySelector('#paper-price-input');
+          if (pIn) pIn.value = '';
+          const sbLink = document.querySelector('#link-sensibull-chain');
+          if (sbLink) sbLink.href = `https://web.sensibull.com/option-chain?tradingsymbol=${encodeURIComponent(sym)}`;
+
           if (App.State.paperInstrument === 'OPTION') {
             this.fetchOptionStrikes(sym);
           } else {
@@ -1202,6 +1327,73 @@ App.Paper = {
     // Subtabs Navigation
     this.initSubtabs();
 
+    // Default strictly to Equity Cash mode
+    this.switchInstrument(App.State.paperInstrument || 'EQUITY');
+
+  },
+
+  _startMtmPolling() {
+    if (this._mtmPollInterval) return;
+    this._updateMtmStatusUI();
+    this._mtmPollInterval = setInterval(() => {
+      if (!this._isMtmPollingPaused && document.visibilityState === 'visible' && App.State.activeTab === 'paper') {
+        this.pollMtmPositions();
+      }
+    }, 5000);
+  },
+
+  _stopMtmPolling() {
+    if (this._mtmPollInterval) {
+      clearInterval(this._mtmPollInterval);
+      this._mtmPollInterval = null;
+    }
+  },
+
+  _toggleMtmPolling() {
+    this._isMtmPollingPaused = !this._isMtmPollingPaused;
+    this._updateMtmStatusUI();
+    if (!this._isMtmPollingPaused) {
+      this.pollMtmPositions();
+    }
+  },
+
+  _updateMtmStatusUI() {
+    const pill = document.querySelector('#mtm-live-pill');
+    const text = document.querySelector('#mtm-status-text');
+    const btn = document.querySelector('#btn-toggle-mtm-poll');
+
+    if (this._isMtmPollingPaused) {
+      if (pill) {
+        pill.classList.remove('active');
+        pill.classList.add('paused');
+      }
+      if (text) text.textContent = 'MTM Paused';
+      if (btn) {
+        btn.textContent = '▶ Resume';
+        btn.classList.add('paused');
+      }
+    } else {
+      if (pill) {
+        pill.classList.remove('paused');
+        pill.classList.add('active');
+      }
+      if (text) text.textContent = 'Live MTM (5s)';
+      if (btn) {
+        btn.textContent = '⏸ Pause';
+        btn.classList.remove('paused');
+      }
+    }
+  },
+
+  async pollMtmPositions() {
+    try {
+      await Promise.all([
+        this.loadSummary(),
+        this.loadPositions()
+      ]);
+    } catch (e) {
+      console.debug('MTM polling error:', e);
+    }
   },
 
   switchInstrument(inst) {
@@ -1219,9 +1411,9 @@ App.Paper = {
     if (isOpt) {
       if (btnOpt) btnOpt.classList.add('active');
       if (btnEq) btnEq.classList.remove('active');
-      if (optPanel) optPanel.style.display = 'grid';
-      if (greeksRibbon) greeksRibbon.style.display = 'flex';
-      if (eqQtyGroup) eqQtyGroup.style.display = 'none';
+      if (optPanel) optPanel.style.setProperty('display', 'grid', 'important');
+      if (greeksRibbon) greeksRibbon.style.setProperty('display', 'flex', 'important');
+      if (eqQtyGroup) eqQtyGroup.style.setProperty('display', 'none', 'important');
       if (fetchBtn) fetchBtn.textContent = '⚡ Fetch Live Premium';
       if (labelPrice) labelPrice.textContent = 'Option Premium (₹)';
       this.updateQuickChips('OPTION');
@@ -1236,12 +1428,15 @@ App.Paper = {
     } else {
       if (btnEq) btnEq.classList.add('active');
       if (btnOpt) btnOpt.classList.remove('active');
-      if (optPanel) optPanel.style.display = 'none';
-      if (greeksRibbon) greeksRibbon.style.display = 'none';
-      if (eqQtyGroup) eqQtyGroup.style.display = 'flex';
+      if (optPanel) optPanel.style.setProperty('display', 'none', 'important');
+      if (greeksRibbon) greeksRibbon.style.setProperty('display', 'none', 'important');
+      if (eqQtyGroup) eqQtyGroup.style.setProperty('display', 'flex', 'important');
       if (fetchBtn) fetchBtn.textContent = '⚡ Fetch Live Price';
       if (labelPrice) labelPrice.textContent = 'Entry Price (₹)';
       this.updateQuickChips('EQUITY');
+      const pIn = document.querySelector('#paper-price-input');
+      if (pIn) pIn.value = '';
+      this.fetchLivePriceOrPremium();
     }
 
     this.updateEstimatedCapital();
@@ -1419,12 +1614,12 @@ App.Paper = {
         `).join('');
       }
 
-      // Update Strike Input with ATM Strike if empty or mismatched with new ticker
+      // Update Strike Input with ATM Strike if empty, new symbol, or mismatched with new ticker
       const strikeInput = document.querySelector('#paper-strike-input');
       if (strikeInput) {
         const currentStrike = parseFloat(strikeInput.value);
         const strikeExists = data.strikes && data.strikes.some(s => s.strike === currentStrike);
-        if (!strikeInput.value || !strikeExists) {
+        if (!selectedExpiry || !strikeInput.value || !strikeExists) {
           strikeInput.value = data.atm_strike;
         }
       }
@@ -1727,14 +1922,29 @@ App.Paper = {
 
     if (!positions || !positions.length) {
       tbody.innerHTML = `<tr><td colspan="11" class="empty-cell">No open positions. Use the order form above or click "Paper Trade" from the Screener.</td></tr>`;
+      this._lastPositionsMap = {};
       return;
     }
+
+    const prevMap = this._lastPositionsMap || {};
+    const newMap = {};
 
     tbody.innerHTML = positions.map(pos => {
       const pnlCls = pos.unrealized_pnl > 0 ? 'positive' : (pos.unrealized_pnl < 0 ? 'negative' : '');
       const sideCls = pos.side.toLowerCase();
       const isOpt = pos.instrument_type === 'OPTION';
       const optTypeCls = pos.option_type ? (pos.option_type === 'CE' ? 'call' : 'put') : 'equity';
+
+      const prevPrice = prevMap[pos.id];
+      let flashClass = '';
+      if (prevPrice !== undefined && prevPrice !== null) {
+        if (pos.current_price > prevPrice) {
+          flashClass = 'flash-price-up';
+        } else if (pos.current_price < prevPrice) {
+          flashClass = 'flash-price-down';
+        }
+      }
+      newMap[pos.id] = pos.current_price;
 
       return `<tr>
         <td>
@@ -1746,6 +1956,10 @@ App.Paper = {
               <a class="sub-link-screener" target="_blank" rel="noopener noreferrer" href="https://www.screener.in/company/${encodeURIComponent(pos.symbol)}/consolidated/">
                 📊 Screener
               </a>
+              ${isOpt ? `
+              <a class="sub-link-sensibull" target="_blank" rel="noopener noreferrer" href="https://web.sensibull.com/option-chain?tradingsymbol=${encodeURIComponent(pos.symbol)}">
+                🎯 Sensibull ↗
+              </a>` : ''}
             </div>
           </div>
         </td>
@@ -1763,7 +1977,7 @@ App.Paper = {
           </div>
         </td>
         <td class="price-cell">${App.Utils.money(pos.entry_price)}</td>
-        <td class="price-cell"><strong>${App.Utils.money(pos.current_price)}</strong></td>
+        <td class="price-cell ${flashClass}"><strong>${App.Utils.money(pos.current_price)}</strong></td>
         <td class="price-cell">${App.Utils.money(pos.invested_amount)}</td>
         <td class="price-cell ${pnlCls}">
           <strong>${App.Utils.money(pos.unrealized_pnl)}</strong>
@@ -1788,6 +2002,8 @@ App.Paper = {
         </td>
       </tr>`;
     }).join('');
+
+    this._lastPositionsMap = newMap;
   },
 
   async loadHistory() {
@@ -3036,6 +3252,13 @@ App.Autocomplete = {
         const input = document.querySelector('#paper-stock-input');
         if (input) {
           input.value = item.symbol;
+          const sIn = document.querySelector('#paper-strike-input');
+          if (sIn) sIn.value = '';
+          const pIn = document.querySelector('#paper-price-input');
+          if (pIn) pIn.value = '';
+          const sbLink = document.querySelector('#link-sensibull-chain');
+          if (sbLink) sbLink.href = `https://web.sensibull.com/option-chain?tradingsymbol=${encodeURIComponent(item.symbol)}`;
+
           if (App.State.paperInstrument === 'OPTION') {
             App.Paper.fetchOptionStrikes(item.symbol);
           } else {

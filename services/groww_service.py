@@ -48,12 +48,46 @@ class GrowwOptionsService:
                     logger.debug(f"Loaded {len(data)} pre-resolved F&O stock slugs from {slug_file}")
             except Exception as e:
                 logger.warning(f"Failed to load {slug_file}: {e}")
+    KNOWN_ALIASES: dict[str, str] = {
+        "NIFTY": "nifty",
+        "NIFTY50": "nifty",
+        "BANKNIFTY": "nifty-bank",
+        "FINNIFTY": "nifty-financial-services",
+        "MIDCPNIFTY": "nifty-midcap-select",
+        "SENSEX": "bse-sensex",
+        "LT": "larsen-toubro-ltd",
+        "L&T": "larsen-toubro-ltd",
+        "M&M": "mahindra-mahindra-ltd",
+        "MM": "mahindra-mahindra-ltd",
+        "TATAMOTORS": "tata-motors-ltd",
+        "BAJAJ-AUTO": "bajaj-auto-ltd",
+        "BAJAJ_AUTO": "bajaj-auto-ltd",
+        "MCDOWELL-N": "united-spirits-ltd",
+        "L&TFH": "lt-finance-holdings-ltd",
+        "NAM-INDIA": "nippon-life-india-asset-management-ltd",
+    }
 
     def get_slug(self, symbol: str) -> str:
-        """Resolve NSE ticker symbol to Groww derivatives slug."""
+        """Resolve NSE ticker symbol to Groww derivatives slug with strict validation."""
         clean_sym = symbol.strip().upper()
+        for prefix in ("NSE:", "BSE:"):
+            if clean_sym.startswith(prefix):
+                clean_sym = clean_sym[len(prefix):].strip()
+        for suffix in (".NS", ".BO", "-EQ", "-BE"):
+            if clean_sym.endswith(suffix):
+                clean_sym = clean_sym[:-len(suffix)].strip()
+
         if clean_sym in self._SLUG_CACHE:
             return self._SLUG_CACHE[clean_sym]
+
+        if clean_sym in self.KNOWN_ALIASES:
+            slug = self.KNOWN_ALIASES[clean_sym]
+            self._SLUG_CACHE[clean_sym] = slug
+            return slug
+
+        # Do not perform fuzzy search on empty or tiny unmapped prefixes (e.g. 'N', 'M')
+        if len(clean_sym) < 3:
+            return clean_sym.lower()
 
         try:
             url = f"https://groww.in/v1/api/search/v1/entity?app=false&entity_type=Stocks&query={clean_sym}"
@@ -61,14 +95,10 @@ class GrowwOptionsService:
             if resp.status_code == 200:
                 data = resp.json()
                 for item in data.get("content", []):
-                    if item.get("nse_scrip_code") == clean_sym or item.get("search_id") == clean_sym.lower():
-                        slug = item.get("search_id")
-                        self._SLUG_CACHE[clean_sym] = slug
-                        self._persist_slug(clean_sym, slug)
-                        return slug
-                if data.get("content"):
-                    slug = data["content"][0].get("search_id")
-                    if slug:
+                    scrip = (item.get("nse_scrip_code") or item.get("bse_scrip_code") or "").strip().upper()
+                    sid = (item.get("search_id") or "").strip().lower()
+                    if scrip == clean_sym or sid == clean_sym.lower() or sid == f"{clean_sym.lower()}-ltd":
+                        slug = sid
                         self._SLUG_CACHE[clean_sym] = slug
                         self._persist_slug(clean_sym, slug)
                         return slug
@@ -81,6 +111,8 @@ class GrowwOptionsService:
 
     def _persist_slug(self, symbol: str, slug: str) -> None:
         """Persist dynamically discovered slug to disk."""
+        if len(symbol) < 2 or not slug:
+            return
         import json
         from pathlib import Path
         try:
@@ -173,11 +205,13 @@ class GrowwOptionsService:
             return 0.0
         val = float(raw_s)
         if spot_price > 0:
-            if val > (spot_price * 25):
+            if val > (spot_price * 5.0):
                 return round(val / 100.0, 2)
-            elif val <= (spot_price * 5):
+            elif val <= (spot_price * 3.5):
                 return round(val, 2)
-        return round(val / 100.0, 2)
+        if val > 10000:
+            return round(val / 100.0, 2)
+        return round(val, 2)
 
     def get_option_strikes(self, symbol: str, spot_price: float, expiry_date_str: str | None = None) -> dict[str, Any] | None:
         """

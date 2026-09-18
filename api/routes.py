@@ -98,8 +98,24 @@ def get_lookback_screener(
         overbought = sum(1 for it in items if it.get("primary_type") in ("overbought", "sell") or (it.get("rsi") is not None and it["rsi"] >= 70))
         knoxville = sum(1 for it in items if any((r.get("category") == "Strategy_Signal" and r.get("strategy") == "RB_KnoxDiv") or "knox" in r.get("text", "").lower() for r in it.get("reasons", [])))
 
+        import time
+        from services.paper_service import PaperTradingService
+        cached_ltps = PaperTradingService._LTP_CACHE
+        now_ts = time.time()
+
         signals_list = []
         for it in items:
+            sym = it["symbol"]
+            close_p = it.get("current_price", 0.0)
+            ltp = close_p
+            is_live = False
+
+            if sym in cached_ltps:
+                c_time, c_val = cached_ltps[sym]
+                if now_ts - c_time < PaperTradingService._LTP_TTL and c_val.get("ltp"):
+                    ltp = c_val["ltp"]
+                    is_live = True
+
             reasons = it.get("reasons", [])
             is_knox = any((r.get("category") == "Strategy_Signal" and r.get("strategy") == "RB_KnoxDiv") or "knox" in r.get("text", "").lower() for r in reasons)
             is_ma200 = any(r.get("category") == "MA200" or "200" in r.get("text", "") for r in reasons)
@@ -112,10 +128,12 @@ def get_lookback_screener(
                 strat_label = "RSI"
 
             signals_list.append({
-                "symbol": it["symbol"],
+                "symbol": sym,
                 "universe": it.get("index_membership", ""),
                 "signal_type": it.get("primary_type", "neutral"),
-                "close_price": it.get("current_price", 0.0),
+                "close_price": ltp,
+                "daily_close": close_p,
+                "is_live_price": is_live,
                 "rsi": it.get("rsi"),
                 "rsi_ma": it.get("rsi_ma"),
                 "sma_200": it.get("sma_200"),

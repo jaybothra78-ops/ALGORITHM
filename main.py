@@ -89,10 +89,12 @@ def serve_dashboard() -> FileResponse:
 
 
 if __name__ == "__main__":
+    import os
     import uvicorn
+    port = int(os.environ.get("PORT", settings.PORT or settings.SERVER_PORT))
     uvicorn.run(
         "main:app",
-        host=settings.SERVER_HOST,
-        port=settings.SERVER_PORT,
+        host="0.0.0.0",
+        port=port,
         reload=False,
     )

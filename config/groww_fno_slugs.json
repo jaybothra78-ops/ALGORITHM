@@ -101,10 +101,10 @@
   "LAURUSLABS": "laurus-labs-ltd",
   "LODHA": "lodha-developers-ltd",
   "LICHSGFIN": "lic-housing-finance-ltd",
-  "LT": "billionbrains-garage-ventures-ltd",
+  "LT": "larsen-toubro-ltd",
   "LTF": "lt-finance-holdings-ltd",
   "LUPIN": "lupin-ltd",
-  "M&M": "madhav-copper-ltd",
+  "M&M": "mahindra-mahindra-ltd",
   "MANAPPURAM": "manappuram-finance-ltd",
   "MANKIND": "mankind-pharma-ltd",
   "MARICO": "marico-ltd",
@@ -150,7 +150,6 @@
   "RVNL": "rail-vikas-nigam-ltd",
   "SBICARD": "sbi-cards-payment-services-ltd",
   "SAIL": "steel-authority-of-india-ltd",
-  "SAMMAANCAP": "indiabulls-housing-finance-ltd",
   "SBIN": "state-bank-of-india",
   "SBILIFE": "sbi-life-insurance-company-ltd",
   "SHREECEM": "shree-cement-ltd",
@@ -186,7 +185,9 @@
   "TATAMOTORS": "tata-motors-ltd",
   "ICICIBANK": "icici-bank-ltd",
   "NB": "nbcc-india-ltd",
-  "N": "credent-connect-n-care-ltd",
-  "NIFT": "nitta-gelatin-india-ltd",
-  "COF": "niit-technologies-ltd"
+  "COF": "niit-technologies-ltd",
+  "RMC": "rmc-switchgears-ltd",
+  "MM": "mahindra-mahindra-ltd",
+  "MCDOWELL-N": "united-spirits-ltd",
+  "L&TFH": "lt-finance-holdings-ltd"
 }

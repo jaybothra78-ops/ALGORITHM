@@ -31,6 +31,13 @@ class PaperTradingService:
     def get_live_ltp(cls, symbol: str) -> dict[str, Any]:
         """Fetch exact real-time Last Traded Price (LTP) from NSE/BSE feeds with TTL caching."""
         clean_sym = symbol.strip().upper()
+        for prefix in ("NSE:", "BSE:"):
+            if clean_sym.startswith(prefix):
+                clean_sym = clean_sym[len(prefix):].strip()
+        for suffix in (".NS", ".BO", "-EQ", "-BE"):
+            if clean_sym.endswith(suffix):
+                clean_sym = clean_sym[:-len(suffix)].strip()
+
         now = time.time()
 
         # 1. Check in-memory TTL cache first (< 0.1ms)
@@ -41,7 +48,7 @@ class PaperTradingService:
 
         # 2. Priority 1: Direct Real-Time NSE Live Feed (matches Sensibull / Kite tick-for-tick)
         try:
-            if clean_sym in ("NIFTY", "NIFTY50", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY", "SENSEX"):
+            if clean_sym in ("NIFTY", "NIFTY50", "BANKNIFTY", "FINNIFTY", "MIDCPNIFTY"):
                 from services.groww_service import GrowwOptionsService
                 d = GrowwOptionsService.get_instance().fetch_option_chain_raw(clean_sym)
                 if d and d.get("livePrice"):
@@ -63,32 +70,45 @@ class PaperTradingService:
                         }
                         cls._LTP_CACHE[clean_sym] = (now, res)
                         return dict(res)
-            else:
+            elif clean_sym != "SENSEX":
                 import requests
-                url = f"https://groww.in/v1/api/stocks_data/v1/accord_points/exchange/NSE/segment/CASH/latest_prices_ohlc/{clean_sym}"
-                r = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
-                if r.status_code == 200:
-                    d = r.json()
-                    ltp_val = d.get("ltp")
-                    if ltp_val and float(ltp_val) > 0:
-                        ltp = float(ltp_val)
-                        close = float(d.get("close") or ltp)
-                        chg = float(d.get("dayChange") or (ltp - close))
-                        pct = round((chg / close) * 100.0, 2) if close > 0 else 0.0
-                        res = {
-                            "symbol": clean_sym,
-                            "ticker": f"{clean_sym}.NS",
-                            "ltp": round(ltp, 2),
-                            "previous_close": round(close, 2),
-                            "change": round(chg, 2),
-                            "change_pct": pct,
-                            "source": "NSE Real-Time Live Feed",
-                            "timestamp": now,
-                        }
-                        cls._LTP_CACHE[clean_sym] = (now, res)
-                        return dict(res)
+                for ex in ("NSE", "BSE"):
+                    url = f"https://groww.in/v1/api/stocks_data/v1/accord_points/exchange/{ex}/segment/CASH/latest_prices_ohlc/{clean_sym}"
+                    r = requests.get(url, headers={"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}, timeout=3)
+                    if r.status_code == 200:
+                        d = r.json()
+                        ltp_val = d.get("ltp")
+                        if ltp_val and float(ltp_val) > 0:
+                            ltp = float(ltp_val)
+                            close = float(d.get("close") or ltp)
+                            chg = float(d.get("dayChange") or (ltp - close))
+                            pct = round((chg / close) * 100.0, 2) if close > 0 else 0.0
+                            res = {
+                                "symbol": clean_sym,
+                                "ticker": f"{clean_sym}.{ 'BO' if ex == 'BSE' else 'NS'}",
+                                "ltp": round(ltp, 2),
+                                "previous_close": round(close, 2),
+                                "change": round(chg, 2),
+                                "change_pct": pct,
+                                "source": f"{ex} Real-Time Live Feed",
+                                "timestamp": now,
+                            }
+                            cls._LTP_CACHE[clean_sym] = (now, res)
+                            return dict(res)
         except Exception as exc:
             logger.debug(f"Direct real-time exchange quote error for {clean_sym}: {exc}")
+
+        if len(clean_sym) < 2 or (len(clean_sym) == 2 and clean_sym not in ("LT", "MM")):
+            return {
+                "symbol": clean_sym,
+                "ticker": f"{clean_sym}.NS",
+                "ltp": 0.0,
+                "previous_close": 0.0,
+                "change": 0.0,
+                "change_pct": 0.0,
+                "source": "Invalid Symbol",
+                "timestamp": now,
+            }
 
         # 3. Fallback to Yahoo Finance (delayed)
         import yfinance as yf
