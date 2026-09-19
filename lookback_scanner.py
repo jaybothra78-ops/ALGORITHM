@@ -7,6 +7,7 @@ def scan_lookback(
     index_filter: str | None = None,
     signal_filter: str | None = None,
     force_refresh: bool = False,
+    user_id: int | None = None,
 ):
     res = ScannerEngine.screen_lookback(
         lookback_days=lookback_days,
@@ -14,5 +15,6 @@ def scan_lookback(
         index_filter=index_filter,
         signal_filter=signal_filter,
         force_refresh=force_refresh,
+        user_id=user_id,
     )
     return res.model_dump()

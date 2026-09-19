@@ -82,7 +82,6 @@ class ScannerEngine:
 
     @classmethod
     def screen_lookback(
-
         cls,
         lookback_days: int = 1,
         rsi_length: int = 14,
@@ -91,16 +90,17 @@ class ScannerEngine:
         symbol: str | None = None,
         include_neutral: bool = False,
         force_refresh: bool = False,
+        user_id: int | None = None,
     ) -> LookbackResponse:
-        """Perform high-speed lookback screening with in-memory caching."""
+        """Perform high-speed lookback screening with in-memory caching isolated per user."""
         clean_sym = symbol.strip().upper() if symbol else None
-        cache_key = f"{lookback_days}_{rsi_length}_{index_filter}_{signal_filter}_{clean_sym}_{include_neutral}"
+        cache_key = f"{user_id or 0}_{lookback_days}_{rsi_length}_{index_filter}_{signal_filter}_{clean_sym}_{include_neutral}"
         if not force_refresh and cache_key in cls._LOOKBACK_CACHE:
             cached_data, timestamp = cls._LOOKBACK_CACHE[cache_key]
             if time.time() - timestamp < settings.CACHE_TTL_SECONDS:
                 return cached_data
 
-        universe = load_universe()
+        universe = load_universe(user_id=user_id)
         if clean_sym:
             if clean_sym in universe:
                 filtered_universe = {clean_sym: universe[clean_sym]}
@@ -110,7 +110,6 @@ class ScannerEngine:
         elif index_filter:
             target_idx = index_filter.replace("custom:", "").strip() if index_filter.startswith("custom:") else index_filter
             filtered_universe = {s: m for s, m in universe.items() if target_idx in m or index_filter in m}
-
         else:
             filtered_universe = universe
 

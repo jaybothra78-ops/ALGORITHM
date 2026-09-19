@@ -25,7 +25,7 @@ async def _warmup_cache() -> None:
     from services.scanner import ScannerEngine
     try:
         logger.info("Pre-warming market data cache in background...")
-        await asyncio.to_thread(ScannerEngine.screen_lookback, 1, 14, None, None, False)
+        await asyncio.to_thread(lambda: ScannerEngine.screen_lookback(lookback_days=1, rsi_length=14, user_id=None))
         logger.info("Market data cache pre-warmed and ready.")
     except Exception as exc:
         logger.warning(f"Background cache warm-up error: {exc}")

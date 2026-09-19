@@ -75,6 +75,7 @@ def get_lookback_screener(
     symbol: str | None = Query(None, description="Specific ticker search"),
     include_neutral: bool = Query(False, description="Include neutral unflagged stocks"),
     refresh: bool = Query(False, description="Force fresh market data download"),
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> dict[str, Any]:
     """Multi-condition lookback screener for RSI extremes and strategy signals."""
     effective_days = days or lookback_days or 1
@@ -90,6 +91,7 @@ def get_lookback_screener(
             symbol=symbol,
             include_neutral=include_neutral,
             force_refresh=refresh,
+            user_id=user["id"],
         )
         res_dict = resp.model_dump()
 
@@ -158,11 +160,13 @@ def get_lookback_screener(
 
 
 @router.get("/universe/symbols", response_model=list[dict[str, Any]])
-def get_universe_symbols_endpoint() -> list[dict[str, Any]]:
+def get_universe_symbols_endpoint(
+    user: dict[str, Any] = Depends(get_current_user),
+) -> list[dict[str, Any]]:
     """Retrieve full list of universe symbols and index memberships for auto-complete."""
     try:
         from services.universe import load_universe
-        universe = load_universe()
+        universe = load_universe(user_id=user["id"])
         return [{"symbol": s, "membership": sorted(list(m))} for s, m in sorted(universe.items())]
     except Exception as exc:
         raise HTTPException(500, f"Failed to retrieve universe symbols: {exc}") from exc
@@ -259,11 +263,12 @@ def delete_watchlist_endpoint(
 @router.post("/backtest/run", response_model=BacktestResponse)
 def run_backtest_endpoint(
     payload: BacktestRequest,
+    user: dict[str, Any] = Depends(get_current_user),
 ) -> BacktestResponse:
     """Run simulated strategy backtest on historical market data."""
     try:
         from services.backtester import BacktesterEngine
-        return BacktesterEngine.run_backtest(payload)
+        return BacktesterEngine.run_backtest(payload, user_id=user["id"])
     except Exception as exc:
         raise HTTPException(500, f"Backtest simulation failed: {exc}") from exc
 

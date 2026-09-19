@@ -142,8 +142,12 @@ def import_tradingview_watchlist(url: str, custom_name: str | None = None, user_
     }
 
 
-def load_universe() -> dict[str, set[str]]:
-    """Return map of symbol -> set of index/watchlist memberships."""
+def load_universe(user_id: int | None = None) -> dict[str, set[str]]:
+    """Return map of symbol -> set of index/watchlist memberships.
+
+    If user_id is specified, includes that user's private custom watchlists.
+    If user_id is None, includes only standard public market index constituents.
+    """
     fallback = _load_fallback()
     memberships: dict[str, set[str]] = {}
 
@@ -158,19 +162,12 @@ def load_universe() -> dict[str, set[str]]:
         for s in symbols:
             memberships.setdefault(s, set()).add(index_name)
 
-    # Load custom Watchlist
-    for s in _load_symbols_from_file(settings.WATCHLIST_PATH) | fallback.get("Watchlist", set()):
-        memberships.setdefault(s, set()).add("Watchlist")
-
-    # Load F&O List
-    for s in _load_symbols_from_file(settings.FNO_PATH) | fallback.get("FNO", set()):
-        memberships.setdefault(s, set()).add("FNO")
-
-    # Load dynamically imported custom watchlists
-    custom_lists = load_custom_watchlists()
-    for list_name, syms in custom_lists.items():
-        for s in syms:
-            memberships.setdefault(s, set()).add(list_name)
+    # Load user-specific custom watchlists only if a valid user_id is provided
+    if user_id is not None:
+        custom_lists = load_custom_watchlists(user_id=user_id)
+        for list_name, syms in custom_lists.items():
+            for s in syms:
+                memberships.setdefault(s, set()).add(list_name)
 
     return memberships
 

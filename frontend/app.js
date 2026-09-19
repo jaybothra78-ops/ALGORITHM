@@ -3786,9 +3786,18 @@ App.Auth = {
     const lookbackSelect = document.querySelector('#lookback-index');
     if (lookbackSelect) lookbackSelect.value = '';
 
+    if (App.Screener) {
+      App.Screener._allSignals = [];
+    }
+
     if (App.Paper && App.Paper.loadData) {
       App.Paper.loadData();
     }
+
+    if (App.Init && App.Init.loadUniverseSymbols) {
+      App.Init.loadUniverseSymbols();
+    }
+
     if (App.Screener && App.Screener.loadCustomWatchlists) {
       App.Screener.loadCustomWatchlists().then(() => {
         if (App.Screener.fetchSignals) {

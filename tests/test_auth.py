@@ -213,6 +213,17 @@ def test_custom_watchlist_user_isolation():
     assert "UserB_Picks" in lists_b
     assert "UserA_Picks" not in lists_b
 
+    # Verify /universe/symbols isolates custom watchlist memberships per user
+    symbols_a = client.get("/universe/symbols", headers=headers_a).json()
+    all_memberships_a = {item["symbol"]: item["membership"] for item in symbols_a}
+    assert "UserB_Picks" not in [m for mems in all_memberships_a.values() for m in mems]
+    assert "UserA_Picks" in all_memberships_a.get("TCS", [])
+
+    symbols_b = client.get("/universe/symbols", headers=headers_b).json()
+    all_memberships_b = {item["symbol"]: item["membership"] for item in symbols_b}
+    assert "UserA_Picks" not in [m for mems in all_memberships_b.values() for m in mems]
+    assert "UserB_Picks" in all_memberships_b.get("HDFCBANK", [])
+
     # User A deletes UserA_Picks
     del_res = client.delete("/watchlist/custom/UserA_Picks", headers=headers_a)
     assert del_res.status_code == 200
