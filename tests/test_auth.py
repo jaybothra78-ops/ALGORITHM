@@ -61,10 +61,10 @@ def test_auth_registration_and_login():
     res_me_after = client.get("/auth/me", headers=headers)
     assert res_me_after.status_code == 401
 
-    # Request with no auth header falls back to default backward-compatible user
+    # Request with no auth header falls back to default guest user
     res_default = client.get("/auth/me")
     assert res_default.status_code == 200
-    assert res_default.json()["user"]["username"] in ("trader", "jay")
+    assert res_default.json()["user"]["username"] in ("guest", "trader", "jay")
 
 
 

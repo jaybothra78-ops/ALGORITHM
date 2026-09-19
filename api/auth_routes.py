@@ -31,11 +31,8 @@ def get_current_user(authorization: str | None = Header(None)) -> dict[str, Any]
             return user
         raise HTTPException(status_code=401, detail="Invalid or expired session token")
 
-    # Fallback to default user 1 for headless calls and test suites
-    default_user = UserRepository.get_user_by_id(1)
-    if default_user:
-        return default_user
-    return {"id": 1, "username": "trader", "display_name": "Default Trader"}
+    # Fallback to isolated guest user (id: 0) so unauthenticated calls NEVER access Jay's private data
+    return {"id": 0, "username": "guest", "display_name": "Guest Trader"}
 
 
 @router.post("/register", response_model=dict[str, Any])

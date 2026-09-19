@@ -298,7 +298,7 @@ App.Screener = {
     });
 
     try {
-      const res = await fetch(`/signals/lookback?${params}`);
+      const res = await fetch(`/signals/lookback?${params}&_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       this._allSignals = data.signals || [];
@@ -510,7 +510,7 @@ App.Screener = {
 
   async loadCustomWatchlists() {
     try {
-      const res = await fetch('/watchlist/custom');
+      const res = await fetch(`/watchlist/custom?_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) return;
       const data = await res.json();
       App.State.customWatchlists = data.watchlists || [];
@@ -3829,7 +3829,7 @@ App.Init = {
 
   async loadUniverseSymbols() {
     try {
-      const res = await fetch('/universe/symbols');
+      const res = await fetch(`/universe/symbols?_t=${Date.now()}`, { cache: 'no-store' });
       if (!res.ok) return;
       const allData = await res.json();
       App.State.universeSymbols = allData;

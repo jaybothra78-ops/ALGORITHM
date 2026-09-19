@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from datetime import date
 from typing import Any
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Response
 from api.auth_routes import get_current_user
 from db.repository import SignalRepository
 from models.backtest import BacktestRequest, BacktestResponse
@@ -76,8 +76,13 @@ def get_lookback_screener(
     include_neutral: bool = Query(False, description="Include neutral unflagged stocks"),
     refresh: bool = Query(False, description="Force fresh market data download"),
     user: dict[str, Any] = Depends(get_current_user),
+    response: Response = None,
 ) -> dict[str, Any]:
     """Multi-condition lookback screener for RSI extremes and strategy signals."""
+    if response:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
+
     effective_days = days or lookback_days or 1
     effective_index = index or index_name or None
     effective_filter = filter or signal_filter or None
@@ -162,8 +167,12 @@ def get_lookback_screener(
 @router.get("/universe/symbols", response_model=list[dict[str, Any]])
 def get_universe_symbols_endpoint(
     user: dict[str, Any] = Depends(get_current_user),
+    response: Response = None,
 ) -> list[dict[str, Any]]:
     """Retrieve full list of universe symbols and index memberships for auto-complete."""
+    if response:
+        response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+        response.headers["Pragma"] = "no-cache"
     try:
         from services.universe import load_universe
         universe = load_universe(user_id=user["id"])
