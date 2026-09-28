@@ -20,7 +20,7 @@ class Settings(BaseSettings):
     DISK_INTRADAY_30M_CACHE_PATH: Path = BASE_DIR / "config" / "intraday_30m_cache.pkl"
 
     # OAuth / Google Authentication
-    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_ID: str = "1062149042763-0iqrhshqv5a5b125hkrh5h486n1aiob5.apps.googleusercontent.com"
 
     # Market data settings
     DATA_PERIOD: str = "1y"
