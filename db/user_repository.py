@@ -332,7 +332,13 @@ class UserRepository:
                 (str(google_id), user_id),
             ).fetchone()
             if existing:
-                raise ValueError(f"This Google account is already linked to trader account '{existing['username']}'")
+                trade_count = conn.execute(
+                    "SELECT COUNT(*) FROM paper_trades WHERE user_id = ?", (existing["id"],)
+                ).fetchone()[0]
+                if trade_count == 0:
+                    conn.execute("UPDATE users SET google_id = NULL WHERE id = ?", (existing["id"],))
+                else:
+                    raise ValueError(f"This Google account is already linked to trader account '{existing['username']}'")
 
             conn.execute(
                 """

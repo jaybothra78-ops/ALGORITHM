@@ -1069,6 +1069,29 @@
           </div>
         </div>
       </div>
+
+      <!-- Dedicated Modal: Link Google Account -->
+      <div id="modal-link-google" class="modal-backdrop" style="display: none;">
+        <div class="modal-dialog-card" style="max-width: 420px; text-align: center;">
+          <div class="modal-header">
+            <div class="modal-title-group">
+              <span class="modal-icon">🔗</span>
+              <div>
+                <h3 class="modal-title">Link Google Account</h3>
+                <p class="modal-subtitle">Connect your Google account to your trading profile.</p>
+              </div>
+            </div>
+            <button type="button" class="btn-icon-close" onclick="App.Auth.closeLinkModal()">&times;</button>
+          </div>
+          <div style="padding: 20px 16px;">
+            <p style="font-size: 0.86rem; color: #57534e; margin-bottom: 16px; line-height: 1.5;">
+              Click below to link Google with your account <strong id="link-target-username">@jay</strong>. Your portfolio and trade journal will remain 100% intact.
+            </p>
+            <div id="link-google-btn-container" style="display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px;"></div>
+            <div id="link-google-status" class="wm-status-box" style="display: none; margin-top: 10px;"></div>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Section 4: Institutional Strategy Tester & Backtest Engine -->
