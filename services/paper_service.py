@@ -769,3 +769,8 @@ class PaperTradingService:
     @classmethod
     def reset_portfolio(cls, capital: float = 1000000.0, user_id: int = 1) -> None:
         PaperRepository.reset_account(capital, user_id=user_id)
+
+    @classmethod
+    def delete_trade(cls, trade_id: int, user_id: int = 1) -> bool:
+        """Permanently delete a trade record (e.g. mistaken past trade) from history/journal."""
+        return PaperRepository.delete_trade(trade_id=trade_id, user_id=user_id)

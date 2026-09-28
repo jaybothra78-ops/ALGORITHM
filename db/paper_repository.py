@@ -131,6 +131,14 @@ class PaperRepository:
                 except Exception as exc:
                     logger.warning(f"Error restoring seed paper trades: {exc}")
 
+            # Purge mistake 0% PFC trades from history if existing in persistent DB
+            try:
+                conn.execute(
+                    "DELETE FROM paper_trades WHERE symbol = 'PFC' AND status = 'CLOSED' AND pnl_amount = 0.0"
+                )
+            except Exception as exc:
+                logger.warning(f"Error purging mistake PFC trades: {exc}")
+
             cls._initialized = True
 
 
@@ -281,3 +289,14 @@ class PaperRepository:
                 (user_id,),
             ).fetchall()
             return [dict(r) for r in rows]
+
+    @staticmethod
+    def delete_trade(trade_id: int, user_id: int = 1) -> bool:
+        """Permanently delete a trade record belonging to a user."""
+        PaperRepository.initialize_paper_tables()
+        with get_db_connection() as conn:
+            cursor = conn.execute(
+                "DELETE FROM paper_trades WHERE id = ? AND user_id = ?",
+                (trade_id, user_id),
+            )
+            return cursor.rowcount > 0

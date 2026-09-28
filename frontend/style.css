@@ -1045,6 +1045,27 @@ select:focus, input:focus, textarea:focus {
   box-shadow: 0 3px 8px rgba(220, 38, 38, 0.28);
 }
 
+.btn-delete-trade {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 7px;
+  font-size: 0.8rem;
+  border-radius: 6px;
+  background: #fef2f2;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #ef4444;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-delete-trade:hover {
+  background: #fee2e2;
+  border-color: #ef4444;
+  color: #b91c1c;
+  transform: scale(1.05);
+}
+
 .price-cell {
   font-family: var(--font-mono);
   font-weight: 600;

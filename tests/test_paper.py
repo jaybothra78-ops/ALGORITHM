@@ -291,5 +291,51 @@ def test_option_pricing_and_caching_improvements():
     assert "NIFTY" in PaperTradingService._LTP_CACHE
 
 
+def test_delete_trade_endpoint():
+    # 1. Place order
+    res_order = client.post(
+        "/paper/order",
+        json={
+            "symbol": "TVSMOTOR",
+            "side": "BUY",
+            "quantity": 5,
+            "entry_price": 2000.0,
+        },
+    )
+    assert res_order.status_code == 200
+    pos_id = res_order.json()["position_id"]
+
+    # 2. Close order to move to history
+    res_close = client.post(
+        "/paper/close",
+        json={
+            "position_id": pos_id,
+            "exit_price": 2000.0,
+            "exit_reason": "Mistake order",
+        },
+    )
+    assert res_close.status_code == 200
+
+    # 3. Verify in history
+    hist = client.get("/paper/history").json()
+    matching = [t for t in hist if t["id"] == pos_id]
+    assert len(matching) == 1
+
+    # 4. Delete trade
+    res_del = client.delete(f"/paper/trades/{pos_id}")
+    assert res_del.status_code == 200
+    del_data = res_del.json()
+    assert del_data["status"] == "success"
+
+    # 5. Verify no longer in history
+    hist_after = client.get("/paper/history").json()
+    matching_after = [t for t in hist_after if t["id"] == pos_id]
+    assert len(matching_after) == 0
+
+    # 6. Delete again should return 404
+    res_del_404 = client.delete(f"/paper/trades/{pos_id}")
+    assert res_del_404.status_code == 404
+
+
 
 

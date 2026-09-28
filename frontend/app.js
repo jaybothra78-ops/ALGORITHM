@@ -2060,7 +2060,7 @@ App.Paper = {
     if (!tbody) return;
 
     if (!history || !history.length) {
-      tbody.innerHTML = `<tr><td colspan="12" class="empty-cell">No closed trades yet in your journal.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="13" class="empty-cell">No closed trades yet in your journal.</td></tr>`;
       return;
     }
 
@@ -2096,8 +2096,33 @@ App.Paper = {
         <td class="date-cell">${t.holding_duration}</td>
         <td><span class="reason-pill">${t.exit_reason}</span></td>
         <td><span class="strategy-tag">${t.strategy}</span></td>
+        <td>
+          <button type="button" class="btn-delete-trade" onclick="App.Paper.deleteHistoryTrade(${t.id})" title="Delete trade from history">
+            🗑️
+          </button>
+        </td>
       </tr>`;
     }).join('');
+  },
+
+  async deleteHistoryTrade(tradeId) {
+    if (!confirm(`Are you sure you want to remove trade #${tradeId} from your history journal?`)) return;
+
+    try {
+      const res = await fetch(`/paper/trades/${tradeId}`, {
+        method: 'DELETE',
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `HTTP ${res.status}`);
+      }
+
+      await this.loadHistory();
+      await this.loadSummary();
+    } catch (err) {
+      alert('Failed to delete trade: ' + err.message);
+    }
   },
 
   initSubtabs() {

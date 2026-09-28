@@ -545,3 +545,22 @@ def reset_paper_portfolio_endpoint(
         return {"status": "success", "message": f"Portfolio reset to ₹{capital:,.2f}"}
     except Exception as exc:
         raise HTTPException(500, f"Failed to reset portfolio: {exc}") from exc
+
+
+@router.delete("/paper/trades/{trade_id}", response_model=dict[str, Any])
+def delete_paper_trade_endpoint(
+    trade_id: int,
+    user: dict[str, Any] = Depends(get_current_user),
+) -> dict[str, Any]:
+    """Permanently delete a specific trade record from journal/history."""
+    try:
+        from services.paper_service import PaperTradingService
+        deleted = PaperTradingService.delete_trade(trade_id=trade_id, user_id=user["id"])
+        if not deleted:
+            raise HTTPException(404, f"Trade #{trade_id} not found or not owned by user")
+        return {"status": "success", "message": f"Trade #{trade_id} deleted successfully"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(500, f"Failed to delete trade: {exc}") from exc
+
