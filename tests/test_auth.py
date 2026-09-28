@@ -257,3 +257,74 @@ def test_login_portal_routes():
     assert "window.location.replace('/login')" in res_root.text
 
 
+def test_google_oauth_endpoints():
+    from unittest.mock import patch
+
+    # 1. Config endpoint returns JSON with client_id & enabled flag
+    res_cfg = client.get("/auth/google/config")
+    assert res_cfg.status_code == 200
+    cfg = res_cfg.json()
+    assert "client_id" in cfg
+    assert "enabled" in cfg
+
+    # 2. Google Login auto-creates new account for first-time user (e.g. Vedant)
+    mock_payload = {
+        "google_id": "google_sub_123456789",
+        "email": "vedant_test@gmail.com",
+        "display_name": "Vedant Google",
+        "avatar_url": "https://lh3.googleusercontent.com/a/test",
+    }
+
+    with patch("services.google_auth_service.GoogleAuthService.verify_id_token", return_value=mock_payload):
+        res_g_login = client.post("/auth/google", json={"credential": "mock_google_jwt_credential"})
+        assert res_g_login.status_code == 200
+        g_data = res_g_login.json()
+        assert g_data["success"] is True
+        assert "token" in g_data
+        vedant_token = g_data["token"]
+        assert g_data["user"]["email"] == "vedant_test@gmail.com"
+        assert g_data["user"]["google_id"] == "google_sub_123456789"
+
+        # Check virtual capital was provisioned (₹10,00,000)
+        v_headers = {"Authorization": f"Bearer {vedant_token}"}
+        res_summary = client.get("/paper/summary", headers=v_headers)
+        assert res_summary.status_code == 200
+        assert res_summary.json()["cash_balance"] == 1000000.0
+
+        # 3. Subsequent login with same Google ID returns existing account
+        res_g_repeat = client.post("/auth/google", json={"credential": "mock_google_jwt_credential"})
+        assert res_g_repeat.status_code == 200
+        assert res_g_repeat.json()["user"]["id"] == g_data["user"]["id"]
+
+    # 4. Link Google account to an existing profile (e.g. Alice)
+    res_alice_login = client.post("/auth/login", json={"username": "alice_test", "password": "password123"})
+    assert res_alice_login.status_code == 200
+    alice_token = res_alice_login.json()["token"]
+    alice_headers = {"Authorization": f"Bearer {alice_token}"}
+
+    alice_mock_google = {
+        "google_id": "google_sub_alice_999",
+        "email": "alice_google@gmail.com",
+        "display_name": "Alice In Googleland",
+        "avatar_url": "",
+    }
+
+    with patch("services.google_auth_service.GoogleAuthService.verify_id_token", return_value=alice_mock_google):
+        res_link = client.post("/auth/google/link", json={"credential": "mock_alice_jwt"}, headers=alice_headers)
+        assert res_link.status_code == 200
+        link_data = res_link.json()
+        assert link_data["success"] is True
+        assert link_data["user"]["google_id"] == "google_sub_alice_999"
+
+        # Alice can now log in directly via Google
+        res_alice_g = client.post("/auth/google", json={"credential": "mock_alice_jwt"})
+        assert res_alice_g.status_code == 200
+        assert res_alice_g.json()["user"]["username"] == "alice_test"
+
+    # 5. Unlink Google account
+    res_unlink = client.post("/auth/google/unlink", headers=alice_headers)
+    assert res_unlink.status_code == 200
+    assert res_unlink.json()["user"]["google_id"] is None
+
+
+

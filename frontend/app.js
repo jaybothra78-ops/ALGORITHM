@@ -3549,6 +3549,8 @@ App.Auth = {
         if (e.target === modalAuth) this.closeAuthModal();
       });
     }
+
+    this.initGoogleAuth();
   },
 
   async checkSession() {
@@ -3585,6 +3587,25 @@ App.Auth = {
     if (nameLabel) nameLabel.textContent = display;
     if (ddName) ddName.textContent = display;
     if (ddSub) ddSub.textContent = `@${user.username} (ID: ${user.id})`;
+
+    // Update Google link status in user dropdown
+    const gStatusRow = document.querySelector('#user-google-status-row');
+    const gStatusText = document.querySelector('#user-google-status-text');
+    const btnLink = document.querySelector('#btn-link-google');
+    const gDivider = document.querySelector('#user-google-divider');
+
+    if (user.google_id) {
+      if (gStatusRow) {
+        gStatusRow.style.display = 'block';
+        if (gStatusText) gStatusText.textContent = `✓ Google: ${user.email || 'Linked'}`;
+      }
+      if (btnLink) btnLink.style.display = 'none';
+      if (gDivider) gDivider.style.display = 'block';
+    } else {
+      if (gStatusRow) gStatusRow.style.display = 'none';
+      if (btnLink) btnLink.style.display = 'flex';
+      if (gDivider) gDivider.style.display = 'block';
+    }
   },
 
   async openAuthModal(tab = 'login') {
@@ -3824,6 +3845,129 @@ App.Auth = {
           App.Screener.fetchSignals();
         }
       });
+    }
+  },
+
+  googleClientId: '',
+
+  async initGoogleAuth() {
+    try {
+      const res = await fetch('/auth/google/config');
+      if (!res.ok) return;
+      const cfg = await res.json();
+      this.googleClientId = (cfg.client_id || '').trim();
+      if (this.googleClientId) {
+        this.setupGoogleGSI();
+      }
+    } catch (err) {
+      console.debug('Google auth config lookup failed:', err);
+    }
+  },
+
+  setupGoogleGSI() {
+    if (!window.google || !window.google.accounts || !this.googleClientId) {
+      setTimeout(() => this.setupGoogleGSI(), 400);
+      return;
+    }
+
+    try {
+      window.google.accounts.id.initialize({
+        client_id: this.googleClientId,
+        callback: (resp) => this.handleGoogleCallback(resp),
+        auto_select: false,
+        cancel_on_tap_outside: true,
+      });
+
+      // Render button in modal if container exists
+      const modalSec = document.querySelector('#modal-google-auth-section');
+      const modalBtn = document.querySelector('#modal-google-btn-container');
+      if (modalSec && modalBtn) {
+        modalSec.style.display = 'block';
+        modalBtn.innerHTML = '';
+        window.google.accounts.id.renderButton(modalBtn, {
+          theme: 'outline',
+          size: 'large',
+          type: 'standard',
+          shape: 'rectangular',
+          text: 'continue_with',
+          logo_alignment: 'left',
+          width: 320,
+        });
+      }
+    } catch (err) {
+      console.debug('Google GSI setup error:', err);
+    }
+  },
+
+  triggerGoogleLink() {
+    if (!this.googleClientId) {
+      alert('💡 Google OAuth is not active yet. Add GOOGLE_CLIENT_ID in your Render environment variables to enable Google linking.');
+      return;
+    }
+
+    if (!window.google || !window.google.accounts) {
+      alert('Google services loading... please try again in a few moments.');
+      return;
+    }
+
+    // Initialize callback specifically for linking account
+    window.google.accounts.id.initialize({
+      client_id: this.googleClientId,
+      callback: (resp) => this.handleGoogleLinkCallback(resp),
+    });
+    window.google.accounts.id.prompt();
+  },
+
+  async handleGoogleLinkCallback(response) {
+    if (!response || !response.credential) return;
+
+    try {
+      const res = await fetch('/auth/google/link', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('stratlab_auth_token')}`,
+        },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || `Linking failed (HTTP ${res.status})`);
+      }
+
+      this.setCurrentUser(data.user);
+      alert(`✅ ${data.message || 'Google account linked successfully!'}`);
+    } catch (err) {
+      alert(`⚠️ Could not link Google account: ${err.message}`);
+    } finally {
+      this.setupGoogleGSI();
+    }
+  },
+
+  async handleGoogleCallback(response) {
+    if (!response || !response.credential) return;
+
+    try {
+      const res = await fetch('/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ credential: response.credential }),
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(data.detail || `Google sign-in failed (HTTP ${res.status})`);
+      }
+
+      localStorage.setItem('stratlab_auth_token', data.token);
+      this.setCurrentUser(data.user);
+      this.closeAuthModal();
+
+      App.Utils.showStatus('#paper-order-status', `Authenticated via Google as: ${data.user.display_name || data.user.username}`, 'success');
+      this.onUserSwitched();
+    } catch (err) {
+      App.Utils.showStatus('#auth-login-status', err.message, 'error');
     }
   },
 

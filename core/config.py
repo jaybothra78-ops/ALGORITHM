@@ -19,6 +19,9 @@ class Settings(BaseSettings):
     DISK_CACHE_PATH: Path = BASE_DIR / "config" / "ohlc_cache.pkl"
     DISK_INTRADAY_30M_CACHE_PATH: Path = BASE_DIR / "config" / "intraday_30m_cache.pkl"
 
+    # OAuth / Google Authentication
+    GOOGLE_CLIENT_ID: str = ""
+
     # Market data settings
     DATA_PERIOD: str = "1y"
     DATA_INTERVAL: str = "1d"

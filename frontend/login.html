@@ -8,6 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
     :root {
       color-scheme: light;
@@ -567,6 +568,17 @@
         </button>
       </form>
 
+      <!-- Google Sign-In Section -->
+      <div id="google-auth-section" style="margin-top: 18px;">
+        <div class="auth-divider">
+          <span>or continue with Google</span>
+        </div>
+        <div id="google-btn-container" style="display: flex; justify-content: center; width: 100%; min-height: 42px; margin-top: 10px;"></div>
+        <div id="google-setup-notice" style="display: none; margin-top: 10px; font-size: 0.76rem; color: var(--text-secondary); text-align: center; background: rgba(217, 119, 6, 0.07); border: 1px dashed rgba(217, 119, 6, 0.3); border-radius: 8px; padding: 9px 12px; line-height: 1.45;">
+          <span>💡 <strong>Google Sign-In ready:</strong> Add <code>GOOGLE_CLIENT_ID</code> in environment to activate 1-click Google access.</span>
+        </div>
+      </div>
+
       <!-- Footer Info -->
       <div class="card-footer-info">
         <span><span class="status-dot"></span> NSE Engine Online</span>
@@ -750,6 +762,91 @@
       }
     }
 
+    // Google Identity Services Auth
+    let googleClientId = '';
+
+    async function initGoogleAuth() {
+      try {
+        const res = await fetch('/auth/google/config');
+        if (!res.ok) return;
+        const cfg = await res.json();
+        googleClientId = (cfg.client_id || '').trim();
+
+        if (googleClientId) {
+          renderGoogleSignIn();
+        } else {
+          const notice = document.getElementById('google-setup-notice');
+          if (notice) notice.style.display = 'block';
+        }
+      } catch (err) {
+        console.warn('Google auth configuration lookup failed:', err);
+      }
+    }
+
+    function renderGoogleSignIn() {
+      if (!window.google || !window.google.accounts || !googleClientId) {
+        // If Google library is still downloading, retry in 300ms
+        setTimeout(renderGoogleSignIn, 300);
+        return;
+      }
+
+      try {
+        window.google.accounts.id.initialize({
+          client_id: googleClientId,
+          callback: handleGoogleCredentialResponse,
+          auto_select: false,
+          cancel_on_tap_outside: true,
+        });
+
+        const container = document.getElementById('google-btn-container');
+        if (container) {
+          container.innerHTML = '';
+          window.google.accounts.id.renderButton(container, {
+            theme: 'outline',
+            size: 'large',
+            type: 'standard',
+            shape: 'rectangular',
+            text: 'continue_with',
+            logo_alignment: 'left',
+            width: 320,
+          });
+        }
+
+        const notice = document.getElementById('google-setup-notice');
+        if (notice) notice.style.display = 'none';
+      } catch (err) {
+        console.warn('Google GSI render error:', err);
+      }
+    }
+
+    async function handleGoogleCredentialResponse(response) {
+      if (!response || !response.credential) return;
+      showStatus('Verifying Google credentials with STRATLAB...', 'success');
+
+      try {
+        const res = await fetch('/auth/google', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ credential: response.credential }),
+        });
+
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) {
+          throw new Error(data.detail || `Google authentication failed (HTTP ${res.status})`);
+        }
+
+        localStorage.setItem('stratlab_auth_token', data.token);
+        localStorage.setItem('stratlab_user', JSON.stringify(data.user));
+
+        showStatus(`Welcome, ${data.user.display_name || data.user.username}! Entering terminal...`, 'success');
+        setTimeout(() => {
+          window.location.replace('/');
+        }, 350);
+      } catch (err) {
+        showStatus(err.message || 'Google sign-in failed. Please try again.');
+      }
+    }
+
     // Check existing session on load
     async function checkExistingSession() {
       const token = localStorage.getItem('stratlab_auth_token');
@@ -784,7 +881,10 @@
       }
     }
 
-    document.addEventListener('DOMContentLoaded', checkExistingSession);
+    document.addEventListener('DOMContentLoaded', () => {
+      checkExistingSession();
+      initGoogleAuth();
+    });
   </script>
 </body>
 </html>

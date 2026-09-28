@@ -25,6 +25,7 @@
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <link rel="stylesheet" href="/static/style.css?v=51.0">
 
 </head>
@@ -89,6 +90,13 @@
               <span>➕ Create New Account</span>
             </button>
             <div class="user-dropdown-divider"></div>
+            <div id="user-google-status-row" class="user-dropdown-item" style="font-size: 0.76rem; color: #15803d; display: none; background: rgba(21, 128, 61, 0.08); border-radius: 6px; padding: 6px 12px; margin: 4px 6px; font-weight: 600;">
+              <span id="user-google-status-text">✓ Google Linked</span>
+            </div>
+            <button type="button" id="btn-link-google" class="user-dropdown-item" onclick="App.Auth.triggerGoogleLink()" style="display: none;">
+              <span>🔗 Link Google Account</span>
+            </button>
+            <div class="user-dropdown-divider" id="user-google-divider" style="display: none;"></div>
             <button type="button" class="user-dropdown-item text-danger" onclick="App.Auth.logout()">
               <span>🚪 Log Out</span>
             </button>
@@ -1053,6 +1061,12 @@
               <span>🚀 Create Account &amp; Start Trading</span>
             </button>
           </form>
+
+          <!-- Modal Google Sign-In -->
+          <div id="modal-google-auth-section" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(168, 142, 110, 0.3); display: none;">
+            <div style="text-align: center; font-size: 0.76rem; color: #78716c; margin-bottom: 8px;">or continue with Google</div>
+            <div id="modal-google-btn-container" style="display: flex; justify-content: center; width: 100%; min-height: 40px;"></div>
+          </div>
         </div>
       </div>
     </section>

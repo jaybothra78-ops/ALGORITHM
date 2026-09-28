@@ -49,6 +49,17 @@ class UserRepository:
             conn.execute("CREATE INDEX IF NOT EXISTS idx_user_sessions_token ON user_sessions(token);")
             conn.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);")
 
+            # 0. Migrate table schema for Google OAuth if columns do not exist
+            user_cols = {r["name"] for r in conn.execute("PRAGMA table_info(users)").fetchall()}
+            if "google_id" not in user_cols:
+                conn.execute("ALTER TABLE users ADD COLUMN google_id TEXT")
+            if "email" not in user_cols:
+                conn.execute("ALTER TABLE users ADD COLUMN email TEXT")
+            if "avatar_url" not in user_cols:
+                conn.execute("ALTER TABLE users ADD COLUMN avatar_url TEXT")
+            conn.execute("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_google_id ON users(google_id) WHERE google_id IS NOT NULL;")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);")
+
             # 1. Migrate user 1 from 'trader' to 'jay' / 'JAY' to keep all existing data under Jay's profile
             conn.execute("UPDATE users SET username = 'jay', display_name = 'JAY' WHERE id = 1 AND username = 'trader'")
 
@@ -100,10 +111,18 @@ class UserRepository:
                         if not exists:
                             cur = conn.execute(
                                 """
-                                INSERT INTO users (username, password_hash, salt, display_name)
-                                VALUES (?, ?, ?, ?)
+                                INSERT INTO users (username, password_hash, salt, display_name, google_id, email, avatar_url)
+                                VALUES (?, ?, ?, ?, ?, ?, ?)
                                 """,
-                                (uname, su["password_hash"], su["salt"], su.get("display_name", uname.capitalize())),
+                                (
+                                    uname,
+                                    su.get("password_hash", ""),
+                                    su.get("salt", ""),
+                                    su.get("display_name", uname.capitalize()),
+                                    su.get("google_id"),
+                                    su.get("email"),
+                                    su.get("avatar_url", ""),
+                                ),
                             )
                             new_uid = cur.lastrowid
                             conn.execute(
@@ -222,6 +241,9 @@ class UserRepository:
                     "id": row["id"],
                     "username": row["username"],
                     "display_name": row["display_name"] or row["username"],
+                    "email": row["email"] if "email" in row.keys() else None,
+                    "google_id": row["google_id"] if "google_id" in row.keys() else None,
+                    "avatar_url": row["avatar_url"] if "avatar_url" in row.keys() else None,
                 }
             return None
 
@@ -250,7 +272,7 @@ class UserRepository:
         with get_db_connection() as conn:
             row = conn.execute(
                 """
-                SELECT u.id, u.username, u.display_name
+                SELECT u.id, u.username, u.display_name, u.email, u.google_id, u.avatar_url
                 FROM user_sessions s
                 JOIN users u ON s.user_id = u.id
                 WHERE s.token = ?
@@ -264,8 +286,154 @@ class UserRepository:
         """Get user by primary ID."""
         cls.initialize_user_tables()
         with get_db_connection() as conn:
-            row = conn.execute("SELECT id, username, display_name FROM users WHERE id = ?", (user_id,)).fetchone()
+            row = conn.execute(
+                "SELECT id, username, display_name, email, google_id, avatar_url FROM users WHERE id = ?",
+                (user_id,),
+            ).fetchone()
             return dict(row) if row else None
+
+    @classmethod
+    def get_user_by_google_id(cls, google_id: str) -> dict[str, Any] | None:
+        """Find a user account linked to a specific Google subject ID."""
+        if not google_id:
+            return None
+        cls.initialize_user_tables()
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT id, username, display_name, email, google_id, avatar_url FROM users WHERE google_id = ?",
+                (str(google_id),),
+            ).fetchone()
+            return dict(row) if row else None
+
+    @classmethod
+    def get_user_by_email(cls, email: str) -> dict[str, Any] | None:
+        """Find a user account by email address (case-insensitive)."""
+        if not email:
+            return None
+        cls.initialize_user_tables()
+        clean_email = email.strip().lower()
+        with get_db_connection() as conn:
+            row = conn.execute(
+                "SELECT id, username, display_name, email, google_id, avatar_url FROM users WHERE LOWER(email) = ?",
+                (clean_email,),
+            ).fetchone()
+            return dict(row) if row else None
+
+    @classmethod
+    def link_google_account(
+        cls, user_id: int, google_id: str, email: str, avatar_url: str | None = None
+    ) -> dict[str, Any]:
+        """Link a verified Google account to an existing user profile."""
+        cls.initialize_user_tables()
+        with get_db_connection() as conn:
+            # Verify google_id is not already linked to another user
+            existing = conn.execute(
+                "SELECT id, username FROM users WHERE google_id = ? AND id != ?",
+                (str(google_id), user_id),
+            ).fetchone()
+            if existing:
+                raise ValueError(f"This Google account is already linked to trader account '{existing['username']}'")
+
+            conn.execute(
+                """
+                UPDATE users
+                SET google_id = ?,
+                    email = COALESCE(email, ?),
+                    avatar_url = CASE WHEN avatar_url IS NULL OR avatar_url = '' THEN ? ELSE avatar_url END
+                WHERE id = ?
+                """,
+                (str(google_id), email.strip().lower(), avatar_url or "", user_id),
+            )
+
+        user = cls.get_user_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+        return user
+
+    @classmethod
+    def unlink_google_account(cls, user_id: int) -> dict[str, Any]:
+        """Unlink Google account from a user profile."""
+        cls.initialize_user_tables()
+        with get_db_connection() as conn:
+            conn.execute("UPDATE users SET google_id = NULL WHERE id = ?", (user_id,))
+        user = cls.get_user_by_id(user_id)
+        if not user:
+            raise ValueError("User not found")
+        return user
+
+    @classmethod
+    def create_google_user(
+        cls, google_id: str, email: str, display_name: str, avatar_url: str | None = None
+    ) -> dict[str, Any]:
+        """Create a new trader profile from a verified Google sign-in."""
+        cls.initialize_user_tables()
+        clean_email = email.strip().lower()
+        base_username = (clean_email.split("@")[0] if clean_email else display_name.lower().replace(" ", "_")).strip()
+        base_username = "".join(c for c in base_username if c.isalnum() or c in ("_", "-"))
+        if len(base_username) < 3:
+            base_username = f"trader_{base_username}"
+
+        with get_db_connection() as conn:
+            # Generate unique username
+            candidate = base_username
+            counter = 1
+            while conn.execute("SELECT id FROM users WHERE username = ?", (candidate,)).fetchone():
+                candidate = f"{base_username}_{counter}"
+                counter += 1
+
+            dummy_salt = secrets.token_hex(16)
+            dummy_hash = cls._hash_password(secrets.token_urlsafe(32), dummy_salt)
+            disp_name = display_name.strip() or candidate.capitalize()
+
+            cursor = conn.execute(
+                """
+                INSERT INTO users (username, password_hash, salt, display_name, google_id, email, avatar_url)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+                """,
+                (candidate, dummy_hash, dummy_salt, disp_name, str(google_id), clean_email, avatar_url or ""),
+            )
+            user_id = cursor.lastrowid
+
+            # Initialize virtual trading balance with ₹10,00,000 capital
+            conn.execute(
+                """
+                INSERT OR IGNORE INTO paper_user_accounts (user_id, initial_capital, cash_balance)
+                VALUES (?, 1000000.0, 1000000.0)
+                """,
+                (user_id,),
+            )
+
+            # Persist to seed file if not under automated testing
+            try:
+                import sys
+                if "pytest" not in sys.modules and not candidate.startswith("test_"):
+                    from core.config import settings
+                    import json
+                    seed_data = []
+                    if settings.USERS_SEED_PATH.exists():
+                        seed_data = json.loads(settings.USERS_SEED_PATH.read_text(encoding="utf-8"))
+                    if not any(u.get("username") == candidate for u in seed_data):
+                        seed_data.append({
+                            "username": candidate,
+                            "password_hash": dummy_hash,
+                            "salt": dummy_salt,
+                            "display_name": disp_name,
+                            "google_id": str(google_id),
+                            "email": clean_email,
+                            "avatar_url": avatar_url or "",
+                        })
+                        settings.USERS_SEED_PATH.write_text(json.dumps(seed_data, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
+            return {
+                "id": user_id,
+                "username": candidate,
+                "display_name": disp_name,
+                "email": clean_email,
+                "google_id": str(google_id),
+                "avatar_url": avatar_url or "",
+            }
 
     @classmethod
     def delete_session(cls, token: str) -> bool:
@@ -280,5 +448,7 @@ class UserRepository:
         """List all users (safe metadata only) for quick user switching."""
         cls.initialize_user_tables()
         with get_db_connection() as conn:
-            rows = conn.execute("SELECT id, username, display_name FROM users ORDER BY id ASC").fetchall()
+            rows = conn.execute(
+                "SELECT id, username, display_name, email, google_id, avatar_url FROM users ORDER BY id ASC"
+            ).fetchall()
             return [dict(r) for r in rows]

@@ -105,3 +105,111 @@ def get_me_endpoint(user: dict[str, Any] = Depends(get_current_user)) -> dict[st
 def list_users_endpoint() -> list[dict[str, Any]]:
     """Return list of local users for fast terminal user switching."""
     return UserRepository.list_users()
+
+
+class GoogleAuthRequest(BaseModel):
+    credential: str = Field(..., description="Google ID Token / Credential")
+
+
+@router.get("/google/config", response_model=dict[str, Any])
+def google_config_endpoint() -> dict[str, Any]:
+    """Return public Google OAuth client ID and activation status."""
+    from core.config import settings
+    client_id = settings.GOOGLE_CLIENT_ID.strip()
+    return {
+        "client_id": client_id,
+        "enabled": bool(client_id),
+    }
+
+
+@router.post("/google", response_model=dict[str, Any])
+def google_login_endpoint(payload: GoogleAuthRequest) -> dict[str, Any]:
+    """Verify Google ID token, authenticate existing user, or auto-create account with ₹10,00,000 capital."""
+    from services.google_auth_service import GoogleAuthService
+    try:
+        profile = GoogleAuthService.verify_id_token(payload.credential)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Google authentication failed: {exc}") from exc
+
+    google_id = profile["google_id"]
+    email = profile["email"]
+
+    # 1. Match by google_id
+    user = UserRepository.get_user_by_google_id(google_id)
+
+    # 2. Match by email if not found by google_id, and auto-link
+    if not user and email:
+        user = UserRepository.get_user_by_email(email)
+        if user:
+            user = UserRepository.link_google_account(
+                user_id=user["id"],
+                google_id=google_id,
+                email=email,
+                avatar_url=profile.get("avatar_url"),
+            )
+
+    # 3. Create new user if not found
+    if not user:
+        user = UserRepository.create_google_user(
+            google_id=google_id,
+            email=email,
+            display_name=profile.get("display_name") or "Google Trader",
+            avatar_url=profile.get("avatar_url"),
+        )
+
+    token = UserRepository.create_session(user["id"])
+    return {
+        "success": True,
+        "token": token,
+        "user": user,
+        "message": f"Welcome, {user.get('display_name') or user.get('username')}! Google account connected.",
+    }
+
+
+@router.post("/google/link", response_model=dict[str, Any])
+def google_link_endpoint(
+    payload: GoogleAuthRequest, current_user: dict[str, Any] = Depends(get_current_user)
+) -> dict[str, Any]:
+    """Link Google account to currently authenticated profile."""
+    if not current_user or current_user.get("id", 0) == 0:
+        raise HTTPException(status_code=401, detail="Authentication required to link account")
+
+    from services.google_auth_service import GoogleAuthService
+    try:
+        profile = GoogleAuthService.verify_id_token(payload.credential)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+    try:
+        updated_user = UserRepository.link_google_account(
+            user_id=current_user["id"],
+            google_id=profile["google_id"],
+            email=profile["email"],
+            avatar_url=profile.get("avatar_url"),
+        )
+        return {
+            "success": True,
+            "user": updated_user,
+            "message": f"Successfully linked Google account ({profile['email']}) to @{current_user.get('username')}.",
+        }
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@router.post("/google/unlink", response_model=dict[str, Any])
+def google_unlink_endpoint(
+    current_user: dict[str, Any] = Depends(get_current_user)
+) -> dict[str, Any]:
+    """Unlink Google account from currently authenticated profile."""
+    if not current_user or current_user.get("id", 0) == 0:
+        raise HTTPException(status_code=401, detail="Authentication required to unlink account")
+
+    updated_user = UserRepository.unlink_google_account(current_user["id"])
+    return {
+        "success": True,
+        "user": updated_user,
+        "message": "Google account unlinked successfully.",
+    }
+
