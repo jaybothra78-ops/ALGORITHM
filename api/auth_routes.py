@@ -60,9 +60,16 @@ def register_endpoint(payload: RegisterRequest) -> dict[str, Any]:
 @router.post("/login", response_model=dict[str, Any])
 def login_endpoint(payload: LoginRequest) -> dict[str, Any]:
     """Authenticate user credentials and issue a session token."""
+    clean_u = payload.username.strip().lower()
+    if not UserRepository.user_exists(clean_u) and clean_u != "trader":
+        raise HTTPException(
+            status_code=401,
+            detail=f"Account '{payload.username}' does not exist. Please click 'Create Account' to register your account.",
+        )
+
     user = UserRepository.authenticate_user(payload.username, payload.password)
     if not user:
-        raise HTTPException(status_code=401, detail="Invalid username or password")
+        raise HTTPException(status_code=401, detail="Incorrect password. Please verify your credentials and try again.")
 
     token = UserRepository.create_session(user["id"])
     return {

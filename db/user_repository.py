@@ -85,6 +85,37 @@ class UserRepository:
                     """,
                     (demo_id,),
                 )
+
+            # 4. Load any persistent users from config/users_seed.json
+            from core.config import settings
+            if settings.USERS_SEED_PATH.exists():
+                try:
+                    import json
+                    seed_users = json.loads(settings.USERS_SEED_PATH.read_text(encoding="utf-8"))
+                    for su in seed_users:
+                        uname = su.get("username", "").strip().lower()
+                        if not uname:
+                            continue
+                        exists = conn.execute("SELECT id FROM users WHERE username = ?", (uname,)).fetchone()
+                        if not exists:
+                            cur = conn.execute(
+                                """
+                                INSERT INTO users (username, password_hash, salt, display_name)
+                                VALUES (?, ?, ?, ?)
+                                """,
+                                (uname, su["password_hash"], su["salt"], su.get("display_name", uname.capitalize())),
+                            )
+                            new_uid = cur.lastrowid
+                            conn.execute(
+                                """
+                                INSERT OR IGNORE INTO paper_user_accounts (user_id, initial_capital, cash_balance)
+                                VALUES (?, 1000000.0, 1000000.0)
+                                """,
+                                (new_uid,),
+                            )
+                except Exception:
+                    pass
+
             cls._initialized = True
 
 
@@ -127,11 +158,42 @@ class UserRepository:
             )
             user_id = cursor.lastrowid
 
+            # Persist newly registered user to users_seed.json (avoiding ephemeral test fixtures)
+            try:
+                import sys
+                if "pytest" not in sys.modules and not clean_user.startswith("test_"):
+                    from core.config import settings
+                    import json
+                    seed_data = []
+                    if settings.USERS_SEED_PATH.exists():
+                        seed_data = json.loads(settings.USERS_SEED_PATH.read_text(encoding="utf-8"))
+                    if not any(u.get("username") == clean_user for u in seed_data):
+                        seed_data.append({
+                            "username": clean_user,
+                            "password_hash": pwd_hash,
+                            "salt": salt,
+                            "display_name": disp_name,
+                        })
+                        settings.USERS_SEED_PATH.write_text(json.dumps(seed_data, indent=2), encoding="utf-8")
+            except Exception:
+                pass
+
             return {
                 "id": user_id,
                 "username": clean_user,
                 "display_name": disp_name,
             }
+
+    @classmethod
+    def user_exists(cls, username: str) -> bool:
+        """Check if a username already exists in the database."""
+        cls.initialize_user_tables()
+        clean_user = username.strip().lower()
+        with get_db_connection() as conn:
+            row = conn.execute("SELECT id FROM users WHERE username = ?", (clean_user,)).fetchone()
+            if not row and clean_user == "trader":
+                row = conn.execute("SELECT id FROM users WHERE username = 'jay'").fetchone()
+            return row is not None
 
     @classmethod
     def authenticate_user(cls, username: str, password: str) -> dict[str, Any] | None:

@@ -3708,6 +3708,26 @@ App.Auth = {
       this.onUserSwitched();
     } catch (err) {
       App.Utils.showStatus('#auth-login-status', err.message, 'error');
+      if (err.message && (err.message.includes('does not exist') || err.message.includes('Create Account'))) {
+        const statusEl = document.querySelector('#auth-login-status');
+        if (statusEl && username) {
+          const promptDiv = document.createElement('div');
+          promptDiv.style.marginTop = '8px';
+          promptDiv.innerHTML = `<button type="button" class="btn btn-sm btn-outline-primary" style="width: 100%; font-weight: 600; cursor: pointer; padding: 6px 10px;">
+            ✨ Click here to create account "${username}"
+          </button>`;
+          promptDiv.querySelector('button').onclick = () => {
+            this.switchAuthTab('register');
+            const regU = document.querySelector('#auth-reg-username');
+            const regP = document.querySelector('#auth-reg-password');
+            const regD = document.querySelector('#auth-reg-display');
+            if (regU) regU.value = username;
+            if (regP && password) regP.value = password;
+            if (regD) regD.value = username.charAt(0).toUpperCase() + username.slice(1);
+          };
+          statusEl.appendChild(promptDiv);
+        }
+      }
     } finally {
       if (btn) {
         btn.disabled = false;

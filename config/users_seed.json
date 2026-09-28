@@ -1,0 +1,20 @@
+[
+  {
+    "username": "jay",
+    "password_hash": "589a93590c10113c1a0303b6debca0e1f7fd9b91bd77a8f7ea0f87b42b999ed2",
+    "salt": "bdc3e32fe884307314e27d6d090e43d5",
+    "display_name": "JAY"
+  },
+  {
+    "username": "jitendra",
+    "password_hash": "25aef1b3efbecc1dc51b83746385c4dfbe797aa3c1803d789e8d858cd879e629",
+    "salt": "5ce005b7cae54bf78aa1253c5116cad6",
+    "display_name": "Jitendra"
+  },
+  {
+    "username": "demo",
+    "password_hash": "9690a64589783a3bca6559cd5090de38b405f47c54c9a5ce2cff01b52ad159fb",
+    "salt": "31181fe35f6222857494a3903ccc74c1",
+    "display_name": "Demo Trader"
+  }
+]

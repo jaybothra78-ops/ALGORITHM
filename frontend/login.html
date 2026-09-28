@@ -274,6 +274,27 @@
       display: flex;
     }
 
+    .btn-create-prompt {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      color: #ffffff;
+      border: none;
+      padding: 9px 14px;
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 6px;
+      width: 100%;
+      text-align: center;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 8px rgba(5, 150, 105, 0.25);
+    }
+
+    .btn-create-prompt:hover {
+      filter: brightness(1.1);
+      transform: translateY(-1px);
+    }
+
     .status-box.success {
       background: #f0fdf4;
       border: 1px solid #bbf7d0;
@@ -628,10 +649,42 @@
           window.location.replace('/');
         }, 350);
       } catch (err) {
-        showStatus(err.message || 'Authentication failed. Please check credentials.');
+        if (err.message && (err.message.includes('does not exist') || err.message.includes('Create Account'))) {
+          showQuickCreatePrompt(username);
+        } else {
+          showStatus(err.message || 'Authentication failed. Please check credentials.');
+        }
         btn.disabled = false;
         btn.innerHTML = '<span>⚡</span> Sign In &amp; Launch Terminal';
       }
+    }
+
+    function showQuickCreatePrompt(username) {
+      const alert = document.getElementById('auth-status-alert');
+      alert.className = 'status-box error';
+      alert.innerHTML = `
+        <div style="display: flex; flex-direction: column; gap: 8px; width: 100%;">
+          <div>⚠️ Account <strong>${username}</strong> has not been registered yet.</div>
+          <button type="button" class="btn-create-prompt" onclick="quickFillRegister('${username.replace(/'/g, "\\'")}')">
+            ✨ Click here to create account "${username}"
+          </button>
+        </div>
+      `;
+      alert.style.display = 'flex';
+    }
+
+    function quickFillRegister(username) {
+      switchAuthMode('register');
+      const regUser = document.getElementById('reg-username');
+      const regPass = document.getElementById('reg-password');
+      const signinPass = document.getElementById('signin-password');
+      if (regUser) regUser.value = username || '';
+      if (regPass && signinPass) regPass.value = signinPass.value || '';
+      const regDisplay = document.getElementById('reg-display');
+      if (regDisplay) {
+        regDisplay.value = username ? (username.charAt(0).toUpperCase() + username.slice(1)) : '';
+      }
+      showStatus(`Pre-filled for "${username}". Click "Create Account" below to claim ₹10,00,000 capital!`, 'success');
     }
 
     // One-Click Demo Access

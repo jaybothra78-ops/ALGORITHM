@@ -15,6 +15,7 @@ class Settings(BaseSettings):
     FNO_PATH: Path = BASE_DIR / "config" / "fno_watchlist.txt"
     FALLBACK_PATH: Path = BASE_DIR / "config" / "universe_fallback.json"
     CUSTOM_WATCHLISTS_PATH: Path = BASE_DIR / "config" / "custom_watchlists.json"
+    USERS_SEED_PATH: Path = BASE_DIR / "config" / "users_seed.json"
     DISK_CACHE_PATH: Path = BASE_DIR / "config" / "ohlc_cache.pkl"
     DISK_INTRADAY_30M_CACHE_PATH: Path = BASE_DIR / "config" / "intraday_30m_cache.pkl"
 
