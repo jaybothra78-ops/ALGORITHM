@@ -995,103 +995,6 @@
           </form>
         </div>
       </div>
-
-      <!-- User Authentication & Switch Modal Dialog -->
-      <div id="modal-auth" class="modal-backdrop" style="display: none;">
-        <div class="modal-dialog-card" style="max-width: 440px;">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="modal-icon">👤</span>
-              <div>
-                <h3 class="modal-title" id="auth-modal-title">Terminal Account Access</h3>
-                <p class="modal-subtitle" id="auth-modal-sub">Sign in to access your personal trades, balance, and watchlists.</p>
-              </div>
-            </div>
-            <button type="button" id="btn-close-auth-modal" class="btn-icon-close" onclick="App.Auth.closeAuthModal()">&times;</button>
-          </div>
-
-          <!-- Auth Tabs: Sign In vs Create Account -->
-          <div class="auth-tabs-row">
-            <button type="button" id="tab-auth-login" class="auth-tab-btn active" onclick="App.Auth.switchAuthTab('login')">
-              <span>🔑 Sign In</span>
-            </button>
-            <button type="button" id="tab-auth-register" class="auth-tab-btn" onclick="App.Auth.switchAuthTab('register')">
-              <span>➕ Create Account</span>
-            </button>
-          </div>
-
-          <!-- Fast User Switcher Chips (visible when other accounts exist) -->
-          <div id="auth-quick-switch-section" class="auth-quick-section" style="display: none;">
-            <span class="auth-quick-label">Switch to account:</span>
-            <div id="auth-quick-users-list" class="auth-quick-list"></div>
-          </div>
-
-          <!-- Login Form -->
-          <form id="form-auth-login" onsubmit="event.preventDefault(); App.Auth.submitLogin();">
-            <div class="form-group" style="margin-bottom: 14px;">
-              <label for="auth-login-username">Username</label>
-              <input type="text" id="auth-login-username" placeholder="e.g. jay or demo" required autocomplete="username">
-            </div>
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label for="auth-login-password">Password</label>
-              <input type="password" id="auth-login-password" placeholder="Enter your password" required autocomplete="current-password">
-            </div>
-            <div id="auth-login-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
-            <button type="submit" id="btn-submit-login" class="btn-primary btn-full-width">
-              <span>⚡ Sign In &amp; Load Terminal</span>
-            </button>
-          </form>
-
-          <!-- Register Form -->
-          <form id="form-auth-register" style="display: none;" onsubmit="event.preventDefault(); App.Auth.submitRegister();">
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label for="auth-reg-username">Username</label>
-              <input type="text" id="auth-reg-username" placeholder="Letters or numbers, min 3 chars" required autocomplete="off">
-            </div>
-            <div class="form-group" style="margin-bottom: 12px;">
-              <label for="auth-reg-display">Display Name (Optional)</label>
-              <input type="text" id="auth-reg-display" placeholder="e.g. Jay Bothra" autocomplete="name">
-            </div>
-            <div class="form-group" style="margin-bottom: 16px;">
-              <label for="auth-reg-password">Password</label>
-              <input type="password" id="auth-reg-password" placeholder="Min 4 characters" required autocomplete="new-password">
-            </div>
-            <div id="auth-reg-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
-            <button type="submit" id="btn-submit-register" class="btn-primary btn-full-width">
-              <span>🚀 Create Account &amp; Start Trading</span>
-            </button>
-          </form>
-
-          <!-- Modal Google Sign-In -->
-          <div id="modal-google-auth-section" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(168, 142, 110, 0.3); display: none;">
-            <div style="text-align: center; font-size: 0.76rem; color: #78716c; margin-bottom: 8px;">or continue with Google</div>
-            <div id="modal-google-btn-container" style="display: flex; justify-content: center; width: 100%; min-height: 40px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Dedicated Modal: Link Google Account -->
-      <div id="modal-link-google" class="modal-backdrop" style="display: none;">
-        <div class="modal-dialog-card" style="max-width: 420px; text-align: center;">
-          <div class="modal-header">
-            <div class="modal-title-group">
-              <span class="modal-icon">🔗</span>
-              <div>
-                <h3 class="modal-title">Link Google Account</h3>
-                <p class="modal-subtitle">Connect your Google account to your trading profile.</p>
-              </div>
-            </div>
-            <button type="button" class="btn-icon-close" onclick="App.Auth.closeLinkModal()">&times;</button>
-          </div>
-          <div style="padding: 20px 16px;">
-            <p style="font-size: 0.86rem; color: #57534e; margin-bottom: 16px; line-height: 1.5;">
-              Click below to link Google with your account <strong id="link-target-username">@jay</strong>. Your portfolio and trade journal will remain 100% intact.
-            </p>
-            <div id="link-google-btn-container" style="display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px;"></div>
-            <div id="link-google-status" class="wm-status-box" style="display: none; margin-top: 10px;"></div>
-          </div>
-        </div>
-      </div>
     </section>
 
     <!-- Section 4: Institutional Strategy Tester & Backtest Engine -->
@@ -1386,9 +1289,106 @@
 
   </main>
 
+  <!-- User Authentication & Switch Modal Dialog (Global) -->
+  <div id="modal-auth" class="modal-backdrop" style="display: none;">
+    <div class="modal-dialog-card" style="max-width: 440px;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-icon">👤</span>
+          <div>
+            <h3 class="modal-title" id="auth-modal-title">Terminal Account Access</h3>
+            <p class="modal-subtitle" id="auth-modal-sub">Sign in to access your personal trades, balance, and watchlists.</p>
+          </div>
+        </div>
+        <button type="button" id="btn-close-auth-modal" class="btn-icon-close" onclick="App.Auth.closeAuthModal()">&times;</button>
+      </div>
+
+      <!-- Auth Tabs: Sign In vs Create Account -->
+      <div class="auth-tabs-row">
+        <button type="button" id="tab-auth-login" class="auth-tab-btn active" onclick="App.Auth.switchAuthTab('login')">
+          <span>🔑 Sign In</span>
+        </button>
+        <button type="button" id="tab-auth-register" class="auth-tab-btn" onclick="App.Auth.switchAuthTab('register')">
+          <span>➕ Create Account</span>
+        </button>
+      </div>
+
+      <!-- Fast User Switcher Chips (visible when other accounts exist) -->
+      <div id="auth-quick-switch-section" class="auth-quick-section" style="display: none;">
+        <span class="auth-quick-label">Switch to account:</span>
+        <div id="auth-quick-users-list" class="auth-quick-list"></div>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-auth-login" onsubmit="event.preventDefault(); App.Auth.submitLogin();">
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label for="auth-login-username">Username</label>
+          <input type="text" id="auth-login-username" placeholder="e.g. jay or demo" required autocomplete="username">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="auth-login-password">Password</label>
+          <input type="password" id="auth-login-password" placeholder="Enter your password" required autocomplete="current-password">
+        </div>
+        <div id="auth-login-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
+        <button type="submit" id="btn-submit-login" class="btn-primary btn-full-width">
+          <span>⚡ Sign In &amp; Load Terminal</span>
+        </button>
+      </form>
+
+      <!-- Register Form -->
+      <form id="form-auth-register" style="display: none;" onsubmit="event.preventDefault(); App.Auth.submitRegister();">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="auth-reg-username">Username</label>
+          <input type="text" id="auth-reg-username" placeholder="Letters or numbers, min 3 chars" required autocomplete="off">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label for="auth-reg-display">Display Name (Optional)</label>
+          <input type="text" id="auth-reg-display" placeholder="e.g. Jay Bothra" autocomplete="name">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label for="auth-reg-password">Password</label>
+          <input type="password" id="auth-reg-password" placeholder="Min 4 characters" required autocomplete="new-password">
+        </div>
+        <div id="auth-reg-status" class="wm-status-box" style="display: none; margin-bottom: 14px;"></div>
+        <button type="submit" id="btn-submit-register" class="btn-primary btn-full-width">
+          <span>🚀 Create Account &amp; Start Trading</span>
+        </button>
+      </form>
+
+      <!-- Modal Google Sign-In -->
+      <div id="modal-google-auth-section" style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(168, 142, 110, 0.3); display: none;">
+        <div style="text-align: center; font-size: 0.76rem; color: #78716c; margin-bottom: 8px;">or continue with Google</div>
+        <div id="modal-google-btn-container" style="display: flex; justify-content: center; width: 100%; min-height: 40px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dedicated Modal: Link Google Account (Global) -->
+  <div id="modal-link-google" class="modal-backdrop" style="display: none; z-index: 9999;">
+    <div class="modal-dialog-card" style="max-width: 420px; text-align: center;">
+      <div class="modal-header">
+        <div class="modal-title-group">
+          <span class="modal-icon">🔗</span>
+          <div>
+            <h3 class="modal-title">Link Google Account</h3>
+            <p class="modal-subtitle">Connect your Google account to your trading profile.</p>
+          </div>
+        </div>
+        <button type="button" class="btn-icon-close" onclick="App.Auth.closeLinkModal()">&times;</button>
+      </div>
+      <div style="padding: 20px 16px;">
+        <p style="font-size: 0.86rem; color: #57534e; margin-bottom: 16px; line-height: 1.5;">
+          Click below to link Google with your account <strong id="link-target-username">@jay</strong>. Your portfolio and trade journal will remain 100% intact.
+        </p>
+        <div id="link-google-btn-container" style="display: flex; justify-content: center; min-height: 44px; margin-bottom: 10px;"></div>
+        <div id="link-google-status" class="wm-status-box" style="display: none; margin-top: 10px;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=76.0"></script>
+  <script src="/static/app.js?v=80.0"></script>
 
 </body>
 

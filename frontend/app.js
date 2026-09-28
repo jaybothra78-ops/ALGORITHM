@@ -3543,6 +3543,15 @@ App.Auth = {
       });
     }
 
+    const btnLink = document.querySelector('#btn-link-google');
+    if (btnLink) {
+      btnLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.triggerGoogleLink();
+      });
+    }
+
     const modalAuth = document.querySelector('#modal-auth');
     if (modalAuth) {
       modalAuth.addEventListener('click', (e) => {
@@ -3906,9 +3915,13 @@ App.Auth = {
     }
   },
 
-  triggerGoogleLink() {
+  async triggerGoogleLink() {
     const userDropdown = document.querySelector('#user-dropdown-menu');
     if (userDropdown) userDropdown.style.display = 'none';
+
+    if (!this.googleClientId) {
+      await this.initGoogleAuth();
+    }
 
     const targetLabel = document.querySelector('#link-target-username');
     if (targetLabel && App.State.currentUser) {
