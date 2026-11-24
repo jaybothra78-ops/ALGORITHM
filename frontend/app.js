@@ -4071,10 +4071,93 @@ App.Auth = {
 };
 
 // =====================================================================
+// 8.5. Theme Manager (Dark / Light Mode)
+// =====================================================================
+App.Theme = {
+  THEME_KEY: 'stratlab_theme',
+
+  init() {
+    const saved = localStorage.getItem(this.THEME_KEY);
+    const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const currentTheme = saved || (prefersDark ? 'dark' : 'light');
+
+    this.applyTheme(currentTheme, false);
+
+    const toggleBtn = document.querySelector('#btn-theme-toggle');
+    if (toggleBtn) {
+      toggleBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        this.toggleTheme();
+      });
+    }
+
+    if (window.matchMedia) {
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+        if (!localStorage.getItem(this.THEME_KEY)) {
+          this.applyTheme(e.matches ? 'dark' : 'light', false);
+        }
+      });
+    }
+  },
+
+  getCurrentTheme() {
+    return document.documentElement.classList.contains('dark-theme') ? 'dark' : 'light';
+  },
+
+  toggleTheme() {
+    const nextTheme = this.getCurrentTheme() === 'dark' ? 'light' : 'dark';
+    this.applyTheme(nextTheme, true);
+  },
+
+  applyTheme(theme, save = true) {
+    const isDark = theme === 'dark';
+    if (isDark) {
+      document.documentElement.classList.add('dark-theme');
+      document.documentElement.setAttribute('data-theme', 'dark');
+      if (document.body) {
+        document.body.classList.add('dark-theme');
+        document.body.setAttribute('data-theme', 'dark');
+      }
+    } else {
+      document.documentElement.classList.remove('dark-theme');
+      document.documentElement.setAttribute('data-theme', 'light');
+      if (document.body) {
+        document.body.classList.remove('dark-theme');
+        document.body.setAttribute('data-theme', 'light');
+      }
+    }
+
+    if (save) {
+      localStorage.setItem(this.THEME_KEY, theme);
+    }
+
+    this.updateToggleUI(isDark);
+  },
+
+  updateToggleUI(isDark) {
+    const btn = document.querySelector('#btn-theme-toggle');
+    const icon = document.querySelector('#theme-toggle-icon');
+    const label = document.querySelector('#theme-toggle-label');
+
+    if (icon) {
+      icon.textContent = isDark ? '☀️' : '🌙';
+    }
+    if (label) {
+      label.textContent = isDark ? 'Light' : 'Dark';
+    }
+    if (btn) {
+      btn.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+      btn.setAttribute('aria-label', btn.title);
+    }
+  }
+};
+
+// =====================================================================
 // 9. Application Bootstrapping
 // =====================================================================
 App.Init = {
   async bootstrap() {
+    App.Theme.init();
     await App.Auth.init();
     App.Router.init();
     App.Screener.init();

@@ -21,12 +21,24 @@
       }
     })();
   </script>
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('stratlab_theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-theme');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
 
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
-  <link rel="stylesheet" href="/static/style.css?v=51.0">
+  <link rel="stylesheet" href="/static/style.css?v=85.0">
 
 </head>
 
@@ -102,6 +114,12 @@
             </button>
           </div>
         </div>
+
+        <!-- Dark / Light Mode Toggle Button -->
+        <button id="btn-theme-toggle" class="btn-subtle theme-toggle-btn" type="button" title="Switch to Dark Mode" aria-label="Toggle Dark / Light Theme">
+          <span id="theme-toggle-icon" class="theme-icon">🌙</span>
+          <span id="theme-toggle-label" class="theme-label">Dark</span>
+        </button>
 
         <button id="btn-import-modal" class="btn-subtle" title="Import public watchlist from TradingView">
           <span class="btn-icon-symbol">➕</span>
@@ -1389,7 +1407,7 @@
 
   <!-- TradingView Lightweight Charts Library -->
   <script src="https://unpkg.com/lightweight-charts@4.1.3/dist/lightweight-charts.standalone.production.js"></script>
-  <script src="/static/app.js?v=80.0"></script>
+  <script src="/static/app.js?v=85.0"></script>
 
 </body>
 

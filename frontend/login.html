@@ -9,6 +9,18 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
+  <script>
+    (function() {
+      try {
+        const saved = localStorage.getItem('stratlab_theme');
+        const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (saved === 'dark' || (!saved && prefersDark)) {
+          document.documentElement.classList.add('dark-theme');
+          document.documentElement.setAttribute('data-theme', 'dark');
+        }
+      } catch (e) {}
+    })();
+  </script>
   <style>
     :root {
       color-scheme: light;
@@ -469,10 +481,127 @@
       from { opacity: 0; transform: translateY(-4px); }
       to { opacity: 1; transform: translateY(0); }
     }
+
+    /* Theme Toggle Button */
+    .login-theme-btn {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      z-index: 100;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 13px;
+      border-radius: 9px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      background: rgba(238, 231, 220, 0.9);
+      border: 1px solid rgba(168, 142, 110, 0.35);
+      color: #292524;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: var(--font-sans);
+      user-select: none;
+    }
+    .login-theme-btn:hover {
+      background: #ffffff;
+      border-color: rgba(180, 83, 9, 0.45);
+      color: #78350f;
+      transform: translateY(-1px);
+      box-shadow: 0 3px 10px rgba(70, 55, 35, 0.1);
+    }
+
+    /* Dark Mode Overrides for Login */
+    html.dark-theme, body.dark-theme {
+      color-scheme: dark !important;
+      --bg-base: #090d16;
+      --bg-subtle: #0f172a;
+      --surface-1: #0f172a;
+      --surface-2: #1e293b;
+      --surface-3: #1e293b;
+      --surface-glass: rgba(15, 23, 42, 0.94);
+      --border-subtle: rgba(51, 65, 85, 0.6);
+      --border-glass: rgba(51, 65, 85, 0.7);
+      --text-pure: #ffffff;
+      --text-main: #f8fafc;
+      --text-secondary: #cbd5e1;
+      --text-muted: #94a3b8;
+      --text-faint: #64748b;
+    }
+    html.dark-theme body {
+      background-color: #090d16 !important;
+      background-image: 
+        radial-gradient(circle at 15% 0%, rgba(30, 58, 138, 0.28) 0%, transparent 45%),
+        radial-gradient(circle at 85% 0%, rgba(88, 28, 135, 0.22) 0%, transparent 45%),
+        radial-gradient(circle at 50% 100%, rgba(6, 78, 59, 0.18) 0%, transparent 50%) !important;
+      color: #f8fafc !important;
+    }
+    html.dark-theme .auth-card {
+      background: rgba(15, 23, 42, 0.92) !important;
+      border-color: rgba(51, 65, 85, 0.65) !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.65) !important;
+    }
+    html.dark-theme .login-theme-btn {
+      background: rgba(30, 41, 59, 0.85);
+      border-color: rgba(71, 85, 105, 0.65);
+      color: #f1f5f9;
+    }
+    html.dark-theme .login-theme-btn:hover {
+      background: #334155;
+      border-color: rgba(56, 189, 248, 0.5);
+      color: #38bdf8;
+    }
+    html.dark-theme input {
+      background: #0f172a !important;
+      border-color: rgba(71, 85, 105, 0.65) !important;
+      color: #f8fafc !important;
+    }
+    html.dark-theme .brand-title {
+      color: #ffffff !important;
+    }
+    html.dark-theme .brand-subtitle {
+      color: #94a3b8 !important;
+    }
+    html.dark-theme .form-label {
+      color: #cbd5e1 !important;
+    }
+    html.dark-theme .tabs-row {
+      background: rgba(15, 23, 42, 0.8) !important;
+      border-color: rgba(51, 65, 85, 0.6) !important;
+    }
+    html.dark-theme .tab-btn {
+      color: #94a3b8 !important;
+    }
+    html.dark-theme .tab-btn.active {
+      background: #1e293b !important;
+      color: #38bdf8 !important;
+      border-color: rgba(56, 189, 248, 0.4) !important;
+    }
+    html.dark-theme .brand-badge {
+      background: rgba(30, 41, 59, 0.8) !important;
+      border-color: rgba(56, 189, 248, 0.35) !important;
+      color: #38bdf8 !important;
+    }
+    html.dark-theme .btn-demo {
+      background: rgba(30, 41, 59, 0.7) !important;
+      border-color: rgba(71, 85, 105, 0.6) !important;
+      color: #e2e8f0 !important;
+    }
+    html.dark-theme .login-footer-card {
+      background: rgba(15, 23, 42, 0.75) !important;
+      border-color: rgba(51, 65, 85, 0.5) !important;
+      color: #94a3b8 !important;
+    }
   </style>
 </head>
 <body>
   <div class="bg-grid"></div>
+
+  <!-- Theme Toggle Button -->
+  <button id="login-theme-toggle" class="login-theme-btn" type="button" title="Toggle Dark / Light Theme" aria-label="Toggle Theme" onclick="toggleLoginTheme()">
+    <span id="login-theme-icon">🌙</span>
+    <span id="login-theme-label">Dark</span>
+  </button>
 
   <!-- Verification overlay when checking active token -->
   <div id="auth-checking-overlay">
@@ -881,7 +1010,32 @@
       }
     }
 
+    function updateLoginThemeUI(isDark) {
+      const icon = document.querySelector('#login-theme-icon');
+      const label = document.querySelector('#login-theme-label');
+      const btn = document.querySelector('#login-theme-toggle');
+      if (icon) icon.textContent = isDark ? '☀️' : '🌙';
+      if (label) label.textContent = isDark ? 'Light' : 'Dark';
+      if (btn) btn.title = isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode';
+    }
+
+    function toggleLoginTheme() {
+      const isDark = document.documentElement.classList.contains('dark-theme');
+      const next = !isDark;
+      if (next) {
+        document.documentElement.classList.add('dark-theme');
+        document.body.classList.add('dark-theme');
+        localStorage.setItem('stratlab_theme', 'dark');
+      } else {
+        document.documentElement.classList.remove('dark-theme');
+        document.body.classList.remove('dark-theme');
+        localStorage.setItem('stratlab_theme', 'light');
+      }
+      updateLoginThemeUI(next);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
+      updateLoginThemeUI(document.documentElement.classList.contains('dark-theme'));
       checkExistingSession();
       initGoogleAuth();
     });

@@ -7084,3 +7084,450 @@ th.th-sortable.sorted-desc .sort-caret {
     grid-template-columns: repeat(2, 1fr) !important;
   }
 }
+
+/* =========================================================
+   THEME TOGGLE BUTTON STYLING
+   ========================================================= */
+.theme-toggle-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  padding: 6px 12px !important;
+  font-family: var(--font-sans) !important;
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  border-radius: 9px !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  user-select: none !important;
+  background: rgba(238, 231, 220, 0.9) !important;
+  border: 1px solid rgba(168, 142, 110, 0.3) !important;
+  color: #292524 !important;
+}
+
+.theme-toggle-btn:hover {
+  background: #ffffff !important;
+  border-color: rgba(180, 83, 9, 0.45) !important;
+  color: #78350f !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 3px 10px rgba(70, 55, 35, 0.1) !important;
+}
+
+.theme-toggle-btn .theme-icon {
+  font-size: 0.95rem !important;
+  line-height: 1 !important;
+  display: inline-block !important;
+  transition: transform 0.25s ease !important;
+}
+
+.theme-toggle-btn:hover .theme-icon {
+  transform: rotate(15deg) scale(1.1) !important;
+}
+
+.theme-toggle-btn .theme-label {
+  font-weight: 700 !important;
+  letter-spacing: 0.2px !important;
+}
+
+/* =========================================================
+   STRATLAB INSTITUTIONAL DARK THEME SYSTEM
+   Activated when html.dark-theme or body.dark-theme is set
+   ========================================================= */
+html.dark-theme {
+  color-scheme: dark !important;
+}
+
+html.dark-theme body,
+body.dark-theme {
+  background: #090d16 !important;
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(30, 58, 138, 0.28), transparent),
+    radial-gradient(ellipse 60% 40% at 85% 10%, rgba(88, 28, 135, 0.22), transparent),
+    radial-gradient(ellipse 50% 30% at 10% 90%, rgba(6, 78, 59, 0.18), transparent) !important;
+  background-attachment: fixed !important;
+  color: #e2e8f0 !important;
+  color-scheme: dark !important;
+}
+
+/* Navbar */
+html.dark-theme .navbar {
+  background: rgba(11, 15, 25, 0.9) !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6) !important;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark-theme .brand-badge-icon {
+  background: rgba(30, 41, 59, 0.9) !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
+  box-shadow: 0 0 16px rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+}
+
+html.dark-theme .brand-name {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+html.dark-theme .brand-tag {
+  color: #38bdf8 !important;
+  background: rgba(56, 189, 248, 0.12) !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
+/* Nav Tabs */
+html.dark-theme .nav-tabs {
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+}
+
+html.dark-theme .nav-tab {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .nav-tab:hover {
+  color: #f8fafc !important;
+  background: rgba(30, 41, 59, 0.8) !important;
+}
+
+html.dark-theme .nav-tab.active {
+  background: #1e293b !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 2px 12px rgba(56, 189, 248, 0.25), 0 1px 3px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Theme Toggle Button in Dark Mode */
+html.dark-theme .theme-toggle-btn {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border: 1px solid rgba(71, 85, 105, 0.65) !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark-theme .theme-toggle-btn:hover {
+  background: #334155 !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 3px 12px rgba(56, 189, 248, 0.25) !important;
+}
+
+/* Main Cards & Workspaces */
+html.dark-theme .table-container,
+html.dark-theme .news-command-bar,
+html.dark-theme .news-command-center,
+html.dark-theme .watchlist-manager-card,
+html.dark-theme .order-entry-card,
+html.dark-theme .stats-bar,
+html.dark-theme .kpi-card,
+html.dark-theme .news-ai-reasoning,
+html.dark-theme .news-feed-column,
+html.dark-theme .news-detail-column,
+html.dark-theme .backtest-control-card,
+html.dark-theme .backtest-card,
+html.dark-theme .paper-summary-card {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.45) !important;
+  color: #e2e8f0 !important;
+}
+
+/* Data Tables */
+html.dark-theme .data-table th {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #94a3b8 !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.8) !important;
+}
+
+html.dark-theme .data-table td {
+  color: #cbd5e1 !important;
+  border-bottom: 1px solid rgba(51, 65, 85, 0.4) !important;
+}
+
+html.dark-theme .data-table tbody tr:hover {
+  background: rgba(30, 41, 59, 0.65) !important;
+}
+
+html.dark-theme .ticker-link {
+  color: #38bdf8 !important;
+}
+
+html.dark-theme .empty-cell {
+  color: #64748b !important;
+}
+
+/* Filter & Range Pills */
+html.dark-theme .pill-group {
+  background: rgba(15, 23, 42, 0.8) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+}
+
+html.dark-theme .pill {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .pill:hover {
+  color: #ffffff !important;
+  background: rgba(30, 41, 59, 0.85) !important;
+}
+
+html.dark-theme .pill.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  color: #ffffff !important;
+  box-shadow: 0 2px 10px rgba(2, 132, 199, 0.45) !important;
+}
+
+/* Stats Pills */
+html.dark-theme .stat-pill {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 1px solid rgba(51, 65, 85, 0.55) !important;
+  color: #cbd5e1 !important;
+}
+
+html.dark-theme .stat-pill strong {
+  color: #f8fafc !important;
+}
+
+html.dark-theme .stat-pill.highlight {
+  border-color: rgba(56, 189, 248, 0.45) !important;
+  background: rgba(56, 189, 248, 0.14) !important;
+  color: #38bdf8 !important;
+}
+
+/* Buttons */
+html.dark-theme .btn-subtle {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border: 1px solid rgba(71, 85, 105, 0.65) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark-theme .btn-subtle:hover {
+  background: #334155 !important;
+  border-color: rgba(148, 163, 184, 0.5) !important;
+  color: #ffffff !important;
+}
+
+html.dark-theme .btn-icon {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(71, 85, 105, 0.65) !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark-theme .btn-icon:hover {
+  background: #334155 !important;
+  border-color: rgba(56, 189, 248, 0.5) !important;
+  color: #38bdf8 !important;
+}
+
+html.dark-theme .btn-primary,
+html.dark-theme .cmd-run-btn,
+html.dark-theme .btn-execute-order {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%) !important;
+  border: 1px solid rgba(56, 189, 248, 0.5) !important;
+  box-shadow: 0 4px 18px rgba(2, 132, 199, 0.4) !important;
+  color: #ffffff !important;
+}
+
+html.dark-theme .btn-primary:hover,
+html.dark-theme .cmd-run-btn:hover,
+html.dark-theme .btn-execute-order:hover {
+  box-shadow: 0 6px 24px rgba(2, 132, 199, 0.55) !important;
+  transform: translateY(-1px) !important;
+}
+
+/* Inputs, Selects & Forms */
+html.dark-theme input[type="text"],
+html.dark-theme input[type="number"],
+html.dark-theme input[type="password"],
+html.dark-theme input[type="url"],
+html.dark-theme select,
+html.dark-theme textarea {
+  background: #0f172a !important;
+  border: 1px solid rgba(71, 85, 105, 0.65) !important;
+  color: #f8fafc !important;
+}
+
+html.dark-theme input:focus,
+html.dark-theme select:focus,
+html.dark-theme textarea:focus {
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.25) !important;
+}
+
+html.dark-theme input::placeholder {
+  color: #64748b !important;
+}
+
+/* User Dropdown */
+html.dark-theme .user-dropdown {
+  background: #0f172a !important;
+  border: 1px solid rgba(51, 65, 85, 0.8) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7) !important;
+}
+
+html.dark-theme .user-dropdown-header {
+  border-bottom: 1px solid rgba(51, 65, 85, 0.6) !important;
+}
+
+html.dark-theme .user-info-name {
+  color: #f8fafc !important;
+}
+
+html.dark-theme .user-info-sub {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .user-dropdown-divider {
+  background: rgba(51, 65, 85, 0.5) !important;
+}
+
+html.dark-theme .user-dropdown-item {
+  color: #cbd5e1 !important;
+}
+
+html.dark-theme .user-dropdown-item:hover {
+  background: rgba(30, 41, 59, 0.95) !important;
+  color: #38bdf8 !important;
+}
+
+/* Modals */
+html.dark-theme .modal-backdrop {
+  background: rgba(0, 0, 0, 0.8) !important;
+}
+
+html.dark-theme .modal-dialog-card,
+html.dark-theme .modal-card {
+  background: #0f172a !important;
+  border: 1px solid rgba(51, 65, 85, 0.85) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.75) !important;
+  color: #f8fafc !important;
+}
+
+html.dark-theme .modal-title {
+  color: #ffffff !important;
+}
+
+html.dark-theme .modal-subtitle {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .modal-close-btn,
+html.dark-theme .btn-icon-close {
+  color: #94a3b8 !important;
+  background: rgba(30, 41, 59, 0.7) !important;
+}
+
+html.dark-theme .modal-close-btn:hover,
+html.dark-theme .btn-icon-close:hover {
+  color: #f8fafc !important;
+  background: rgba(51, 65, 85, 0.85) !important;
+}
+
+/* News Cards & Intelligence */
+html.dark-theme .news-card {
+  background: rgba(30, 41, 59, 0.55) !important;
+  border: 1px solid rgba(51, 65, 85, 0.6) !important;
+}
+
+html.dark-theme .news-card:hover {
+  background: rgba(30, 41, 59, 0.85) !important;
+  border-color: rgba(56, 189, 248, 0.45) !important;
+}
+
+html.dark-theme .news-card.active {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 4px 16px rgba(2, 132, 199, 0.3) !important;
+}
+
+html.dark-theme .news-title {
+  color: #f1f5f9 !important;
+}
+
+html.dark-theme .news-summary {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .news-meta {
+  color: #64748b !important;
+}
+
+html.dark-theme .news-ai-box {
+  background: rgba(30, 41, 59, 0.55) !important;
+  border: 1px solid rgba(51, 65, 85, 0.55) !important;
+}
+
+html.dark-theme .trending-pills-row {
+  border-top: 1px solid rgba(51, 65, 85, 0.45) !important;
+}
+
+html.dark-theme .trending-label {
+  color: #94a3b8 !important;
+}
+
+/* Paper Trading Elements */
+html.dark-theme .kpi-title {
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .kpi-value {
+  color: #f8fafc !important;
+}
+
+html.dark-theme .paper-subtab-btn {
+  background: transparent !important;
+  color: #94a3b8 !important;
+}
+
+html.dark-theme .paper-subtab-btn:hover {
+  color: #f8fafc !important;
+  background: rgba(30, 41, 59, 0.65) !important;
+}
+
+html.dark-theme .paper-subtab-btn.active {
+  background: #1e293b !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.45) !important;
+}
+
+html.dark-theme .btn-delete-trade {
+  background: rgba(239, 68, 68, 0.14) !important;
+  border-color: rgba(239, 68, 68, 0.45) !important;
+  color: #f87171 !important;
+}
+
+html.dark-theme .btn-delete-trade:hover {
+  background: rgba(239, 68, 68, 0.28) !important;
+  color: #fca5a5 !important;
+}
+
+/* Option Chain & Strategy Tester */
+html.dark-theme .option-chain-container,
+html.dark-theme .backtest-results-card {
+  background: rgba(15, 23, 42, 0.9) !important;
+  border-color: rgba(51, 65, 85, 0.6) !important;
+}
+
+/* Price & Status Indicators */
+html.dark-theme .price-cell {
+  color: #f1f5f9 !important;
+}
+
+html.dark-theme .price-cell.positive {
+  color: #4ade80 !important;
+}
+
+html.dark-theme .price-cell.negative {
+  color: #f87171 !important;
+}
+
+html.dark-theme .reason-pill {
+  background: rgba(30, 41, 59, 0.8) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(71, 85, 105, 0.6) !important;
+}
+
+html.dark-theme .strategy-tag {
+  background: rgba(56, 189, 248, 0.12) !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(56, 189, 248, 0.35) !important;
+}
+
